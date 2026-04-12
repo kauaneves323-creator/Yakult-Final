@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>yakult.br</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --blue:#628ad2;--blue-dark:#3a62aa;--blue-bg:#bfd0ea;--blue-light:#d4e0ef;
+      --pink:#e9007e;--pink-dark:#b80063;--white:#fff;--border:#c5d5f0;
+      --text:#333;--muted:#777;--scrap-bg:#f1f6ff;--scrap-bdr:#d9e6f6;--radius:6px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:13px;background:var(--blue-light);color:var(--text);min-height:100vh;}
+    .topbar{background:var(--blue);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;box-shadow:0 2px 4px rgba(0,0,0,.15);}
+    .logo{font-size:26px;font-weight:bold;font-style:italic;color:#fff;letter-spacing:-1px;}
+    .logo span{color:var(--pink);}
+    .topbar-right{display:flex;align-items:center;gap:12px;color:#fff;font-size:12px;}
+    .pill{background:rgba(255,255,255,.2);padding:2px 10px;border-radius:10px;font-size:11px;}
+    .btn-sair{background:transparent;border:1px solid rgba(255,255,255,.7);color:#fff;padding:3px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;}
+    .btn-sair:hover{background:rgba(255,255,255,.15);}
+    .page{max-width:980px;margin:18px auto;padding:0 12px;}
+    #loginPage{max-width:420px;margin:60px auto 0;}
+    #homePage{display:grid;grid-template-columns:200px 1fr 250px;gap:14px;}
+
+    @media(max-width:760px){
+      #homePage{grid-template-columns:1fr;}
+      .left-col,.right-col{display:none;}
+      .left-col.mob-visible,.right-col.mob-visible{display:block;}
+      .mobile-nav{display:flex!important;}
+      .topbar-right .pill{display:none;}
+      #topUser{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    }
+    @media(min-width:761px){
+      .mobile-nav{display:none!important;}
+    }
+
+    .mobile-nav{
+      position:fixed;bottom:0;left:0;right:0;z-index:50;
+      background:var(--blue-dark);display:flex;align-items:center;
+      justify-content:space-around;padding:6px 0 8px;
+      box-shadow:0 -2px 8px rgba(0,0,0,.2);
+    }
+    .mobile-nav a{
+      display:flex;flex-direction:column;align-items:center;
+      color:rgba(255,255,255,.7);font-size:9px;gap:2px;cursor:pointer;
+      padding:2px 6px;border-radius:6px;transition:color .15s;
+    }
+    .mobile-nav a .nav-icon{font-size:20px;line-height:1;}
+    .mobile-nav a.active{color:#fff;}
+    .mobile-nav a .mnbadge{
+      background:var(--pink);color:#fff;border-radius:10px;
+      padding:1px 5px;font-size:9px;font-weight:bold;margin-top:-2px;
+    }
+
+    @media(max-width:760px){
+      body{padding-bottom:70px;}
+      .page{margin-top:12px;}
+    }
+
+    .card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:12px;}
+    .card h3{color:var(--blue);font-size:13px;font-weight:bold;border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px;}
+    #loginPage .card{padding:22px;}
+    .login-logo{text-align:center;font-size:44px;font-weight:bold;font-style:italic;color:var(--blue);margin-bottom:2px;letter-spacing:-2px;}
+    .login-logo span{color:var(--pink);}
+    .login-tag{text-align:center;color:var(--muted);font-size:12px;margin-bottom:20px;}
+    .ig{margin-bottom:10px;}
+    .ig label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:bold;}
+    .ig input,.ig textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;outline:none;font-family:Arial,sans-serif;}
+    .ig input:focus,.ig textarea:focus{border-color:var(--blue);}
+    .btn-p{width:100%;background:var(--pink);color:#fff;border:none;padding:9px;border-radius:var(--radius);font-weight:bold;font-size:13px;cursor:pointer;margin-top:6px;}
+    .btn-p:hover{background:var(--pink-dark);}
+    .divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+    .err{background:#fff0f0;border:1px solid #f5c0c0;color:#c00;padding:6px 10px;border-radius:var(--radius);font-size:12px;margin-top:8px;display:none;}
+    .remember-row{display:flex;align-items:center;gap:6px;margin:8px 0 2px;font-size:12px;color:var(--muted);}
+    .remember-row input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--pink);}
+
+    /* PERFIL */
+    .profile-box{text-align:center;}
+    .avatar{width:90px;height:90px;border-radius:50%;background:var(--blue-bg);border:3px solid var(--blue);margin:8px auto;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden;cursor:pointer;position:relative;}
+    .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .avatar-overlay{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.45);color:#fff;font-size:10px;padding:3px 0;border-radius:0 0 50% 50%;opacity:0;transition:opacity .2s;}
+    .avatar:hover .avatar-overlay{opacity:1;}
+    .pname{font-weight:bold;font-size:14px;color:var(--blue-dark);margin:4px 0 2px;}
+    .pbio{font-size:11px;color:var(--muted);margin-bottom:4px;word-break:break-word;}
+    .pcountry{font-size:11px;color:var(--muted);}
+    .stats{display:flex;justify-content:space-around;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+    .stat{text-align:center;}
+    .stat-n{font-weight:bold;color:var(--blue-dark);font-size:15px;}
+    .stat-l{font-size:10px;color:var(--muted);}
+    .nav-card a{display:block;padding:4px 0;color:var(--blue-dark);text-decoration:none;font-size:12px;cursor:pointer;}
+    .nav-card a:hover{text-decoration:underline;}
+    .nav-card a.active{font-weight:bold;color:var(--pink);}
+    .nav-card a .badge{background:var(--pink);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;}
+
+    /* INPUTS GERAIS */
+    .row-inp{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;}
+    .row-inp input{flex:1;min-width:0;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;}
+    textarea.stxt{width:100%;height:70px;border:1px solid var(--border);border-radius:var(--radius);padding:6px;font-size:12px;font-family:Arial,sans-serif;resize:vertical;outline:none;}
+    textarea.stxt:focus{border-color:var(--blue);}
+    .btn-s{background:var(--pink);color:#fff;border:none;padding:5px 14px;border-radius:var(--radius);font-size:12px;font-weight:bold;cursor:pointer;margin-top:6px;}
+    .btn-s:hover{background:var(--pink-dark);}
+
+    /* POSTAGENS */
+    .post-item{background:var(--scrap-bg);border:1px solid var(--scrap-bdr);border-radius:var(--radius);padding:10px;margin-top:8px;animation:fadeIn .3s ease;}
+    .post-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+    .post-av{width:32px;height:32px;border-radius:50%;background:var(--blue-bg);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0;}
+    .post-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .post-nick{font-weight:bold;color:var(--blue-dark);font-size:12px;}
+    .post-time{color:var(--muted);font-size:10px;margin-left:auto;}
+    .post-txt{font-size:12px;color:var(--text);line-height:1.6;word-break:break-word;margin-bottom:6px;}
+    .post-img{width:100%;max-height:300px;object-fit:cover;border-radius:var(--radius);margin-bottom:6px;cursor:pointer;}
+    .post-actions{display:flex;gap:12px;align-items:center;padding-top:6px;border-top:1px solid var(--scrap-bdr);}
+    .post-btn{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .15s;}
+    .post-btn:hover{background:var(--blue-bg);color:var(--blue-dark);}
+    .post-btn.liked{color:var(--pink);font-weight:bold;}
+    .post-comments{margin-top:8px;padding-top:6px;border-top:1px solid var(--scrap-bdr);}
+    .comment-item{display:flex;gap:6px;margin-bottom:6px;font-size:11px;align-items:flex-start;}
+    .comment-av{width:22px;height:22px;border-radius:50%;background:var(--blue-bg);border:1px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;overflow:hidden;flex-shrink:0;}
+    .comment-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .comment-nick{font-weight:bold;color:var(--blue-dark);}
+    .comment-txt{color:var(--text);}
+    .comment-img{max-width:120px;max-height:120px;border-radius:4px;margin-top:3px;cursor:pointer;display:block;}
+    .comment-inp-row{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+    .comment-inp{flex:1;min-width:0;padding:4px 8px;border:1px solid var(--border);border-radius:12px;font-size:12px;outline:none;}
+    .comment-inp:focus{border-color:var(--blue);}
+    .comment-send{background:var(--blue);color:#fff;border:none;padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer;}
+    .comment-photo-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:4px 8px;border-radius:12px;font-size:11px;cursor:pointer;white-space:nowrap;}
+    .comment-photo-preview{width:60px;height:60px;object-fit:cover;border-radius:6px;margin-top:4px;cursor:pointer;}
+
+    /* SCRAPS */
+    .target-sel select{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;background:var(--white);margin-bottom:6px;}
+    .scrap-item{background:var(--scrap-bg);border:1px solid var(--scrap-bdr);border-radius:var(--radius);padding:8px 10px;margin-top:8px;animation:fadeIn .3s ease;}
+    .scrap-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+    .scrap-from{font-weight:bold;color:var(--blue-dark);font-size:12px;}
+    .scrap-arr{color:var(--muted);font-size:11px;margin:0 4px;}
+    .scrap-to{color:var(--pink);font-size:12px;font-weight:bold;}
+    .scrap-time{color:var(--muted);font-size:10px;}
+    .scrap-txt{font-size:12px;color:var(--text);line-height:1.5;word-break:break-word;}
+
+    /* DM */
+    .dm-list{display:flex;flex-direction:column;gap:4px;}
+    .dm-conv{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;transition:background .15s;}
+    .dm-conv:hover{background:var(--scrap-bg);border-color:var(--border);}
+    .dm-conv.active{background:var(--blue-bg);border-color:var(--blue);}
+    .dm-av{width:36px;height:36px;border-radius:50%;background:var(--blue-bg);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;}
+    .dm-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .dm-info{flex:1;min-width:0;}
+    .dm-nick{font-weight:bold;color:var(--blue-dark);font-size:12px;}
+    .dm-preview{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .dm-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+    .dm-time{color:var(--muted);font-size:10px;}
+    .dm-unread{background:var(--pink);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:bold;}
+    .dm-window{display:flex;flex-direction:column;height:400px;}
+    .dm-header{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px;}
+    .dm-header-av{width:32px;height:32px;border-radius:50%;background:var(--blue-bg);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;}
+    .dm-header-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .dm-header-name{font-weight:bold;color:var(--blue-dark);font-size:13px;flex:1;}
+    .dm-back{background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;padding:2px 6px;}
+    .dm-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:4px 0;}
+    .dm-bubble{max-width:75%;padding:7px 10px;border-radius:12px;font-size:12px;line-height:1.5;word-break:break-word;animation:fadeIn .2s ease;}
+    .dm-bubble.mine{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:3px;}
+    .dm-bubble.theirs{background:var(--scrap-bg);color:var(--text);border:1px solid var(--scrap-bdr);align-self:flex-start;border-bottom-left-radius:3px;}
+    .dm-bubble-time{font-size:10px;opacity:.7;margin-top:2px;}
+    .dm-input-row{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+    .dm-input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:20px;font-size:12px;outline:none;font-family:Arial,sans-serif;}
+    .dm-input:focus{border-color:var(--blue);}
+    .dm-send{background:var(--pink);color:#fff;border:none;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:bold;cursor:pointer;}
+
+    /* AMIGOS */
+    .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+    .fcard{text-align:center;font-size:10px;color:var(--muted);cursor:pointer;}
+    .fcard:hover .fname{text-decoration:underline;}
+    .favatar{width:50px;height:50px;border-radius:50%;background:var(--blue-bg);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 3px;overflow:hidden;}
+    .favatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .fname{word-break:break-all;color:var(--blue-dark);font-weight:bold;}
+    .fstatus{font-size:9px;}
+    .fstatus.on{color:#2a9d2a;}
+    .fstatus.off{color:var(--muted);}
+
+    /* COMUNIDADES */
+    .comm-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .comm-item:last-child{border-bottom:none;}
+    .comm-icon{width:36px;height:36px;border-radius:4px;background:var(--blue-bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+    .comm-info{flex:1;}
+    .comm-name{font-weight:bold;color:var(--blue-dark);}
+    .comm-members{color:var(--muted);font-size:10px;}
+
+    /* MÚSICAS */
+    .music-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .music-item:last-child{border-bottom:none;}
+    .music-icon{font-size:20px;flex-shrink:0;}
+    .music-info{flex:1;min-width:0;}
+    .music-title{font-weight:bold;color:var(--blue-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .music-artist{color:var(--muted);font-size:11px;}
+    .music-play{background:var(--blue);color:#fff;border:none;padding:4px 10px;border-radius:10px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+    .music-play:hover{background:var(--blue-dark);}
+    .music-play.playing{background:var(--pink);}
+    .now-playing{background:var(--blue-bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-size:11px;color:var(--blue-dark);display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+    .now-playing-dot{width:8px;height:8px;border-radius:50%;background:var(--pink);animation:pulse 1s infinite;flex-shrink:0;}
+
+    /* PLAYER DE ÁUDIO */
+    .audio-player{background:var(--blue-dark);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;color:#fff;}
+    .audio-title{font-weight:bold;font-size:12px;margin-bottom:2px;}
+    .audio-artist{font-size:11px;opacity:.75;margin-bottom:8px;}
+    .audio-controls{display:flex;align-items:center;gap:8px;}
+    .audio-btn{background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;}
+    .audio-btn:hover{background:rgba(255,255,255,.35);}
+    .audio-progress{flex:1;height:4px;background:rgba(255,255,255,.3);border-radius:2px;cursor:pointer;position:relative;}
+    .audio-progress-fill{height:100%;background:var(--pink);border-radius:2px;width:0%;transition:width .2s;}
+    .audio-time{font-size:10px;opacity:.7;min-width:65px;text-align:right;}
+    .audio-vol{width:60px;height:4px;background:rgba(255,255,255,.3);border-radius:2px;cursor:pointer;}
+    #globalAudio{display:none;}
+
+    /* UPLOAD MÚSICA */
+    .music-upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:16px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:8px;}
+    .music-upload-area:hover{border-color:var(--blue);}
+    .music-upload-area .upload-icon{font-size:28px;margin-bottom:4px;}
+    .music-upload-area p{font-size:12px;color:var(--muted);}
+    .upload-prog{display:none;height:4px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden;}
+    .upload-prog-bar{height:100%;background:var(--pink);width:0%;transition:width .3s;}
+
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* EDITAR PERFIL */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;}
+    .modal{background:var(--white);border-radius:8px;padding:20px;width:320px;max-width:95vw;}
+    .modal h3{color:var(--blue);margin-bottom:14px;font-size:14px;}
+    .modal .ig{margin-bottom:10px;}
+    .modal-btns{display:flex;gap:8px;margin-top:14px;}
+    .modal-btns button{flex:1;padding:8px;border-radius:var(--radius);border:none;font-weight:bold;font-size:13px;cursor:pointer;}
+    .modal-btns .save{background:var(--pink);color:#fff;}
+    .modal-btns .cancel{background:var(--blue-bg);color:var(--blue-dark);}
+
+    /* ONLINE */
+    .online-user{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .online-user:last-child{border-bottom:none;}
+    .odot{width:8px;height:8px;border-radius:50%;background:#2a9d2a;flex-shrink:0;}
+    .oname{color:var(--blue-dark);font-weight:bold;flex:1;}
+
+    /* CHAMADA DE VOZ */
+    .call-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;}
+    .call-box{background:#1a2540;border-radius:16px;padding:28px 24px;width:280px;max-width:92vw;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+    .call-avatar{width:72px;height:72px;border-radius:50%;background:var(--blue-bg);border:3px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
+    .call-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .call-name{font-weight:bold;font-size:16px;margin-bottom:4px;}
+    .call-status{font-size:12px;opacity:.7;margin-bottom:20px;}
+    .call-timer{font-size:13px;font-weight:bold;color:#7ef0a0;margin-bottom:18px;display:none;}
+    .call-actions{display:flex;justify-content:center;gap:16px;}
+    .call-btn{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+    .call-btn:hover{transform:scale(1.08);}
+    .call-btn.hangup{background:#e03030;}
+    .call-btn.accept{background:#20a050;}
+    .call-btn.mute{background:rgba(255,255,255,.15);}
+    .call-btn.muted{background:#e03030;}
+    .call-ring{animation:callpulse 1s infinite;}
+    @keyframes callpulse{0%,100%{box-shadow:0 0 0 0 rgba(32,160,80,.6)}50%{box-shadow:0 0 0 12px rgba(32,160,80,0)}}
+    .call-voice-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;cursor:pointer;white-space:nowrap;}
+    .call-voice-btn:hover{background:var(--blue-light);}
+    .loading{text-align:center;color:var(--muted);padding:16px;font-size:12px;}
+    .empty{text-align:center;color:var(--muted);padding:14px;font-size:12px;font-style:italic;}
+    .toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--blue-dark);color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;z-index:999;transition:transform .3s ease;pointer-events:none;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
+    @media(min-width:761px){.toast{bottom:20px;}}
+    .hidden{display:none!important;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+    /* COMM TABS */
+    .comm-tab-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;font-weight:bold;}
+    .comm-tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+    /* COMM CHAT MESSAGES */
+    .cmsg{display:flex;flex-direction:column;max-width:80%;}
+    .cmsg.mine{align-self:flex-end;align-items:flex-end;}
+    .cmsg.theirs{align-self:flex-start;align-items:flex-start;}
+    .cmsg-nick{font-size:10px;color:var(--muted);margin-bottom:2px;}
+    .cmsg-bubble{padding:7px 10px;border-radius:12px;font-size:12px;line-height:1.5;word-break:break-word;}
+    .cmsg.mine .cmsg-bubble{background:var(--blue);color:#fff;border-bottom-right-radius:3px;}
+    .cmsg.theirs .cmsg-bubble{background:var(--scrap-bg);color:var(--text);border:1px solid var(--scrap-bdr);border-bottom-left-radius:3px;}
+    .cmsg-bubble img{max-width:200px;max-height:200px;border-radius:6px;display:block;margin-top:4px;cursor:pointer;}
+    .cmsg-bubble video{max-width:220px;max-height:160px;border-radius:6px;display:block;margin-top:4px;}
+    .cmsg-bubble audio{max-width:220px;margin-top:4px;}
+    .cmsg-time{font-size:10px;opacity:.65;margin-top:2px;}
+    .cmsg-del{background:none;border:none;color:#f88;font-size:11px;cursor:pointer;padding:1px 4px;margin-left:4px;}
+    /* VOICE RECORDING */
+    .voice-recording{background:var(--pink)!important;color:#fff!important;animation:pulse 1s infinite;}
+    /* BOT PANEL */
+    #botPanel{position:fixed;bottom:80px;right:12px;z-index:200;background:var(--white);border:2px solid var(--blue);border-radius:10px;width:280px;box-shadow:0 4px 20px rgba(0,0,0,.2);display:none;}
+    #botPanel.open{display:flex;flex-direction:column;}
+    .bot-hdr{background:var(--blue-dark);color:#fff;padding:8px 12px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:8px;font-weight:bold;font-size:13px;}
+    .bot-hdr .close-bot{background:none;border:none;color:#fff;cursor:pointer;font-size:16px;margin-left:auto;}
+    .bot-log{flex:1;height:180px;overflow-y:auto;padding:8px;font-size:11px;color:var(--text);display:flex;flex-direction:column;gap:4px;}
+    .bot-log-item{padding:4px 8px;border-radius:6px;background:var(--scrap-bg);border:1px solid var(--scrap-bdr);}
+    .bot-log-item.deleted{color:#c00;background:#fff0f0;border-color:#f5c0c0;}
+    .bot-controls{padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+    .bot-controls label{font-size:11px;color:var(--muted);font-weight:bold;}
+    .bot-controls input[type=text]{width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px;}
+    .bot-toggle{position:fixed;bottom:80px;right:12px;z-index:201;background:var(--blue-dark);color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+    @media(min-width:761px){.bot-toggle{bottom:20px;}#botPanel{bottom:30px;}}
+    /* UPLOAD FOTO */
+    #avatarInput{display:none;}
+    .img-preview{width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius);margin-top:6px;display:none;}
+    .file-btn{display:inline-block;background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:5px 12px;border-radius:var(--radius);font-size:12px;cursor:pointer;margin-top:4px;}
+
+    /* POST INPUT TOOLBAR */
+    .post-toolbar{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;}
+
+    /* MODO ESCURO */
+    body.dark{
+      --blue:#7aa3e0;--blue-dark:#5b82c0;--blue-bg:#1e2a3a;--blue-light:#111827;
+      --pink:#ff4da6;--pink-dark:#d63385;--white:#1e2130;--border:#2d3a50;
+      --text:#d4dbe8;--muted:#8899b0;--scrap-bg:#1a2236;--scrap-bdr:#2d3a50;
+      background:#111827;
+    }
+    body.dark .topbar{background:#1a2a42;}
+    body.dark .card{background:#1e2130;border-color:#2d3a50;}
+    body.dark .ig input,body.dark .ig textarea,body.dark .row-inp input,
+    body.dark textarea.stxt,body.dark .dm-input,body.dark .comment-inp{
+      background:#151c2c;border-color:#2d3a50;color:#d4dbe8;
+    }
+    body.dark .target-sel select{background:#151c2c;color:#d4dbe8;border-color:#2d3a50;}
+    body.dark .post-item,body.dark .scrap-item{background:#1a2236;border-color:#2d3a50;}
+    body.dark .modal{background:#1e2130;}
+    body.dark .audio-player{background:#0f1a2a;}
+    body.dark .music-upload-area{border-color:#2d3a50;}
+    body.dark .mobile-nav{background:#0f1a2a;}
+    body.dark .dm-conv:hover{background:#1a2236;}
+    body.dark .dm-conv.active{background:#1e2a3a;}
+    body.dark .dm-bubble.theirs{background:#1a2236;border-color:#2d3a50;}
+    body.dark input[type=text],body.dark input[type=password]{background:#151c2c;color:#d4dbe8;}
+
+    /* BOTÃO DARK MODE */
+    .btn-dark{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;padding:3px 10px;border-radius:var(--radius);cursor:pointer;font-size:12px;}
+    .btn-dark:hover{background:rgba(255,255,255,.15);}
+
+    /* VOLTAR AO TOPO */
+    #backToTop{position:fixed;right:16px;bottom:80px;z-index:60;background:var(--blue-dark);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;}
+    #backToTop.show{display:flex;}
+    @media(min-width:761px){#backToTop{bottom:20px;right:20px;}}
+
+    /* BUSCA */
+    .search-bar{display:flex;gap:6px;margin-bottom:10px;}
+    .search-bar input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:20px;font-size:12px;outline:none;background:var(--white);color:var(--text);}
+    .search-bar input:focus{border-color:var(--blue);}
+
+    /* NOTIF BADGE SCRAPS */
+    #scrapNotif{background:var(--pink);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;display:none;}
+    #mScrapBadge{display:none;}
+
+    /* TYPING INDICATOR */
+    .typing-indicator{color:var(--muted);font-size:11px;font-style:italic;padding:4px 0;min-height:18px;}
+    @keyframes blink{0%,80%,100%{opacity:0}40%{opacity:1}}
+    .dot-blink span{display:inline-block;animation:blink 1.4s infinite both;}
+    .dot-blink span:nth-child(2){animation-delay:.2s;}
+    .dot-blink span:nth-child(3){animation-delay:.4s;}
+
+    /* DELETAR PRÓPRIO POST */
+    .post-btn.delete-own{color:#c00;margin-left:auto;}
+    .post-btn.delete-own:hover{background:#fff0f0;}
+
+    /* CHAR COUNTER */
+    .char-count{font-size:10px;color:var(--muted);text-align:right;margin-top:2px;}
+    .char-count.warn{color:#e08000;}
+    .char-count.over{color:#c00;font-weight:bold;}
+  </style>
+</head>
+<body>
+
+<!-- ÁUDIO GLOBAL -->
+<audio id="globalAudio" preload="metadata"></audio>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">yakult<span>.</span>br</div>
+  <div class="topbar-right">
+    <span class="pill" id="onlineTop">● 0 online</span>
+    <span id="topUser"></span>
+    <button class="btn-dark" id="darkBtn" onclick="toggleDark()" title="Modo escuro">🌙</button>
+    <button class="btn-sair" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Voltar ao topo">↑</button>
+
+<div class="page">
+  <!-- LOGIN -->
+  <div id="loginPage">
+    <div class="card">
+      <div class="login-logo">yakult<span>.</span>br</div>
+      <div class="login-tag">a rede social mais fresquinha do Brasil 🥛</div>
+      <div class="ig"><label>nickname</label><input id="lNick" placeholder="ex: brunosilva2008" maxlength="20" autocomplete="off"></div>
+      <div class="ig"><label>senha</label><input id="lPass" type="password" placeholder="mínimo 4 caracteres"></div>
+      <div class="remember-row">
+        <input type="checkbox" id="rememberMe" checked>
+        <label for="rememberMe">Lembrar de mim</label>
+      </div>
+      <div id="lErr" class="err"></div>
+      <button class="btn-p" onclick="login()">entrar</button>
+      <hr class="divider">
+      <div class="ig"><label>criar conta — nickname</label><input id="rNick" placeholder="ex: mariazinha99" maxlength="20" autocomplete="off"></div>
+      <div class="ig"><label>senha</label><input id="rPass" type="password" placeholder="mínimo 4 caracteres"></div>
+      <div id="rErr" class="err"></div>
+      <button class="btn-p" onclick="register()">criar conta</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="homePage" class="hidden">
+    <!-- ESQUERDA -->
+    <div class="left-col">
+      <div class="card profile-box">
+        <div class="avatar" id="myAv" onclick="document.getElementById('avatarInput').click()" title="Clique para trocar foto">
+          <span id="myAvEmoji">😊</span>
+          <img id="myAvImg" style="display:none">
+          <div class="avatar-overlay">trocar foto</div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(this)">
+        <div class="pname" id="myName"></div>
+        <div class="pbio" id="myBio"></div>
+        <div class="pcountry">🇧🇷 Brasil</div>
+        <button class="btn-s" style="margin-top:8px;font-size:11px;padding:4px 10px" onclick="openEditProfile()">✏️ editar perfil</button>
+        <div class="stats">
+          <div class="stat"><div class="stat-n" id="stPosts">0</div><div class="stat-l">posts</div></div>
+          <div class="stat"><div class="stat-n" id="stFriends">0</div><div class="stat-l">amigos</div></div>
+          <div class="stat"><div class="stat-n" id="stComms">0</div><div class="stat-l">comus</div></div>
+        </div>
+      </div>
+      <div class="card nav-card">
+        <h3>navegação</h3>
+        <a onclick="showTab('feed')" class="active" id="nav-feed">🏠 Feed</a>
+        <a onclick="showTab('scraps')" id="nav-scraps">📩 Recados <span id="scrapNotif" class="badge">0</span></a>
+        <a onclick="showTab('dm')" id="nav-dm">💬 Mensagens <span id="dmBadge" class="badge hidden">0</span></a>
+        <a onclick="showTab('friends')" id="nav-friends">👥 Amigos</a>
+        <a onclick="showTab('communities')" id="nav-communities">🏘️ Comunidades</a>
+        <a onclick="showTab('music')" id="nav-music">🎵 Músicas</a>
+        <a onclick="showTab('online')" id="nav-online">🌐 Online agora</a>
+      </div>
+    </div>
+
+    <!-- CENTRO -->
+    <div>
+      <!-- FEED / POSTAGENS -->
+      <div id="tab-feed">
+        <div class="card">
+          <h3>🏠 nova postagem</h3>
+          <textarea class="stxt" id="postTxt" placeholder="O que você está pensando?" maxlength="500" oninput="updateCharCount('postTxt','postCharCount',500)"></textarea>
+          <div class="char-count" id="postCharCount">0/500</div>
+          <div class="post-toolbar">
+            <label class="file-btn" for="postImgInput">📷 Foto</label>
+            <input type="file" id="postImgInput" accept="image/*" style="display:none" onchange="previewPostImg(this)">
+            <button class="btn-s" style="margin-top:0" onclick="sendPost()">Postar</button>
+          </div>
+          <img id="postImgPreview" class="img-preview">
+        </div>
+        <div class="search-bar">
+          <input id="feedSearch" placeholder="🔍 Buscar no feed..." oninput="filterFeed(this.value)">
+        </div>
+        <div id="feedWall"><div class="loading">Carregando feed...</div></div>
+      </div>
+
+      <!-- SCRAPS -->
+      <div id="tab-scraps" class="hidden">
+        <div class="card">
+          <h3>📩 escrever recado</h3>
+          <div class="target-sel"><select id="scrapTarget"><option value="">Para quem?</option></select></div>
+          <textarea class="stxt" id="scrapTxt" placeholder="Deixa um recado carinhoso..."></textarea>
+          <button class="btn-s" onclick="sendScrap()">Enviar recado ♥</button>
+        </div>
+        <div class="card"><h3>📬 mural de recados</h3><div id="scrapsWall"><div class="loading">Carregando...</div></div></div>
+      </div>
+
+      <!-- DM -->
+      <div id="tab-dm" class="hidden">
+        <div id="dmConvList">
+          <div class="card">
+            <h3>💬 mensagens privadas</h3>
+            <div class="row-inp">
+              <input id="dmNewNick" placeholder="nickname para conversar..." maxlength="20">
+              <button class="btn-s" onclick="openDmWith()">Nova DM</button>
+            </div>
+            <div id="dmList" class="dm-list"><div class="empty">Nenhuma conversa ainda</div></div>
+          </div>
+        </div>
+        <div id="dmChatWindow" class="hidden">
+          <div class="card">
+            <div class="dm-window">
+              <div class="dm-header">
+                <button class="dm-back" onclick="closeDmWindow()">← voltar</button>
+                <div class="dm-header-av" id="dmChatAv"></div>
+                <div class="dm-header-name" id="dmChatName"></div>
+                <button class="call-voice-btn" onclick="startVoiceCall()" title="Chamada de voz">📞</button>
+              </div>
+              <div class="dm-messages" id="dmMessages"></div>
+              <div class="typing-indicator" id="dmTypingIndicator"></div>
+              <div id="dmMediaPreview" style="display:none;padding:6px 0 2px">
+                <img id="dmImgPrev" style="max-height:80px;border-radius:6px;display:none">
+                <video id="dmVidPrev" style="max-height:80px;border-radius:6px;display:none" controls></video>
+                <audio id="dmAudPrev" style="display:none;width:100%" controls></audio>
+                <button onclick="clearDmMedia()" style="background:none;border:none;color:#c00;cursor:pointer;font-size:11px;display:block;margin-top:2px">✕ remover</button>
+              </div>
+              <div class="dm-input-row" style="flex-wrap:wrap;gap:4px">
+                <input class="dm-input" id="dmInput" placeholder="Digite uma mensagem..." maxlength="500" style="flex:1;min-width:0" oninput="sendTypingSignal()">
+                <label title="Foto/Vídeo" style="cursor:pointer;background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;white-space:nowrap" for="dmFileInput">📷</label>
+                <input type="file" id="dmFileInput" accept="image/*,video/*" style="display:none" onchange="handleDmFile(this)">
+                <input type="file" id="dmAudioFallback" accept="audio/*" capture="microphone" style="display:none" onchange="handleDmFile(this)">
+                <button id="dmVoiceBtn" title="Gravar áudio" style="background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;cursor:pointer;white-space:nowrap" onclick="toggleDmVoice()">🎤</button>
+                <button class="dm-send" onclick="sendDm()">Enviar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FRIENDS -->
+      <div id="tab-friends" class="hidden">
+        <div class="card">
+          <h3>👥 adicionar amigo</h3>
+          <div class="row-inp"><input id="friendInp" placeholder="nickname do amigo..." maxlength="20"><button class="btn-s" onclick="addFriend()">Adicionar</button></div>
+        </div>
+        <div class="card"><h3>meus amigos</h3><div class="fgrid" id="fGrid"><div class="empty">Nenhum amigo ainda 😢</div></div></div>
+      </div>
+
+      <!-- COMMUNITIES -->
+      <div id="tab-communities" class="hidden">
+        <!-- LISTA -->
+        <div id="commMainView">
+          <div class="card">
+            <h3>🏘️ criar comunidade</h3>
+            <div class="row-inp">
+              <input id="commName" placeholder="nome da comunidade..." maxlength="40">
+              <input id="commEmoji" placeholder="🎸" maxlength="2" style="width:50px;text-align:center;">
+              <button class="btn-s" onclick="createCommunity()">Criar</button>
+            </div>
+          </div>
+          <div class="card"><h3>comunidades globais</h3><div id="commList"><div class="loading">Carregando...</div></div></div>
+        </div>
+        <!-- SALA DA COMUNIDADE -->
+        <div id="commRoomView" class="hidden">
+          <div class="card" style="padding:8px 10px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn-s" style="margin:0;padding:3px 10px;font-size:11px;background:var(--blue)" onclick="closeCommRoom()">← voltar</button>
+              <span id="commRoomIcon" style="font-size:22px">🌐</span>
+              <div style="flex:1"><div id="commRoomName" style="font-weight:bold;color:var(--blue-dark);font-size:14px"></div><div id="commRoomMembers" style="font-size:10px;color:var(--muted)"></div></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="comm-tab-btn active" id="ctab-chat" onclick="switchCommTab('chat')">💬 Chat</button>
+              <button class="comm-tab-btn" id="ctab-feed" onclick="switchCommTab('feed')">📋 Feed</button>
+            </div>
+          </div>
+          <!-- CHAT -->
+          <div id="commChatView">
+            <div class="card" style="padding:0">
+              <div id="commChatMessages" style="height:360px;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px"><div class="loading">Carregando chat...</div></div>
+              <div style="border-top:1px solid var(--border);padding:8px;display:flex;flex-direction:column;gap:6px">
+                <div id="commChatMediaPreview" style="display:none">
+                  <img id="commChatImgPrev" style="max-height:80px;border-radius:6px;display:none">
+                  <video id="commChatVidPrev" style="max-height:80px;border-radius:6px;display:none" controls></video>
+                  <audio id="commChatAudPrev" style="display:none" controls></audio>
+                  <button onclick="clearCommChatMedia()" style="background:none;border:none;color:#c00;cursor:pointer;font-size:11px;display:block;margin-top:2px">✕ remover</button>
+                </div>
+                <div style="display:flex;gap:5px;align-items:center">
+                  <input class="dm-input" id="commChatInput" placeholder="Mensagem para o grupo..." maxlength="500" style="flex:1">
+                  <label title="Foto/Vídeo/Áudio" style="cursor:pointer;background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:6px 8px;border-radius:10px;font-size:14px" for="commChatFileInput">📎</label>
+                  <input type="file" id="commChatFileInput" accept="image/*,video/*,audio/*" style="display:none" onchange="handleCommChatFile(this)">
+                  <input type="file" id="commChatAudioFallback" accept="audio/*" capture="microphone" style="display:none" onchange="handleCommChatFile(this)">
+                  <button id="commVoiceBtn" style="background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:6px 8px;border-radius:10px;font-size:14px;cursor:pointer" onclick="toggleCommVoiceRec()">🎤</button>
+                  <button class="dm-send" onclick="sendCommChat()">➤</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- FEED -->
+          <div id="commFeedView" class="hidden">
+            <div class="card">
+              <h3>📋 Feed da comunidade</h3>
+              <textarea class="stxt" id="commPostTxt" placeholder="Compartilhe algo com a comunidade..."></textarea>
+              <div class="post-toolbar">
+                <label class="file-btn" for="commPostImgInput">📷 Foto/Vídeo</label>
+                <input type="file" id="commPostImgInput" accept="image/*,video/*" style="display:none" onchange="previewCommImg(this)">
+                <input type="file" id="commPostAudioFallback" accept="audio/*" capture="microphone" style="display:none" onchange="handleCommPostAudioFallback(this)">
+                <button id="commPostVoiceBtn" class="file-btn" onclick="toggleCommPostVoice()" title="Gravar áudio">🎤 Áudio</button>
+                <button class="btn-s" style="margin-top:0" onclick="sendCommPost()">Postar</button>
+              </div>
+              <img id="commPostImgPreview" class="img-preview">
+              <video id="commPostVidPreview" style="display:none;width:100%;max-height:180px;border-radius:var(--radius);margin-top:6px" controls></video>
+              <audio id="commPostAudPreview" style="display:none;width:100%;margin-top:6px" controls></audio>
+            </div>
+            <div id="commFeedWall"><div class="loading">Carregando...</div></div>
+          </div>
+        </div>
+        <!-- FIM SALA -->
+      </div>
+
+      <!-- MÚSICAS -->
+      <div id="tab-music" class="hidden">
+        <div class="card">
+          <h3>🎵 player yakult.br</h3>
+          <!-- PLAYER VISUAL -->
+          <div id="audioPlayerUI" class="audio-player hidden">
+            <div class="audio-title" id="playerTitle">—</div>
+            <div class="audio-artist" id="playerArtist">—</div>
+            <div class="audio-controls">
+              <button class="audio-btn" onclick="prevTrack()" title="Anterior">⏮</button>
+              <button class="audio-btn" id="playPauseBtn" onclick="togglePlayPause()">▶</button>
+              <button class="audio-btn" onclick="nextTrack()" title="Próxima">⏭</button>
+              <div class="audio-progress" id="audioProgress" onclick="seekAudio(event)">
+                <div class="audio-progress-fill" id="audioProgressFill"></div>
+              </div>
+              <span class="audio-time" id="audioTime">0:00 / 0:00</span>
+            </div>
+          </div>
+          <div id="musicList"></div>
+        </div>
+        <div class="card">
+          <h3>🎵 adicionar música</h3>
+          <div class="ig"><label>nome da música</label><input id="musicTitle" placeholder="ex: Bohemian Rhapsody"></div>
+          <div class="ig"><label>artista</label><input id="musicArtist" placeholder="ex: Queen"></div>
+          <div class="ig"><label>arquivo de áudio (MP3, OGG, WAV…)</label>
+            <div class="music-upload-area" onclick="document.getElementById('musicFileInput').click()">
+              <div class="upload-icon">🎵</div>
+              <p id="uploadAreaTxt">Clique para escolher o arquivo de áudio</p>
+              <div class="upload-prog" id="uploadProg"><div class="upload-prog-bar" id="uploadProgBar"></div></div>
+            </div>
+            <input type="file" id="musicFileInput" accept="audio/*" style="display:none" onchange="handleMusicFile(this)">
+            <small style="color:var(--muted);font-size:10px">Máx. 5MB · MP3, OGG, WAV, M4A</small>
+          </div>
+          <button class="btn-s" onclick="addMusic()">Adicionar 🎵</button>
+        </div>
+        <div class="card">
+          <h3>🎵 músicas da comunidade</h3>
+          <div id="communityMusicList"><div class="loading">Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- ONLINE -->
+      <div id="tab-online" class="hidden">
+        <div class="card"><h3>🌐 online agora</h3><div id="onlineList"><div class="loading">Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- DIREITA -->
+    <div class="right-col">
+      <div class="card"><h3>👥 meus amigos</h3><div class="fgrid" id="fGridSide"><div class="empty">Adicione amigos!</div></div></div>
+      <div class="card" id="nowPlayingCard" style="display:none">
+        <h3>🎵 tocando agora</h3>
+        <div id="nowPlayingCardTxt" style="font-size:12px;color:var(--blue-dark);font-weight:bold;"></div>
+        <div id="nowPlayingCardArtist" style="font-size:11px;color:var(--muted);"></div>
+      </div>
+      <div class="card"><h3>🌐 online agora</h3><div id="onlineSide"><div class="loading">...</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav hidden" id="mobileNav">
+  <a onclick="showTab('feed')" id="mnav-feed"><span class="nav-icon">🏠</span>Feed</a>
+  <a onclick="showTab('scraps')" id="mnav-scraps"><span class="nav-icon">📩</span>Recados<span class="mnbadge hidden" id="mScrapBadge">0</span></a>
+  <a onclick="showTab('dm')" id="mnav-dm"><span class="nav-icon">💬</span>DM<span class="mnbadge hidden" id="mDmBadge">0</span></a>
+  <a onclick="showTab('friends')" id="mnav-friends"><span class="nav-icon">👥</span>Amigos</a>
+  <a onclick="showTab('music')" id="mnav-music"><span class="nav-icon">🎵</span>Músicas</a>
+  <a onclick="showMobileMenu()" id="mnav-more"><span class="nav-icon">⋯</span>Mais</a>
+</nav>
+
+<!-- MODAL MAIS (MOBILE) -->
+<div id="moreModal" class="modal-bg hidden">
+  <div class="modal" style="width:280px;">
+    <h3>Menu</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+      <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();showTab('communities')">🏘️ Comunidades</button>
+      <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();showTab('online')">🌐 Online agora</button>
+      <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();openEditProfile()">✏️ Editar perfil</button>
+      <button class="btn-p" onclick="closeMobileMenu();logout()">Sair</button>
+    </div>
+    <div class="modal-btns"><button class="cancel" onclick="closeMobileMenu()">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PERFIL -->
+<div id="editModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>✏️ editar perfil</h3>
+    <div class="ig"><label>nome de exibição</label><input id="editName" maxlength="30" placeholder="Seu nome"></div>
+    <div class="ig"><label>bio</label><textarea id="editBio" maxlength="100" placeholder="Fale um pouco sobre você..." style="height:60px;resize:none;"></textarea></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeEditProfile()">Cancelar</button>
+      <button class="save" onclick="saveProfile()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOT ADM PANEL -->
+<button class="bot-toggle" id="botToggleBtn" onclick="toggleBot()" title="Bot ADM" style="display:none">🤖</button>
+<div id="botPanel">
+  <div class="bot-hdr">🤖 Bot ADM <button class="close-bot" onclick="toggleBot()">✕</button></div>
+  <div class="bot-log" id="botLog"><div style="color:var(--muted);text-align:center;padding:20px 0">Bot ativo. Monitorando mensagens...</div></div>
+  <div class="bot-controls">
+    <label>Palavras proibidas (separadas por vírgula):</label>
+    <input type="text" id="botBadWords" value="spam,xingamento,ódio,palavrao" placeholder="ex: spam,ofensa">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="checkbox" id="botAutoDelete" checked style="accent-color:var(--pink)">
+      Deletar automaticamente
+    </label>
+    <button class="btn-s" style="margin:0" onclick="clearBotLog()">Limpar log</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL='https://nctzqgochkfrlxjjawan.supabase.co';
+const SUPA_KEY='sb_publishable_INuIEt9LcnACogCJNZE4xg_3heVJ8cQ';
+const {createClient}=supabase;
+const sb=createClient(SUPA_URL,SUPA_KEY);
+
+let me=null,myFriends=[],channels=[],onlineInterval=null;
+let currentDmPartner=null,dmChannel=null,unreadCounts={};
+let postImgBase64=null;
+let musicFileBase64=null;
+let dmMediaB64=null,dmMediaType=null;
+let dmVoiceRec=null,dmVoiceChunks=[],dmVoiceRecording=false;
+
+// ── PLAYER DE MÚSICA ──
+let playlist=[];
+let currentTrackIdx=-1;
+let currentBlobUrl=null;
+const gAudio=document.getElementById('globalAudio');
+
+// ─── COOKIES ───
+function setCookie(name,val,days){
+  const d=new Date();d.setTime(d.getTime()+days*86400000);
+  document.cookie=`${name}=${encodeURIComponent(val)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+function getCookie(name){
+  const v=document.cookie.split(';').find(c=>c.trim().startsWith(name+'='));
+  return v?decodeURIComponent(v.trim().split('=')[1]):null;
+}
+function deleteCookie(name){document.cookie=`${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;}
+
+const $=id=>document.getElementById(id);
+const avatarOf=nick=>{const em=['😊','😎','🤩','🥳','🦄','🐱','🌟','🎮','🎵','🌸'];let h=0;for(const c of nick)h=(h*31+c.charCodeAt(0))%em.length;return em[Math.abs(h)];};
+const timeAgo=ts=>{const d=Date.now()-new Date(ts).getTime();if(d<60000)return'agora';if(d<3600000)return Math.floor(d/60000)+'min';if(d<86400000)return Math.floor(d/3600000)+'h';return Math.floor(d/86400000)+'d';};
+const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
+const toast=msg=>{const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);};
+const showErr=(id,msg)=>{const e=$(id);e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',3500);};
+const dmKey=(a,b)=>[a,b].sort().join('__');
+const toB64=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});
+const fmtTime=s=>{if(!s||isNaN(s))return'0:00';const m=Math.floor(s/60);return`${m}:${String(Math.floor(s%60)).padStart(2,'0')}`;};
+
+function avHtml(nick,photo,size=32){
+  if(photo)return`<img src="${photo}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%;border:2px solid var(--blue);">`;
+  return`<div style="width:${size}px;height:${size}px;border-radius:50%;background:var(--blue-bg);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:${size*0.45}px;">${avatarOf(nick)}</div>`;
+}
+
+// ── MOBILE MENU ──
+function showMobileMenu(){$('moreModal').classList.remove('hidden');}
+function closeMobileMenu(){$('moreModal').classList.add('hidden');}
+
+// showTab definido em NOVAS FUNÇÕES abaixo
+
+// ── AUTH ──
+async function register(){
+  const nick=$('rNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const pass=$('rPass').value;
+  if(nick.length<3)return showErr('rErr','Nickname deve ter ao menos 3 caracteres');
+  if(pass.length<4)return showErr('rErr','Senha deve ter ao menos 4 caracteres');
+  const{data:exists}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
+  if(exists)return showErr('rErr','Nickname já existe!');
+  const{error}=await sb.from('users').insert({nick,password_hash:btoa(unescape(encodeURIComponent(pass))),display_name:nick,bio:'',photo:null});
+  if(error)return showErr('rErr','Erro: '+error.message);
+  toast('Conta criada! Entre com seu nick 🎉');
+}
+
+async function login(){
+  const nick=$('lNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const pass=$('lPass').value;
+  if(!nick)return showErr('lErr','Digite seu nickname');
+  if(!pass)return showErr('lErr','Digite sua senha');
+  const{data,error}=await sb.from('users').select('*').eq('nick',nick).maybeSingle();
+  if(error||!data)return showErr('lErr','Usuário não encontrado');
+  if(data.password_hash!==btoa(unescape(encodeURIComponent(pass))))return showErr('lErr','Senha incorreta');
+
+  // Salvar cookie se marcado
+  if($('rememberMe').checked){
+    setCookie('yk_nick',nick,30);
+    setCookie('yk_hash',data.password_hash,30);
+  } else {
+    deleteCookie('yk_nick');
+    deleteCookie('yk_hash');
+  }
+
+  await doLogin(data);
+}
+
+async function doLogin(data){
+  me=data;
+  $('loginPage').classList.add('hidden');
+  $('homePage').classList.remove('hidden');
+  $('mobileNav').classList.remove('hidden');
+  $('topUser').textContent='👤 '+(me.display_name||me.nick);
+  updateMyProfileUI();
+  await sb.from('online').upsert({nick:me.nick,last_seen:new Date().toISOString()},{onConflict:'nick'});
+  onlineInterval=setInterval(()=>sb.from('online').upsert({nick:me.nick,last_seen:new Date().toISOString()},{onConflict:'nick'}),20000);
+  await loadAll();
+  subscribeRealtime();
+  vcStartGlobalListener();
+  // Bot ADM
+  if(me.nick==='kaua12345'){
+    $('botToggleBtn').style.display='flex';
+    subscribeBotChannel();
+  }
+}
+
+// Auto-login via cookie
+async function tryAutoLogin(){
+  const nick=getCookie('yk_nick');
+  const hash=getCookie('yk_hash');
+  if(!nick||!hash)return;
+  const{data,error}=await sb.from('users').select('*').eq('nick',nick).maybeSingle();
+  if(error||!data||data.password_hash!==hash)return;
+  await doLogin(data);
+}
+
+function updateMyProfileUI(){
+  $('myName').textContent=me.display_name||me.nick;
+  $('myBio').textContent=me.bio||'';
+  if(me.photo){
+    $('myAvEmoji').style.display='none';
+    $('myAvImg').src=me.photo;
+    $('myAvImg').style.display='block';
+  } else {
+    $('myAvEmoji').textContent=avatarOf(me.nick);
+    $('myAvEmoji').style.display='';
+    $('myAvImg').style.display='none';
+  }
+}
+
+async function logout(){
+  channels.forEach(c=>sb.removeChannel(c));channels=[];
+  if(dmChannel){sb.removeChannel(dmChannel);dmChannel=null;}
+  if(typingChannel){sb.removeChannel(typingChannel);typingChannel=null;}
+  clearInterval(onlineInterval);
+  if(me)await sb.from('online').delete().eq('nick',me.nick);
+  gAudio.pause();gAudio.src='';
+  $('audioPlayerUI').classList.add('hidden');
+  $('nowPlayingCard').style.display='none';
+  me=null;myFriends=[];currentDmPartner=null;unreadCounts={};
+  playlist=[];currentTrackIdx=-1;
+  deleteCookie('yk_nick');deleteCookie('yk_hash');
+  $('homePage').classList.add('hidden');
+  $('mobileNav').classList.add('hidden');
+  $('loginPage').classList.remove('hidden');
+  $('topUser').textContent='';
+}
+
+// ── EDITAR PERFIL ──
+function openEditProfile(){
+  $('editName').value=me.display_name||me.nick;
+  $('editBio').value=me.bio||'';
+  $('editModal').classList.remove('hidden');
+}
+function closeEditProfile(){$('editModal').classList.add('hidden');}
+async function saveProfile(){
+  const name=$('editName').value.trim();
+  const bio=$('editBio').value.trim();
+  if(!name)return toast('Nome não pode ser vazio');
+  const{error}=await sb.from('users').update({display_name:name,bio}).eq('nick',me.nick);
+  if(error)return toast('Erro: '+error.message);
+  me.display_name=name;me.bio=bio;
+  updateMyProfileUI();
+  $('topUser').textContent='👤 '+name;
+  closeEditProfile();
+  toast('Perfil atualizado! ✨');
+}
+
+// ── FOTO DE PERFIL ──
+async function uploadAvatar(input){
+  if(!input.files[0])return;
+  const file=input.files[0];
+  if(file.size>2*1024*1024)return toast('Foto muito grande! Máx 2MB');
+  toast('Enviando foto...');
+  const b64=await toB64(file);
+  const{error}=await sb.from('users').update({photo:b64}).eq('nick',me.nick);
+  if(error)return toast('Erro ao salvar foto: '+error.message);
+  me.photo=b64;
+  updateMyProfileUI();
+  toast('Foto atualizada! 📸');
+}
+
+// ── POSTAGENS ──
+function previewPostImg(input){
+  if(!input.files[0]){postImgBase64=null;$('postImgPreview').style.display='none';return;}
+  if(input.files[0].size>3*1024*1024){toast('Imagem muito grande! Máx 3MB');input.value='';return;}
+  toB64(input.files[0]).then(b64=>{
+    postImgBase64=b64;
+    $('postImgPreview').src=b64;
+    $('postImgPreview').style.display='block';
+  });
+}
+
+async function loadFeed(){
+  const{data}=await sb.from('posts').select('*').order('created_at',{ascending:false}).limit(30);
+  allPosts=data||[];
+  renderFeed(allPosts);
+  $('stPosts').textContent=allPosts.filter(p=>(p.author_nick||p.nick)===me.nick).length;
+}
+
+async function sendPost(){
+  const text=$('postTxt').value.trim();
+  if(!text&&!postImgBase64)return toast('Escreva algo ou adicione uma foto!');
+  const{error}=await sb.from('posts').insert({
+    author_nick:me.nick,
+    display_name:me.display_name||me.nick,
+    author_photo:me.photo||null,
+    content:esc(text),
+    image:postImgBase64||null,  // BUG CORRIGIDO: era postingBase64
+    likes:[],
+    created_at:new Date().toISOString()
+  });
+  if(error)return toast('Erro: '+error.message);
+  $('postTxt').value='';
+  postImgBase64=null;
+  $('postImgPreview').style.display='none';
+  $('postImgInput').value='';
+  toast('Postagem publicada! 🎉');
+}
+
+function renderFeed(posts){
+  const w=$('feedWall');
+  if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda. Seja o primeiro! 🌟</div>';return;}
+  w.innerHTML=posts.map(p=>{
+    const nick=p.author_nick||p.nick||'?';
+    const photo=p.author_photo||p.photo||null;
+    const name=p.display_name||nick;
+    const content=p.content||p.text||'';
+    const likes=Array.isArray(p.likes)?p.likes:[];
+    const liked=likes.includes(me.nick);
+    return`<div class="post-item" id="post-${p.id}">
+      <div class="post-hdr">
+        ${avHtml(nick,photo,32)}
+        <div>
+          <div class="post-nick">${esc(name)}</div>
+          <div style="font-size:10px;color:var(--muted)">@${esc(nick)}</div>
+        </div>
+        <span class="post-time">${timeAgo(p.created_at)}</span>
+      </div>
+      ${content?`<div class="post-txt">${content}</div>`:''}
+      ${p.image?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
+      <div class="post-actions">
+        <button class="post-btn ${liked?'liked':''}" onclick="toggleLike('${p.id}',${JSON.stringify(likes)})">♥ ${likes.length}${liked?' curtido':' curtir'}</button>
+        <button class="post-btn" onclick="toggleComments('${p.id}')">💬 comentar</button>
+        <button class="post-btn" onclick="sharePost('${p.id}','${esc(name).replace(/'/g,"\\'")}','${(p.content||p.text||'').replace(/'/g,"\\'").replace(/\n/g,' ').substring(0,80)}')" title="Compartilhar">↗ share</button>
+        ${me.nick==='kaua12345'?`<button class="post-btn delete-own" onclick="adminDeletePost('${p.id}')">🗑️ apagar</button>`:(nick===me.nick?`<button class="post-btn delete-own" onclick="deleteOwnPost('${p.id}')">🗑️</button>`:'')}
+      </div>
+      <div id="comments-${p.id}" class="post-comments hidden">
+        <div id="comments-list-${p.id}"><div class="loading" style="padding:6px">Carregando...</div></div>
+        <div class="comment-inp-row">
+          <input class="comment-inp" id="comment-inp-${p.id}" placeholder="Comentar..." maxlength="200">
+          <label class="comment-photo-btn" for="comment-img-${p.id}" title="Foto no comentário">📷</label>
+          <input type="file" id="comment-img-${p.id}" accept="image/*" style="display:none" onchange="previewCommentImg(this,'${p.id}')">
+          <button class="comment-send" onclick="sendComment('${p.id}')">Enviar</button>
+        </div>
+        <img id="comment-img-preview-${p.id}" style="display:none" class="comment-photo-preview" onclick="clearCommentImg('${p.id}')">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Guarda b64 temporário por postId
+const commentImgs={};
+
+function previewCommentImg(input,postId){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>2*1024*1024){toast('Imagem muito grande! Máx 2MB');input.value='';return;}
+  toB64(file).then(b64=>{
+    commentImgs[postId]=b64;
+    const prev=$('comment-img-preview-'+postId);
+    prev.src=b64;prev.style.display='block';
+    prev.title='Clique para remover';
+  });
+}
+
+function clearCommentImg(postId){
+  delete commentImgs[postId];
+  const prev=$('comment-img-preview-'+postId);
+  prev.src='';prev.style.display='none';
+  $('comment-img-'+postId).value='';
+}
+
+async function toggleLike(postId,currentLikes){
+  const idx=currentLikes.indexOf(me.nick);
+  const newLikes=idx>=0?currentLikes.filter(n=>n!==me.nick):[...currentLikes,me.nick];
+  await sb.from('posts').update({likes:newLikes}).eq('id',postId);
+  loadFeed();
+}
+
+async function toggleComments(postId){
+  const el=$('comments-'+postId);
+  el.classList.toggle('hidden');
+  if(!el.classList.contains('hidden'))loadComments(postId);
+}
+
+async function loadComments(postId){
+  const{data}=await sb.from('comments').select('*').eq('post_id',postId).order('created_at',{ascending:true});
+  const el=$('comments-list-'+postId);
+  if(!el)return;
+  if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);font-size:11px;padding:4px 0">Nenhum comentário ainda</div>';return;}
+  el.innerHTML=data.map(c=>`<div class="comment-item">
+    <div class="comment-av">${c.author_photo?`<img src="${c.author_photo}">`:`${avatarOf(c.nick||'?')}`}</div>
+    <div>
+      <span class="comment-nick">${esc(c.display_name||c.nick)}</span>
+      <span class="comment-txt"> ${esc(c.text||'')}</span>
+      ${c.image?`<img class="comment-img" src="${c.image}" onclick="this.style.maxWidth=this.style.maxWidth?'':'100%'">`:''}
+    </div>
+  </div>`).join('');
+}
+
+async function sendComment(postId){
+  const inp=$('comment-inp-'+postId);
+  const text=inp.value.trim();
+  const img=commentImgs[postId]||null;
+  if(!text&&!img)return;
+  await sb.from('comments').insert({
+    post_id:postId,
+    nick:me.nick,
+    display_name:me.display_name||me.nick,
+    author_photo:me.photo||null,
+    text:esc(text||''),
+    image:img
+  });
+  inp.value='';
+  clearCommentImg(postId);
+  loadComments(postId);
+}
+
+// ── SCRAPS ──
+async function loadScraps(){
+  const{data}=await sb.from('scraps').select('*').order('created_at',{ascending:false}).limit(40);
+  renderScraps(data||[]);
+}
+async function sendScrap(){
+  const to=$('scrapTarget').value,text=$('scrapTxt').value.trim();
+  if(!to)return toast('Selecione para quem enviar!');
+  if(!text)return toast('Escreva algo no recado!');
+  const{error}=await sb.from('scraps').insert({from_nick:me.nick,to_nick:to,text:esc(text)});
+  if(error)return toast('Erro: '+error.message);
+  $('scrapTxt').value='';toast('Recado enviado para '+to+' ♥');
+}
+function renderScraps(scraps){
+  const w=$('scrapsWall');
+  if(!scraps.length){w.innerHTML='<div class="empty">Nenhum recado ainda 📝</div>';return;}
+  w.innerHTML=scraps.map(s=>`<div class="scrap-item" id="scrap-${s.id}"><div class="scrap-hdr"><div><span class="scrap-from">${esc(s.from_nick)}</span><span class="scrap-arr">→</span><span class="scrap-to">${esc(s.to_nick)}</span></div><div style="display:flex;align-items:center;gap:8px"><span class="scrap-time">${timeAgo(s.created_at)}</span>${me&&me.nick==='kaua12345'?`<button class="post-btn" style="color:#c00;font-size:11px;padding:1px 6px" onclick="adminDeleteScrap('${s.id}')">🗑️</button>`:''}</div></div><div class="scrap-txt">${s.text}</div></div>`).join('');
+}
+
+async function adminDeletePost(id){
+  if(!confirm('Apagar este post?'))return;
+  await sb.from('comments').delete().eq('post_id',id);
+  await sb.from('posts').delete().eq('id',id);
+  toast('Post apagado! 🗑️');
+  loadFeed();
+}
+async function adminDeleteScrap(id){
+  if(!confirm('Apagar este recado?'))return;
+  await sb.from('scraps').delete().eq('id',id);
+  toast('Recado apagado! 🗑️');
+  loadScraps();
+}
+
+// ── MÚSICAS ──
+async function loadCommunityMusic(){
+  const{data}=await sb.from('music').select('*').order('created_at',{ascending:false}).limit(50);
+  playlist=(data||[]).filter(m=>m.audio_data);
+  renderMusicList(data||[]);
+}
+
+function renderMusicList(tracks){
+  const el=$('musicList');
+  if(!tracks.length){el.innerHTML='<div class="empty">Nenhuma música ainda! Adicione a primeira 🎶</div>';return;}
+  el.innerHTML=tracks.map(m=>{
+    const hasAudio=!!m.audio_data;
+    const isCur=currentTrackIdx>=0&&playlist[currentTrackIdx]&&playlist[currentTrackIdx].id===m.id;
+    const isPlay=isCur&&!gAudio.paused;
+    return`<div class="music-item" id="mitem-${m.id}">
+      <div class="music-icon">${hasAudio?'🎵':'📝'}</div>
+      <div class="music-info">
+        <div class="music-title">${esc(m.title)}</div>
+        <div class="music-artist">${esc(m.artist)}${m.added_by?' · por '+esc(m.added_by):''}</div>
+      </div>
+      ${hasAudio?`<button class="music-play${isCur?' playing':''}" id="playbtn-${m.id}" onclick="playTrackById('${m.id}')">${isPlay?'⏸ pausar':'▶ ouvir'}</button>`:`<span style="font-size:10px;color:var(--muted)">sem áudio</span>`}
+    </div>`;
+  }).join('');
+  const commEl=$('communityMusicList');
+  if(commEl)commEl.innerHTML=el.innerHTML;
+}
+
+function refreshPlayButtons(){
+  if(currentTrackIdx<0)return;
+  const cur=playlist[currentTrackIdx];
+  if(!cur)return;
+  document.querySelectorAll('.music-play').forEach(btn=>{
+    const id=btn.id.replace('playbtn-','');
+    const isCur=id===String(cur.id);
+    btn.classList.toggle('playing',isCur);
+    btn.textContent=isCur&&!gAudio.paused?'⏸ pausar':'▶ ouvir';
+  });
+  $('playPauseBtn').textContent=gAudio.paused?'▶':'⏸';
+}
+
+function playTrackById(id){
+  const idx=playlist.findIndex(m=>m.id===id||String(m.id)===String(id));
+  if(idx<0){toast('Música sem áudio');return;}
+  if(currentTrackIdx===idx){togglePlayPause();return;}
+  loadTrack(idx);
+}
+
+function loadTrack(idx){
+  if(idx<0||idx>=playlist.length)return;
+  currentTrackIdx=idx;
+  const m=playlist[idx];
+  // Revogar blob anterior
+  if(currentBlobUrl){URL.revokeObjectURL(currentBlobUrl);currentBlobUrl=null;}
+  // Converter base64 para Blob para compatibilidade máxima
+  try{
+    const b64=m.audio_data;
+    const arr=b64.split(',');
+    const mime=arr[0].match(/:(.*?);/)[1];
+    const bstr=atob(arr[1]);
+    const bytes=new Uint8Array(bstr.length);
+    for(let i=0;i<bstr.length;i++)bytes[i]=bstr.charCodeAt(i);
+    const blob=new Blob([bytes],{type:mime});
+    currentBlobUrl=URL.createObjectURL(blob);
+    gAudio.src=currentBlobUrl;
+  }catch(e){
+    // Fallback direto
+    gAudio.src=m.audio_data;
+  }
+  gAudio.load();
+  gAudio.play().then(()=>{
+    $('playPauseBtn').textContent='⏸';
+    refreshPlayButtons();
+  }).catch(err=>{
+    toast('Erro ao tocar: '+err.message);
+    console.error(err);
+  });
+  $('playerTitle').textContent=m.title;
+  $('playerArtist').textContent=m.artist;
+  $('audioPlayerUI').classList.remove('hidden');
+  $('nowPlayingCard').style.display='';
+  $('nowPlayingCardTxt').textContent=m.title;
+  $('nowPlayingCardArtist').textContent=m.artist;
+  refreshPlayButtons();
+}
+
+function togglePlayPause(){
+  if(!gAudio.src)return;
+  if(gAudio.paused){
+    gAudio.play().then(()=>{$('playPauseBtn').textContent='⏸';refreshPlayButtons();}).catch(e=>toast('Erro: '+e.message));
+  }else{
+    gAudio.pause();$('playPauseBtn').textContent='▶';refreshPlayButtons();
+  }
+}
+
+function prevTrack(){if(playlist.length)loadTrack((currentTrackIdx-1+playlist.length)%playlist.length);}
+function nextTrack(){if(playlist.length)loadTrack((currentTrackIdx+1)%playlist.length);}
+
+function seekAudio(e){
+  if(!gAudio.duration)return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  gAudio.currentTime=((e.clientX-rect.left)/rect.width)*gAudio.duration;
+}
+
+gAudio.addEventListener('timeupdate',()=>{
+  if(!gAudio.duration)return;
+  $('audioProgressFill').style.width=((gAudio.currentTime/gAudio.duration)*100)+'%';
+  $('audioTime').textContent=fmtTime(gAudio.currentTime)+' / '+fmtTime(gAudio.duration);
+});
+gAudio.addEventListener('ended',()=>nextTrack());
+gAudio.addEventListener('play',()=>refreshPlayButtons());
+gAudio.addEventListener('pause',()=>refreshPlayButtons());
+
+function handleMusicFile(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){toast('Arquivo muito grande! Máx 5MB');input.value='';return;}
+  const prog=$('uploadProg'),bar=$('uploadProgBar'),txt=$('uploadAreaTxt');
+  prog.style.display='block';bar.style.width='0%';txt.textContent='Lendo arquivo...';
+  const reader=new FileReader();
+  let fake=0;
+  const fakeInt=setInterval(()=>{fake=Math.min(fake+10,90);bar.style.width=fake+'%';},100);
+  reader.onload=()=>{clearInterval(fakeInt);bar.style.width='100%';musicFileBase64=reader.result;txt.textContent='✅ '+file.name;setTimeout(()=>{prog.style.display='none';},500);};
+  reader.onerror=()=>{clearInterval(fakeInt);toast('Erro ao ler arquivo');txt.textContent='Clique para escolher';};
+  reader.readAsDataURL(file);
+}
+
+async function addMusic(){
+  const title=$('musicTitle').value.trim(),artist=$('musicArtist').value.trim();
+  if(!title||!artist)return toast('Preencha título e artista!');
+  if(!musicFileBase64)return toast('Selecione um arquivo de áudio!');
+  toast('Adicionando música...');
+  const{error}=await sb.from('music').insert({title:esc(title),artist:esc(artist),audio_data:musicFileBase64,added_by:me.nick});
+  if(error)return toast('Erro: '+error.message);
+  $('musicTitle').value='';$('musicArtist').value='';$('musicFileInput').value='';
+  $('uploadAreaTxt').textContent='Clique para escolher o arquivo de áudio';
+  musicFileBase64=null;
+  await loadCommunityMusic();
+  toast('Música adicionada! 🎵');
+}
+
+// ── DM ──
+async function loadDmUnread(){
+  const{data}=await sb.from('dms').select('from_nick').eq('to_nick',me.nick).eq('read',false);
+  unreadCounts={};
+  (data||[]).forEach(m=>{unreadCounts[m.from_nick]=(unreadCounts[m.from_nick]||0)+1;});
+  updateDmBadge();
+}
+function updateDmBadge(){
+  const total=Object.values(unreadCounts).reduce((a,b)=>a+b,0);
+  const badge=$('dmBadge');const mbadge=$('mDmBadge');
+  if(total>0){
+    badge.textContent=total;badge.classList.remove('hidden');
+    mbadge.textContent=total;mbadge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');mbadge.classList.add('hidden');
+  }
+}
+async function loadDmList(){
+  const{data:sent}=await sb.from('dms').select('to_nick,text,created_at').eq('from_nick',me.nick).order('created_at',{ascending:false});
+  const{data:recv}=await sb.from('dms').select('from_nick,text,created_at').eq('to_nick',me.nick).order('created_at',{ascending:false});
+  const convMap={};
+  (sent||[]).forEach(m=>{const k=m.to_nick;if(!convMap[k]||new Date(m.created_at)>new Date(convMap[k].ts))convMap[k]={partner:k,preview:m.text,ts:m.created_at,unread:0};});
+  (recv||[]).forEach(m=>{const k=m.from_nick;if(!convMap[k]||new Date(m.created_at)>new Date(convMap[k].ts))convMap[k]={partner:k,preview:m.text,ts:m.created_at,unread:unreadCounts[k]||0};else if(convMap[k])convMap[k].unread=unreadCounts[k]||0;});
+  const convs=Object.values(convMap).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  const el=$('dmList');
+  if(!convs.length){el.innerHTML='<div class="empty">Nenhuma conversa ainda</div>';return;}
+  el.innerHTML=convs.map(c=>`<div class="dm-conv" onclick="openDmConv('${esc(c.partner)}')"><div class="dm-av">${avatarOf(c.partner)}</div><div class="dm-info"><div class="dm-nick">${esc(c.partner)}</div><div class="dm-preview">${esc(c.preview)}</div></div><div class="dm-meta"><span class="dm-time">${timeAgo(c.ts)}</span>${c.unread>0?`<span class="dm-unread">${c.unread}</span>`:''}</div></div>`).join('');
+}
+async function openDmWith(){
+  const nick=$('dmNewNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  if(!nick)return toast('Digite um nickname');
+  if(nick===me.nick)return toast('Você não pode mandar DM pra si mesmo!');
+  const{data}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
+  if(!data)return toast('Usuário "'+nick+'" não encontrado');
+  $('dmNewNick').value='';openDmConv(nick);
+}
+async function openDmConv(partner){
+  currentDmPartner=partner;
+  $('dmConvList').classList.add('hidden');$('dmChatWindow').classList.remove('hidden');
+  $('dmChatAv').innerHTML=avatarOf(partner);$('dmChatName').textContent=partner;
+  await sb.from('dms').update({read:true}).eq('to_nick',me.nick).eq('from_nick',partner);
+  delete unreadCounts[partner];updateDmBadge();
+  await loadDmMessages();subscribeDmChannel();subscribeTyping(partner);
+}
+function closeDmWindow(){
+  if(dmChannel){sb.removeChannel(dmChannel);dmChannel=null;}
+  if(typingChannel){sb.removeChannel(typingChannel);typingChannel=null;}
+  currentDmPartner=null;
+  $('dmChatWindow').classList.add('hidden');$('dmConvList').classList.remove('hidden');
+  loadDmList();
+}
+async function loadDmMessages(){
+  const key=dmKey(me.nick,currentDmPartner);
+  const{data}=await sb.from('dms').select('*').eq('conv_key',key).order('created_at',{ascending:true});
+  const el=$('dmMessages');
+  if(!data||!data.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:30px 0;font-size:12px">Diga olá! 👋</div>';return;}
+  el.innerHTML=data.map(m=>{
+    const mediaHtml=m.media_type&&m.media_data
+      ?m.media_type.startsWith('image')?`<img src="${m.media_data}" style="max-width:200px;max-height:180px;border-radius:8px;display:block;margin-top:4px;cursor:pointer" onclick="this.style.maxWidth=this.style.maxWidth?'':'none'">`
+        :m.media_type.startsWith('video')?`<video src="${m.media_data}" controls style="max-width:220px;max-height:160px;border-radius:8px;display:block;margin-top:4px"></video>`
+        :m.media_type.startsWith('audio')?`<audio src="${m.media_data}" controls style="display:block;margin-top:4px;max-width:220px"></audio>`
+        :''
+      :'';
+    return`<div style="display:flex;flex-direction:column;align-items:${m.from_nick===me.nick?'flex-end':'flex-start'}"><div class="dm-bubble ${m.from_nick===me.nick?'mine':'theirs'}">${m.text?esc(m.text):''}${mediaHtml}<div class="dm-bubble-time">${timeAgo(m.created_at)}</div></div></div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+// ── MÍDIA NA DM ──
+function handleDmFile(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>10*1024*1024){toast('Arquivo muito grande! Máx 10MB');input.value='';return;}
+  toB64(file).then(b64=>{
+    dmMediaB64=b64;dmMediaType=file.type;
+    $('dmMediaPreview').style.display='block';
+    $('dmImgPrev').style.display='none';$('dmVidPrev').style.display='none';$('dmAudPrev').style.display='none';
+    if(file.type.startsWith('image')){$('dmImgPrev').src=b64;$('dmImgPrev').style.display='block';}
+    else if(file.type.startsWith('video')){$('dmVidPrev').src=b64;$('dmVidPrev').style.display='block';}
+    else if(file.type.startsWith('audio')){$('dmAudPrev').src=b64;$('dmAudPrev').style.display='block';}
+    input.value='';
+  });
+}
+function clearDmMedia(){
+  dmMediaB64=null;dmMediaType=null;
+  $('dmMediaPreview').style.display='none';
+  $('dmImgPrev').src='';$('dmVidPrev').src='';$('dmAudPrev').src='';
+}
+async function toggleDmVoice(){
+  const useNative=isSecureContext()&&typeof MediaRecorder!=='undefined'&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&!/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(!useNative){$('dmAudioFallback').click();return;}
+  if(!dmVoiceRecording){
+    const granted=await requestMicPermission();
+    if(!granted)return;
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      dmVoiceChunks=[];
+      const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')?'audio/ogg;codecs=opus':'';
+      dmVoiceRec=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
+      const finalMime=dmVoiceRec.mimeType||'audio/webm';
+      dmVoiceRec.ondataavailable=e=>{if(e.data&&e.data.size>0)dmVoiceChunks.push(e.data);};
+      dmVoiceRec.onstop=()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        const blob=new Blob(dmVoiceChunks,{type:finalMime});
+        const reader=new FileReader();
+        reader.onload=()=>{
+          dmMediaB64=reader.result;dmMediaType=finalMime.split(';')[0];
+          $('dmMediaPreview').style.display='block';
+          $('dmImgPrev').style.display='none';$('dmVidPrev').style.display='none';
+          $('dmAudPrev').src=reader.result;$('dmAudPrev').style.display='block';
+          toast('Áudio gravado! Envie agora 🎤');
+        };
+        reader.readAsDataURL(blob);
+      };
+      dmVoiceRec.start(200);
+      dmVoiceRecording=true;
+      $('dmVoiceBtn').textContent='⏹';
+      $('dmVoiceBtn').style.background='#ffcccc';
+      toast('Gravando... Toque ⏹ para parar 🎤');
+    }catch(e){
+      dmVoiceRecording=false;
+    }
+  }else{
+    try{dmVoiceRec.stop();}catch(e){}
+    dmVoiceRecording=false;
+    $('dmVoiceBtn').textContent='🎤';
+    $('dmVoiceBtn').style.background='';
+  }
+}
+
+async function sendDm(){
+  const text=$('dmInput').value.trim();
+  if((!text&&!dmMediaB64)||!currentDmPartner)return;
+  const key=dmKey(me.nick,currentDmPartner);
+  const{error}=await sb.from('dms').insert({from_nick:me.nick,to_nick:currentDmPartner,text:esc(text||''),conv_key:key,read:false,media_data:dmMediaB64||null,media_type:dmMediaType||null});
+  $('dmInput').value='';
+  clearDmMedia();
+  if(!error)loadDmMessages();
+}
+function subscribeDmChannel(){
+  if(dmChannel)sb.removeChannel(dmChannel);
+  const key=dmKey(me.nick,currentDmPartner);
+  dmChannel=sb.channel('dm-'+key).on('postgres_changes',{event:'INSERT',schema:'public',table:'dms',filter:`conv_key=eq.${key}`},async()=>{
+    await sb.from('dms').update({read:true}).eq('to_nick',me.nick).eq('from_nick',currentDmPartner);
+    loadDmMessages();
+  }).subscribe();
+}
+
+// ── AMIGOS ──
+async function loadFriends(){
+  const{data}=await sb.from('friends').select('friend_nick').eq('nick',me.nick);
+  myFriends=(data||[]).map(r=>r.friend_nick);
+  await renderFriends();populateTarget();
+  $('stFriends').textContent=myFriends.length;
+}
+async function addFriend(){
+  const nick=$('friendInp').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  if(!nick)return toast('Digite um nickname');
+  if(nick===me.nick)return toast('Você não pode se adicionar!');
+  if(myFriends.includes(nick))return toast(nick+' já é seu amigo!');
+  const{data}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
+  if(!data)return toast('Usuário "'+nick+'" não encontrado');
+  await sb.from('friends').upsert([{nick:me.nick,friend_nick:nick},{nick,friend_nick:me.nick}],{onConflict:'nick,friend_nick',ignoreDuplicates:true});
+  $('friendInp').value='';await loadFriends();toast(nick+' adicionado! 👋');
+}
+async function renderFriends(){
+  const{data:od}=await sb.from('online').select('nick').gte('last_seen',new Date(Date.now()-60000).toISOString());
+  const os=new Set((od||[]).map(r=>r.nick));
+  const{data:usersData}=await sb.from('users').select('nick,photo,display_name').in('nick',myFriends.length?myFriends:['__none__']);
+  const photoMap={};(usersData||[]).forEach(u=>{photoMap[u.nick]={photo:u.photo,name:u.display_name||u.nick};});
+  const html=myFriends.length?myFriends.map(f=>`<div class="fcard" onclick="startDmFriend('${esc(f)}')" title="Mandar DM">${avHtml(f,photoMap[f]?.photo,50)}<div class="fname">${esc(photoMap[f]?.name||f)}</div><div class="fstatus ${os.has(f)?'on':'off'}">${os.has(f)?'● online':'○ offline'}</div></div>`).join(''):'<div class="empty">Nenhum amigo ainda 😢</div>';
+  $('fGrid').innerHTML=html;$('fGridSide').innerHTML=html;
+}
+function startDmFriend(nick){showTab('dm');setTimeout(()=>openDmConv(nick),100);}
+function populateTarget(){
+  const sel=$('scrapTarget');sel.innerHTML='<option value="">Para quem?</option>';
+  myFriends.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+}
+
+// ── COMUNIDADES ──
+async function loadCommunities(){
+  const{data}=await sb.from('communities').select('*').order('created_at',{ascending:false});
+  renderCommunities(data||[]);
+}
+async function createCommunity(){
+  const name=$('commName').value.trim(),emoji=$('commEmoji').value.trim()||'🌐';
+  if(name.length<3)return toast('Nome muito curto');
+  const{error}=await sb.from('communities').insert({name:esc(name),emoji,creator:me.nick,member_count:1});
+  if(error)return toast('Erro: '+error.message);
+  $('commName').value='';$('commEmoji').value='';await loadCommunities();toast('Comunidade criada! 🎉');
+}
+async function joinCommunity(id){
+  await sb.from('community_members').upsert({community_id:id,nick:me.nick},{onConflict:'community_id,nick',ignoreDuplicates:true});
+  const{count}=await sb.from('community_members').select('*',{count:'exact',head:true}).eq('community_id',id);
+  await sb.from('communities').update({member_count:count}).eq('id',id);
+  await loadCommunities();toast('Você entrou! 🏘️');
+}
+function renderCommunities(comms){
+  const el=$('commList');
+  if(!comms.length){el.innerHTML='<div class="empty">Nenhuma comunidade ainda!</div>';return;}
+  el.innerHTML=comms.map(c=>`<div class="comm-item">
+    <div class="comm-icon">${c.emoji||'🌐'}</div>
+    <div class="comm-info"><div class="comm-name">${esc(c.name)}</div><div class="comm-members">${c.member_count||1} membro(s) · por ${esc(c.creator)}</div></div>
+    <button class="btn-s" style="margin:0;padding:4px 10px;font-size:12px" onclick="openCommRoom('${c.id}','${esc(c.name).replace(/'/g,"\\'")}','${c.emoji||'🌐'}')">Entrar →</button>
+  </div>`).join('');
+  $('stComms').textContent=comms.length;
+}
+
+// ── SALA DA COMUNIDADE ──
+let currentCommId=null,commChatChannel=null;
+let commChatMediaB64=null,commChatMediaType=null;
+let commVoiceRec=null,commVoiceChunks=[],commVoiceRecording=false;
+let commImgBase64=null,commVidBase64=null,commAudBase64=null;
+let commPostVoiceRec=null,commPostVoiceChunks=[],commPostVoiceRecording=false;
+
+function openCommRoom(id,name,emoji){
+  currentCommId=id;
+  $('commRoomName').textContent=name;
+  $('commRoomIcon').textContent=emoji||'🌐';
+  $('commMainView').classList.add('hidden');
+  $('commRoomView').classList.remove('hidden');
+  switchCommTab('chat');
+  loadCommMemberCount(id);
+  joinCommunity(id);
+}
+function closeCommRoom(){
+  currentCommId=null;
+  if(commChatChannel){sb.removeChannel(commChatChannel);commChatChannel=null;}
+  $('commRoomView').classList.add('hidden');
+  $('commMainView').classList.remove('hidden');
+}
+async function loadCommMemberCount(id){
+  const{count}=await sb.from('community_members').select('*',{count:'exact',head:true}).eq('community_id',id);
+  $('commRoomMembers').textContent=(count||1)+' membros';
+}
+
+function switchCommTab(tab){
+  ['chat','feed'].forEach(t=>{
+    const btn=$('ctab-'+t),view=$('comm'+t.charAt(0).toUpperCase()+t.slice(1)+'View');
+    if(btn)btn.classList.toggle('active',t===tab);
+    if(view)view.classList.toggle('hidden',t!==tab);
+  });
+  if(tab==='chat'){loadCommChat();subscribeCommChat();}
+  if(tab==='feed'){loadCommFeed();}
+}
+
+// ── CHAT DO GRUPO ──
+async function loadCommChat(){
+  if(!currentCommId)return;
+  const{data}=await sb.from('community_chat').select('*').eq('community_id',currentCommId).order('created_at',{ascending:true}).limit(60);
+  renderCommChat(data||[]);
+}
+
+function renderCommChat(msgs){
+  const el=$('commChatMessages');
+  if(!msgs.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:30px 0;font-size:12px">Seja o primeiro a falar! 👋</div>';return;}
+  el.innerHTML=msgs.map(m=>{
+    const isMine=m.nick===me.nick;
+    const mediaHtml=m.media_type&&m.media_data
+      ?m.media_type.startsWith('image')?`<img src="${m.media_data}" onclick="this.style.maxWidth=this.style.maxWidth?'':'300px'">`
+        :m.media_type.startsWith('video')?`<video src="${m.media_data}" controls></video>`
+        :m.media_type.startsWith('audio')?`<audio src="${m.media_data}" controls></audio>`
+        :''
+      :'';
+    const isAdm=me.nick==='kaua12345';
+    return`<div class="cmsg ${isMine?'mine':'theirs'}">
+      ${!isMine?`<div class="cmsg-nick">${esc(m.display_name||m.nick)}</div>`:''}
+      <div class="cmsg-bubble">
+        ${m.text?esc(m.text):''}${mediaHtml}
+        <div class="cmsg-time">${timeAgo(m.created_at)}${isAdm?` <button class="cmsg-del" onclick="adminDeleteChatMsg('${m.id}')">🗑️</button>`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+function subscribeCommChat(){
+  if(commChatChannel)sb.removeChannel(commChatChannel);
+  if(!currentCommId)return;
+  commChatChannel=sb.channel('comm-chat-'+currentCommId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'community_chat',filter:`community_id=eq.${currentCommId}`},()=>loadCommChat())
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'community_chat'},()=>loadCommChat())
+    .subscribe();
+}
+
+async function sendCommChat(){
+  if(!currentCommId)return;
+  const text=$('commChatInput').value.trim();
+  if(!text&&!commChatMediaB64)return;
+  const row={
+    community_id:currentCommId,nick:me.nick,
+    display_name:me.display_name||me.nick,
+    text:text?esc(text):'',
+    media_data:commChatMediaB64||null,
+    media_type:commChatMediaType||null,
+    created_at:new Date().toISOString()
+  };
+  await sb.from('community_chat').insert(row);
+  $('commChatInput').value='';
+  clearCommChatMedia();
+  botScanMessage(row);
+}
+
+function handleCommChatFile(input){
+  const file=input.files[0];
+  if(!file)return;
+  const maxSize=file.type.startsWith('video')?20*1024*1024:8*1024*1024;
+  if(file.size>maxSize){toast(file.type.startsWith('video')?'Vídeo muito grande! Máx 20MB':'Arquivo muito grande! Máx 8MB');input.value='';return;}
+  toB64(file).then(b64=>{
+    commChatMediaB64=b64;
+    commChatMediaType=file.type;
+    $('commChatMediaPreview').style.display='block';
+    $('commChatImgPrev').style.display='none';
+    $('commChatVidPrev').style.display='none';
+    $('commChatAudPrev').style.display='none';
+    if(file.type.startsWith('image')){$('commChatImgPrev').src=b64;$('commChatImgPrev').style.display='block';}
+    else if(file.type.startsWith('video')){$('commChatVidPrev').src=b64;$('commChatVidPrev').style.display='block';}
+    else if(file.type.startsWith('audio')){$('commChatAudPrev').src=b64;$('commChatAudPrev').style.display='block';}
+    input.value='';
+  });
+}
+
+function clearCommChatMedia(){
+  commChatMediaB64=null;commChatMediaType=null;
+  $('commChatMediaPreview').style.display='none';
+  $('commChatImgPrev').src='';$('commChatVidPrev').src='';$('commChatAudPrev').src='';
+}
+
+// ── PERMISSÃO DE MICROFONE ──
+function isSecureContext(){
+  return window.isSecureContext||location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
+}
+async function requestMicPermission(){
+  if(!isSecureContext()||typeof MediaRecorder==='undefined'||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    return false; // vai usar fallback de input
+  }
+  try{
+    if(navigator.permissions){
+      const perm=await navigator.permissions.query({name:'microphone'}).catch(()=>null);
+      if(perm&&perm.state==='denied'){showMicDeniedDialog();return false;}
+    }
+    const testStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    testStream.getTracks().forEach(t=>t.stop());
+    return true;
+  }catch(e){
+    if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){showMicDeniedDialog();}
+    else if(e.name==='NotFoundError'){toast('Nenhum microfone encontrado no dispositivo 😢');}
+    else{toast('Erro ao acessar microfone: '+e.message);}
+    return false;
+  }
+}
+function showMicDeniedDialog(){
+  const existing=$('micPermModal');
+  if(existing){existing.classList.remove('hidden');return;}
+  const div=document.createElement('div');
+  div.id='micPermModal';
+  div.className='modal-bg';
+  div.innerHTML=`<div class="modal" style="text-align:center">
+    <div style="font-size:36px;margin-bottom:8px">🎤</div>
+    <h3 style="margin-bottom:8px">Microfone bloqueado</h3>
+    <p style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:14px;text-align:left">
+      O navegador bloqueou o microfone porque o arquivo está aberto localmente.<br><br>
+      <b>Para liberar no computador:</b><br>
+      1. Clique no <b>🔒 cadeado</b> na barra de endereço<br>
+      2. Vá em <b>Permissões do site</b><br>
+      3. Em <b>Microfone</b>, selecione <b>Permitir</b><br>
+      4. Recarregue a página
+    </p>
+    <button class="btn-p" onclick="$('micPermModal').classList.add('hidden')">Entendido</button>
+  </div>`;
+  document.body.appendChild(div);
+}
+
+// ── VOZ NO CHAT ──
+async function toggleCommVoiceRec(){
+  const useNative=isSecureContext()&&typeof MediaRecorder!=='undefined'&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&!/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(!useNative){$('commChatAudioFallback').click();return;}
+  if(!commVoiceRecording){
+    const granted=await requestMicPermission();
+    if(!granted)return;
+    try{
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+        toast('Seu navegador não suporta gravação de áudio 😢');return;
+      }
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      commVoiceChunks=[];
+      // Detectar melhor codec disponível
+      const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ?'audio/webm;codecs=opus'
+        :MediaRecorder.isTypeSupported('audio/webm')
+        ?'audio/webm'
+        :MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+        ?'audio/ogg;codecs=opus'
+        :'';
+      commVoiceRec=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
+      const finalMime=commVoiceRec.mimeType||'audio/webm';
+      commVoiceRec.ondataavailable=e=>{if(e.data&&e.data.size>0)commVoiceChunks.push(e.data);};
+      commVoiceRec.onstop=()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        const blob=new Blob(commVoiceChunks,{type:finalMime});
+        if(blob.size>5*1024*1024){toast('Áudio muito longo! Máx ~5min');return;}
+        const reader=new FileReader();
+        reader.onload=()=>{
+          commChatMediaB64=reader.result;
+          commChatMediaType=finalMime.split(';')[0];
+          $('commChatMediaPreview').style.display='block';
+          $('commChatImgPrev').style.display='none';$('commChatVidPrev').style.display='none';
+          $('commChatAudPrev').src=reader.result;$('commChatAudPrev').style.display='block';
+          toast('Áudio gravado! Envie agora 🎤');
+        };
+        reader.readAsDataURL(blob);
+      };
+      commVoiceRec.start(200);
+      commVoiceRecording=true;
+      $('commVoiceBtn').classList.add('voice-recording');
+      $('commVoiceBtn').textContent='⏹';
+      toast('Gravando... Toque de novo para parar 🎤');
+    }catch(e){
+      commVoiceRecording=false;
+      toast('Erro ao gravar: '+e.message);
+    }
+  }else{
+    try{commVoiceRec.stop();}catch(e){}
+    commVoiceRecording=false;
+    $('commVoiceBtn').classList.remove('voice-recording');
+    $('commVoiceBtn').textContent='🎤';
+  }
+}
+
+async function adminDeleteChatMsg(id){
+  await sb.from('community_chat').delete().eq('id',id);
+  toast('Mensagem apagada! 🗑️');
+  botLog('Mensagem apagada manualmente (ID: '+id+')',true);
+  loadCommChat();
+}
+
+// ── FEED DA COMUNIDADE ──
+async function loadCommFeed(){
+  if(!currentCommId)return;
+  const{data}=await sb.from('community_posts').select('*').eq('community_id',currentCommId).order('created_at',{ascending:false}).limit(30);
+  renderCommFeed(data||[]);
+}
+
+function previewCommImg(input){
+  if(!input.files[0]){commImgBase64=null;commVidBase64=null;$('commPostImgPreview').style.display='none';$('commPostVidPreview').style.display='none';return;}
+  const file=input.files[0];
+  const maxSize=file.type.startsWith('video')?20*1024*1024:10*1024*1024;
+  if(file.size>maxSize){toast(file.type.startsWith('video')?'Vídeo muito grande! Máx 20MB':'Imagem muito grande! Máx 10MB');input.value='';return;}
+  // Limpar áudio se havia
+  commAudBase64=null;$('commPostAudPreview').style.display='none';$('commPostAudPreview').src='';
+  if($('commPostVoiceBtn'))$('commPostVoiceBtn').textContent='🎤 Áudio';
+  toB64(file).then(b64=>{
+    if(file.type.startsWith('video')){
+      commVidBase64=b64;commImgBase64=null;
+      $('commPostVidPreview').src=b64;$('commPostVidPreview').style.display='block';
+      $('commPostImgPreview').style.display='none';
+    }else{
+      commImgBase64=b64;commVidBase64=null;
+      $('commPostImgPreview').src=b64;$('commPostImgPreview').style.display='block';
+      $('commPostVidPreview').style.display='none';
+    }
+  });
+}
+
+async function toggleCommPostVoice(){
+  const useNative=isSecureContext()&&typeof MediaRecorder!=='undefined'&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&!/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(!useNative){$('commPostAudioFallback').click();return;}
+  if(!commPostVoiceRecording){
+    const granted=await requestMicPermission();
+    if(!granted)return;
+    try{
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+        toast('Seu navegador não suporta gravação de áudio 😢');return;
+      }
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      commPostVoiceChunks=[];
+      const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ?'audio/webm;codecs=opus'
+        :MediaRecorder.isTypeSupported('audio/webm')?'audio/webm'
+        :MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')?'audio/ogg;codecs=opus':'';
+      commPostVoiceRec=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
+      const finalMime=commPostVoiceRec.mimeType||'audio/webm';
+      commPostVoiceRec.ondataavailable=e=>{if(e.data&&e.data.size>0)commPostVoiceChunks.push(e.data);};
+      commPostVoiceRec.onstop=()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        const blob=new Blob(commPostVoiceChunks,{type:finalMime});
+        if(blob.size>8*1024*1024){toast('Áudio muito longo!');return;}
+        // Limpar foto/vídeo se havia
+        commImgBase64=null;commVidBase64=null;
+        $('commPostImgPreview').style.display='none';$('commPostVidPreview').style.display='none';
+        $('commPostImgInput').value='';
+        const reader=new FileReader();
+        reader.onload=()=>{
+          commAudBase64=reader.result;
+          $('commPostAudPreview').src=reader.result;
+          $('commPostAudPreview').style.display='block';
+          $('commPostVoiceBtn').textContent='🎤 Áudio';
+          $('commPostVoiceBtn').classList.remove('voice-recording');
+          toast('Áudio gravado! Poste agora 🎤');
+        };
+        reader.readAsDataURL(blob);
+      };
+      commPostVoiceRec.start(200);
+      commPostVoiceRecording=true;
+      $('commPostVoiceBtn').classList.add('voice-recording');
+      $('commPostVoiceBtn').textContent='⏹ Parar';
+      toast('Gravando áudio... Toque ⏹ para parar 🎤');
+    }catch(e){
+      commPostVoiceRecording=false;
+      toast('Erro ao gravar: '+e.message);
+    }
+  }else{
+    try{commPostVoiceRec.stop();}catch(e){}
+    commPostVoiceRecording=false;
+  }
+}
+
+function handleCommPostAudioFallback(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>8*1024*1024){toast('Áudio muito grande! Máx 8MB');input.value='';return;}
+  commImgBase64=null;commVidBase64=null;
+  $('commPostImgPreview').style.display='none';$('commPostVidPreview').style.display='none';
+  toB64(file).then(b64=>{
+    commAudBase64=b64;
+    $('commPostAudPreview').src=b64;$('commPostAudPreview').style.display='block';
+    toast('Áudio selecionado! Poste agora 🎤');
+  });
+}
+
+async function sendCommPost(){
+  if(!currentCommId)return;
+  const text=$('commPostTxt').value.trim();
+  const media=commImgBase64||commVidBase64||commAudBase64||null;
+  const mtype=commVidBase64?'video':commImgBase64?'image':commAudBase64?'audio':null;
+  if(!text&&!media)return toast('Escreva algo ou adicione uma mídia!');
+  const{error}=await sb.from('community_posts').insert({
+    community_id:currentCommId,author_nick:me.nick,
+    display_name:me.display_name||me.nick,author_photo:me.photo||null,
+    content:esc(text),image:media||null,media_type:mtype,
+    likes:[],
+    created_at:new Date().toISOString()
+  });
+  if(error)return toast('Erro: '+error.message);
+  $('commPostTxt').value='';
+  commImgBase64=null;commVidBase64=null;commAudBase64=null;
+  $('commPostImgPreview').style.display='none';
+  $('commPostVidPreview').style.display='none';
+  $('commPostAudPreview').style.display='none';$('commPostAudPreview').src='';
+  $('commPostImgInput').value='';
+  if($('commPostVoiceBtn'))$('commPostVoiceBtn').textContent='🎤 Áudio';
+  toast('Postado! 🎉');loadCommFeed();
+}
+
+function renderCommFeed(posts){
+  const w=$('commFeedWall');
+  if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda nesta comunidade! 🌟</div>';return;}
+  w.innerHTML=posts.map(p=>{
+    const likes=Array.isArray(p.likes)?p.likes:[];
+    const liked=likes.includes(me.nick);
+    return`<div class="post-item" id="cpost-${p.id}">
+    <div class="post-hdr">
+      ${avHtml(p.author_nick,p.author_photo,32)}
+      <div><div class="post-nick">${esc(p.display_name||p.author_nick)}</div><div style="font-size:10px;color:var(--muted)">@${esc(p.author_nick)}</div></div>
+      <span class="post-time">${timeAgo(p.created_at)}</span>
+    </div>
+    ${p.content?`<div class="post-txt">${p.content}</div>`:''}
+    ${p.image&&p.media_type==='video'?`<video class="post-img" src="${p.image}" controls style="max-height:260px"></video>`:''}
+    ${p.image&&p.media_type==='audio'?`<audio src="${p.image}" controls style="width:100%;margin-bottom:6px"></audio>`:''}
+    ${p.image&&p.media_type==='image'?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
+    ${p.image&&!p.media_type?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
+    <div class="post-actions">
+      <button class="post-btn ${liked?'liked':''}" onclick="toggleCommLike('${p.id}',${JSON.stringify(likes)})">♥ ${likes.length}${liked?' curtido':' curtir'}</button>
+      <button class="post-btn" onclick="toggleCommComments('${p.id}')">💬 comentar</button>
+      ${me.nick==='kaua12345'?`<button class="post-btn delete-own" onclick="adminDeleteCommPost('${p.id}')">🗑️ apagar</button>`:(p.author_nick===me.nick?`<button class="post-btn delete-own" onclick="deleteOwnCommPost('${p.id}')">🗑️</button>`:'')}
+    </div>
+    <div id="ccomments-${p.id}" class="post-comments hidden">
+      <div id="ccomments-list-${p.id}"><div class="loading" style="padding:6px">Carregando...</div></div>
+      <div class="comment-inp-row">
+        <input class="comment-inp" id="ccomment-inp-${p.id}" placeholder="Comentar..." maxlength="200">
+        <label class="comment-photo-btn" for="ccomment-img-${p.id}" title="Foto no comentário">📷</label>
+        <input type="file" id="ccomment-img-${p.id}" accept="image/*" style="display:none" onchange="previewCommCommentImg(this,'${p.id}')">
+        <button class="comment-send" onclick="sendCommComment('${p.id}')">Enviar</button>
+      </div>
+      <img id="ccomment-img-preview-${p.id}" style="display:none" class="comment-photo-preview" onclick="clearCommCommentImg('${p.id}')">
+    </div>
+  </div>`;
+  }).join('');
+}
+
+// ── LIKES E COMENTÁRIOS DA COMUNIDADE ──
+const commCommentImgs={};
+
+async function toggleCommLike(postId,currentLikes){
+  const idx=currentLikes.indexOf(me.nick);
+  const newLikes=idx>=0?currentLikes.filter(n=>n!==me.nick):[...currentLikes,me.nick];
+  await sb.from('community_posts').update({likes:newLikes}).eq('id',postId);
+  loadCommFeed();
+}
+
+async function toggleCommComments(postId){
+  const el=$('ccomments-'+postId);
+  el.classList.toggle('hidden');
+  if(!el.classList.contains('hidden'))loadCommComments(postId);
+}
+
+async function loadCommComments(postId){
+  const{data}=await sb.from('community_post_comments').select('*').eq('post_id',postId).order('created_at',{ascending:true});
+  const el=$('ccomments-list-'+postId);
+  if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);font-size:11px;padding:4px 0">Nenhum comentário ainda</div>';return;}
+  el.innerHTML=data.map(c=>`<div class="comment-item">
+    <div class="comment-av">${c.author_photo?`<img src="${c.author_photo}">`:`${avatarOf(c.nick||'?')}`}</div>
+    <div>
+      <span class="comment-nick">${esc(c.display_name||c.nick)}</span>
+      <span class="comment-txt"> ${esc(c.text||'')}</span>
+      ${c.image?`<img class="comment-img" src="${c.image}" onclick="this.style.maxWidth=this.style.maxWidth?'':'100%'">`:''}
+    </div>
+  </div>`).join('');
+}
+
+async function sendCommComment(postId){
+  const inp=$('ccomment-inp-'+postId);
+  const text=inp.value.trim();
+  const img=commCommentImgs[postId]||null;
+  if(!text&&!img)return;
+  await sb.from('community_post_comments').insert({
+    post_id:postId,nick:me.nick,
+    display_name:me.display_name||me.nick,
+    author_photo:me.photo||null,
+    text:esc(text||''),image:img
+  });
+  inp.value='';
+  clearCommCommentImg(postId);
+  loadCommComments(postId);
+}
+
+function previewCommCommentImg(input,postId){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>2*1024*1024){toast('Imagem muito grande! Máx 2MB');input.value='';return;}
+  toB64(file).then(b64=>{
+    commCommentImgs[postId]=b64;
+    const prev=$('ccomment-img-preview-'+postId);
+    prev.src=b64;prev.style.display='block';
+    prev.title='Clique para remover';
+  });
+}
+
+function clearCommCommentImg(postId){
+  delete commCommentImgs[postId];
+  const prev=$('ccomment-img-preview-'+postId);
+  prev.src='';prev.style.display='none';
+  $('ccomment-img-'+postId).value='';
+}
+
+async function adminDeleteCommPost(id){
+  if(!confirm('Apagar este post da comunidade?'))return;
+  await sb.from('community_posts').delete().eq('id',id);
+  toast('Post apagado! 🗑️');loadCommFeed();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ⚠️  EXECUTE ESTE SQL NO SUPABASE → SQL Editor antes de usar:
+//
+// -- Tabela de posts da comunidade
+// create table if not exists public.community_posts (
+//   id uuid primary key default gen_random_uuid(),
+//   community_id uuid references public.communities(id) on delete cascade,
+//   author_nick text not null,
+//   display_name text,
+//   author_photo text,
+//   content text,
+//   image text,
+//   media_type text,
+//   likes text[] default '{}',
+//   created_at timestamptz default now()
+// );
+// alter table public.community_posts enable row level security;
+// create policy "allow all community_posts" on public.community_posts for all using (true) with check (true);
+// alter publication supabase_realtime add table public.community_posts;
+//
+// -- Tabela de comentários dos posts da comunidade
+// create table if not exists public.community_post_comments (
+//   id uuid primary key default gen_random_uuid(),
+//   post_id uuid references public.community_posts(id) on delete cascade,
+//   nick text not null,
+//   display_name text,
+//   author_photo text,
+//   text text,
+//   image text,
+//   created_at timestamptz default now()
+// );
+// alter table public.community_post_comments enable row level security;
+// create policy "allow all community_post_comments" on public.community_post_comments for all using (true) with check (true);
+// alter publication supabase_realtime add table public.community_post_comments;
+//
+// ══════════════════════════════════════════════════════════════════
+const BOT_ADMIN='kaua12345';
+function toggleBot(){
+  const p=$('botPanel');
+  p.classList.toggle('open');
+}
+function botLog(msg,deleted=false){
+  const log=$('botLog');
+  if(!log)return;
+  const item=document.createElement('div');
+  item.className='bot-log-item'+(deleted?' deleted':'');
+  item.textContent='['+new Date().toLocaleTimeString('pt-BR')+'] '+msg;
+  log.appendChild(item);
+  log.scrollTop=log.scrollHeight;
+}
+function clearBotLog(){$('botLog').innerHTML='';}
+function getBotBadWords(){
+  return $('botBadWords').value.split(',').map(w=>w.trim().toLowerCase()).filter(Boolean);
+}
+function botScanMessage(msg){
+  if(!$('botPanel'))return;
+  const text=(msg.text||'').toLowerCase();
+  const bad=getBotBadWords().find(w=>text.includes(w));
+  if(bad){
+    botLog('⚠️ Palavra proibida "'+bad+'" detectada de @'+(msg.nick||'?')+': "'+msg.text+'"',false);
+    if($('botAutoDelete')&&$('botAutoDelete').checked){
+      setTimeout(async()=>{
+        // Apagar a mensagem mais recente do usuário com esse texto
+        const{data}=await sb.from('community_chat').select('id').eq('nick',msg.nick).eq('text',msg.text).order('created_at',{ascending:false}).limit(1);
+        if(data&&data[0]){
+          await sb.from('community_chat').delete().eq('id',data[0].id);
+          botLog('🗑️ Mensagem de @'+msg.nick+' deletada automaticamente.',true);
+          loadCommChat();
+        }
+      },800);
+    }
+  }else{
+    botLog('✅ Msg de @'+(msg.nick||'?')+': "'+(msg.text||'[mídia]')+'"');
+  }
+}
+// Escutar TODAS as msgs do grupo ativo para o bot
+function subscribeBotChannel(){
+  sb.channel('bot-monitor').on('postgres_changes',{event:'INSERT',schema:'public',table:'community_chat'},payload=>{
+    if(me&&me.nick===BOT_ADMIN)botScanMessage(payload.new);
+  }).subscribe();
+}
+
+// ── ONLINE ──
+async function loadOnline(){
+  const cutoff=new Date(Date.now()-60000).toISOString();
+  const{data}=await sb.from('online').select('nick,last_seen').gte('last_seen',cutoff);
+  const users=data||[];
+  $('onlineTop').textContent='● '+users.length+' online';
+  const html=users.length?users.map(u=>`<div class="online-user"><div class="odot"></div><span class="oname">${avatarOf(u.nick)} ${esc(u.nick)}</span></div>`).join(''):'<div class="empty">Ninguém online agora 😴</div>';
+  $('onlineList').innerHTML=html;
+  $('onlineSide').innerHTML=users.slice(0,5).map(u=>`<div class="online-user"><div class="odot"></div><span class="oname">${esc(u.nick)}</span></div>`).join('')||'<div class="empty">Ninguém 😴</div>';
+}
+
+async function loadAll(){await Promise.all([loadFriends(),loadFeed(),loadScraps(),loadCommunities(),loadOnline(),loadDmUnread()]);}
+
+// ── REALTIME ──
+function subscribeRealtime(){
+  const ch1=sb.channel('posts-rt').on('postgres_changes',{event:'*',schema:'public',table:'posts'},()=>loadFeed()).subscribe();
+  const ch2=sb.channel('scraps-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'scraps'},payload=>{
+    loadScraps();
+    if(payload.new&&payload.new.to_nick===me.nick){
+      scrapUnread++;updateScrapBadge();
+      toast('📩 Novo recado de @'+payload.new.from_nick+'!');
+    }
+  }).subscribe();
+  const ch3=sb.channel('online-rt').on('postgres_changes',{event:'*',schema:'public',table:'online'},()=>{loadOnline();renderFriends();}).subscribe();
+  const ch4=sb.channel('comms-rt').on('postgres_changes',{event:'*',schema:'public',table:'communities'},()=>loadCommunities()).subscribe();
+  const ch5=sb.channel('dm-notify').on('postgres_changes',{event:'INSERT',schema:'public',table:'dms',filter:`to_nick=eq.${me.nick}`},async(payload)=>{
+    const from=payload.new.from_nick;
+    if(from!==currentDmPartner){
+      unreadCounts[from]=(unreadCounts[from]||0)+1;
+      updateDmBadge();
+      toast('💬 Nova mensagem de @'+from+' — toque em Mensagens para ver');
+    }
+  }).subscribe();
+  // Realtime para comentários do feed principal
+  const ch6=sb.channel('comments-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'comments'},payload=>{
+    const postId=payload.new.post_id;
+    const el=$('comments-'+postId);
+    if(el&&!el.classList.contains('hidden'))loadComments(postId);
+  }).subscribe();
+  // Realtime para posts e comentários da comunidade
+  const ch7=sb.channel('comm-posts-rt').on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},()=>{
+    if(currentCommId)loadCommFeed();
+  }).subscribe();
+  const ch8=sb.channel('comm-post-comments-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'community_post_comments'},payload=>{
+    const postId=payload.new.post_id;
+    const el=$('ccomments-'+postId);
+    if(el&&!el.classList.contains('hidden'))loadCommComments(postId);
+  }).subscribe();
+  channels=[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8];
+}
+
+// ── ENTER ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){
+    const id=document.activeElement.id;
+    if(id==='lNick'||id==='lPass')login();
+    if(id==='rPass')register();
+    if(id==='friendInp')addFriend();
+    if(id==='commName'||id==='commEmoji')createCommunity();
+    if(id==='dmInput')sendDm();
+    if(id==='dmNewNick')openDmWith();
+    if(id==='commChatInput')sendCommChat();
+  }
+});
+
+// ── NOVAS FUNÇÕES ──
+
+// Variável global para posts em cache (busca no feed)
+let allPosts=[];
+let scrapUnread=0;
+
+// ── MODO ESCURO ──
+function toggleDark(){
+  const isDark=document.body.classList.toggle('dark');
+  $('darkBtn').textContent=isDark?'☀️':'🌙';
+  localStorage.setItem('yk_dark',isDark?'1':'0');
+}
+function applyDarkPref(){
+  if(localStorage.getItem('yk_dark')==='1'){
+    document.body.classList.add('dark');
+    const btn=$('darkBtn');if(btn)btn.textContent='☀️';
+  }
+}
+applyDarkPref();
+
+// ── VOLTAR AO TOPO ──
+window.addEventListener('scroll',()=>{
+  const btn=$('backToTop');if(!btn)return;
+  btn.classList.toggle('show',window.scrollY>300);
+});
+
+// ── BUSCA NO FEED ──
+function filterFeed(q){
+  if(!q.trim()){renderFeed(allPosts);return;}
+  const low=q.toLowerCase();
+  renderFeed(allPosts.filter(p=>{
+    const nick=(p.author_nick||p.nick||'').toLowerCase();
+    const name=(p.display_name||'').toLowerCase();
+    const content=(p.content||p.text||'').toLowerCase();
+    return nick.includes(low)||name.includes(low)||content.includes(low);
+  }));
+}
+
+// ── CONTADOR DE CARACTERES ──
+function updateCharCount(textareaId,counterId,max){
+  const ta=$(textareaId),c=$(counterId);if(!ta||!c)return;
+  const len=ta.value.length;
+  c.textContent=len+'/'+max;
+  c.className='char-count'+(len>=max?' over':len>=max*0.85?' warn':'');
+}
+
+// ── BADGE DE RECADOS NÃO LIDOS ──
+function updateScrapBadge(){
+  const badge=$('scrapNotif');
+  const mbadge=$('mScrapBadge');
+  if(scrapUnread>0){
+    badge.textContent=scrapUnread;badge.style.display='inline';
+    mbadge.textContent=scrapUnread;mbadge.classList.remove('hidden');
+  }else{
+    badge.style.display='none';mbadge.classList.add('hidden');
+  }
+}
+
+// Zerar badge ao abrir aba de scraps
+const _origShowTab=showTab;
+// Sobrescrever showTab para zerar badge de scraps
+function showTab(name){
+  ['feed','scraps','dm','friends','communities','music','online'].forEach(t=>{
+    const el=$('tab-'+t);if(el)el.classList.add('hidden');
+    const nav=$('nav-'+t);if(nav)nav.classList.remove('active');
+    const mnav=$('mnav-'+t);if(mnav)mnav.classList.remove('active');
+  });
+  $('tab-'+name).classList.remove('hidden');
+  const nav=$('nav-'+name);if(nav)nav.classList.add('active');
+  const mnav=$('mnav-'+name);if(mnav)mnav.classList.add('active');
+  if(name==='dm')loadDmList();
+  if(name==='music')loadCommunityMusic();
+  if(name==='scraps'){scrapUnread=0;updateScrapBadge();}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── COMPARTILHAR POST ──
+function sharePost(id,author,preview){
+  const txt='@'+author+': '+preview+'...';
+  if(navigator.share){navigator.share({title:'yakult.br',text:txt}).catch(()=>{});}
+  else{
+    navigator.clipboard.writeText(txt).then(()=>toast('📋 Texto copiado!')).catch(()=>toast('Não foi possível copiar'));
+  }
+}
+
+// ── DELETAR PRÓPRIO POST ──
+async function deleteOwnPost(id){
+  if(!confirm('Apagar sua postagem?'))return;
+  await sb.from('comments').delete().eq('post_id',id);
+  await sb.from('posts').delete().eq('id',id);
+  toast('Post apagado 🗑️');
+  loadFeed();
+}
+async function deleteOwnCommPost(id){
+  if(!confirm('Apagar sua postagem?'))return;
+  await sb.from('community_posts').delete().eq('id',id);
+  toast('Post apagado 🗑️');
+  loadCommFeed();
+}
+
+// ── INDICADOR DE DIGITAÇÃO (DM) ──
+let typingTimeout=null;
+let typingChannel=null;
+function sendTypingSignal(){
+  if(!currentDmPartner||!me)return;
+  const ch='typing-'+dmKey(me.nick,currentDmPartner);
+  sb.channel(ch).send({type:'broadcast',event:'typing',payload:{nick:me.nick}}).catch(()=>{});
+}
+function subscribeTyping(partner){
+  if(typingChannel){sb.removeChannel(typingChannel);typingChannel=null;}
+  const ch='typing-'+dmKey(me.nick,partner);
+  typingChannel=sb.channel(ch).on('broadcast',{event:'typing'},payload=>{
+    if(payload.payload.nick===partner){
+      const el=$('dmTypingIndicator');if(!el)return;
+      el.innerHTML=partner+' está digitando <span class="dot-blink"><span>.</span><span>.</span><span>.</span></span>';
+      clearTimeout(typingTimeout);
+      typingTimeout=setTimeout(()=>{if(el)el.innerHTML='';},2000);
+    }
+  }).subscribe();
+}
+
+// ── ENTER NO COMMENT INPUT ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){
+    const el=document.activeElement;
+    if(el&&el.classList.contains('comment-inp')){
+      e.preventDefault();
+      const id=el.id.replace('comment-inp-','').replace('ccomment-inp-','');
+      if(el.id.startsWith('ccomment-'))sendCommComment(id);
+      else sendComment(id);
+    }
+  }
+});
+
+// ── INIT ──
+(async()=>{
+  await tryAutoLogin();
+})();
+</script>
+</body>
+</html>
+
+<!-- ══ CHAMADA DE VOZ ══ -->
+<div id="callOverlay" class="call-overlay hidden">
+  <div class="call-box">
+    <div class="call-avatar" id="callAvatar"></div>
+    <div class="call-name" id="callPartnerName"></div>
+    <div class="call-status" id="callStatus"></div>
+    <div class="call-timer" id="callTimer" style="display:none"></div>
+    <div class="call-actions" id="callActions"></div>
+  </div>
+</div>
+<audio id="vcRemoteAudio" autoplay playsinline></audio>
+
+<script>
+/*
+  SINALIZAÇÃO via tabela Supabase "call_signals"
+  Colunas: id, from_nick, to_nick, type, payload, created_at
+  
+  Fluxo:
+  1. Caller insere {type:'ring'}
+  2. Callee vê pelo realtime → mostra tela de chamada
+  3. Callee aceita → getUserMedia → cria RTCPeer → cria offer → insere {type:'offer', payload: sdp}
+  4. Caller vê offer → setRemoteDescription → cria answer → insere {type:'answer', payload: sdp}
+  5. Callee vê answer → setRemoteDescription
+  6. ICE candidates trocados pelo mesmo canal
+  7. Áudio flui
+  
+  Motivo de o CALLEE criar o offer:
+  - Garante que o callee está 100% pronto antes de qualquer SDP ser trocado
+  - Elimina o race condition de timing
+*/
+
+// ─── Estado global ───
+let VC = {
+  peer: null, stream: null, role: null, partner: null,
+  muted: false, timerInt: null, secs: 0,
+  iceBuf: [],           // ICE recebidos antes de setRemoteDescription
+  sigChannel: null,     // canal Realtime para sinais
+  pollInt: null,        // fallback poll
+  lastSigId: null,      // evitar reprocessar
+};
+
+const VC_ICE = {iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},
+]};
+
+const VC_AUDIO = {audio:{
+  echoCancellation:true, noiseSuppression:true,
+  autoGainControl:true, channelCount:1,
+  sampleRate:22050,
+}, video:false};
+
+// ─── Inserir sinal no banco ───
+async function vcInsertSignal(type, payload=''){
+  await sb.from('call_signals').insert({
+    from_nick: me.nick,
+    to_nick:   VC.partner,
+    type,
+    payload:   typeof payload==='string' ? payload : JSON.stringify(payload),
+    created_at: new Date().toISOString()
+  });
+}
+
+// ─── Escutar sinais vindos do parceiro ───
+function vcStartListening(){
+  // Limpa listener anterior
+  if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){}}
+  clearInterval(VC.pollInt);
+
+  // Realtime INSERT na tabela call_signals
+  VC.sigChannel = sb.channel('vc-sig-'+me.nick)
+    .on('postgres_changes',{
+      event:'INSERT', schema:'public', table:'call_signals',
+      filter:`to_nick=eq.${me.nick}`
+    }, row => vcHandleSignal(row.new))
+    .subscribe();
+
+  // Fallback: poll a cada 1.5s (para redes onde realtime falha)
+  VC.pollInt = setInterval(async()=>{
+    const {data} = await sb.from('call_signals')
+      .select('*')
+      .eq('to_nick', me.nick)
+      .eq('from_nick', VC.partner||'__none__')
+      .order('created_at',{ascending:false})
+      .limit(1);
+    if(data&&data[0]&&data[0].id!==VC.lastSigId){
+      VC.lastSigId=data[0].id;
+      vcHandleSignal(data[0]);
+    }
+  }, 1500);
+}
+
+// ─── Processar sinal recebido ───
+async function vcHandleSignal(row){
+  if(!row||row.from_nick===me.nick)return;
+  // Só processa sinais do parceiro atual (se já em chamada) ou qualquer um (se idle)
+  if(VC.partner && row.from_nick!==VC.partner)return;
+
+  const type = row.type;
+  const payload = row.payload;
+
+  if(type==='ring'){
+    // Receber chamada
+    if(VC.peer){vcInsertSignal('busy','');return;}
+    VC.partner = row.from_nick;
+    VC.role    = 'callee';
+    vcShowUI('incoming');
+    vcRingStart();
+    return;
+  }
+
+  if(type==='offer'){
+    // Caller recebeu offer do callee → responde com answer
+    if(VC.role!=='caller'||!VC.peer)return;
+    const sdp = JSON.parse(payload);
+    await VC.peer.setRemoteDescription(new RTCSessionDescription(sdp));
+    // Aplicar ICE buffer
+    for(const c of VC.iceBuf){try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){}}
+    VC.iceBuf=[];
+    const answer = await VC.peer.createAnswer();
+    await VC.peer.setLocalDescription(answer);
+    await vcInsertSignal('answer', VC.peer.localDescription);
+    vcOnConnected();
+    return;
+  }
+
+  if(type==='answer'){
+    // Callee recebeu answer do caller
+    if(VC.role!=='callee'||!VC.peer)return;
+    const sdp = JSON.parse(payload);
+    await VC.peer.setRemoteDescription(new RTCSessionDescription(sdp));
+    for(const c of VC.iceBuf){try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){}}
+    VC.iceBuf=[];
+    vcOnConnected();
+    return;
+  }
+
+  if(type==='ice'){
+    const candidate = JSON.parse(payload);
+    if(VC.peer&&VC.peer.remoteDescription){
+      try{await VC.peer.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){}
+    }else{
+      VC.iceBuf.push(candidate);
+    }
+    return;
+  }
+
+  if(type==='hangup'||type==='reject'){
+    const msg = type==='reject'
+      ? (VC.partner+' recusou a chamada 📵')
+      : (VC.partner+' encerrou a chamada');
+    vcCleanup();
+    toast(msg);
+    return;
+  }
+
+  if(type==='busy'){
+    vcCleanup();
+    toast(VC.partner+' está em outra chamada');
+    return;
+  }
+}
+
+// ─── Caller: iniciar chamada ───
+async function startVoiceCall(){
+  if(!currentDmPartner||!me)return;
+  if(VC.peer||VC.role)return toast('Já existe uma chamada ativa');
+
+  VC.partner = currentDmPartner;
+  VC.role    = 'caller';
+  VC.iceBuf  = [];
+
+  vcShowUI('calling');
+  vcStartListening();
+
+  // Criar peer e stream já (para ter ICE candidates prontos)
+  try{
+    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO);
+  }catch(err){
+    toast('Microfone bloqueado: '+err.message);
+    vcCleanup(); return;
+  }
+
+  VC.peer = vcBuildPeer();
+  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
+
+  // Avisar o callee que está sendo chamado
+  await vcInsertSignal('ring','');
+}
+
+// ─── Callee: aceitar chamada ───
+async function acceptCall(){
+  vcRingStop();
+  vcShowUI('connecting');
+
+  VC.iceBuf = [];
+  vcStartListening();
+
+  try{
+    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO);
+  }catch(err){
+    toast('Microfone bloqueado: '+err.message);
+    vcCleanup(); return;
+  }
+
+  VC.peer = vcBuildPeer();
+  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
+
+  // CALLEE cria o offer → elimina race condition
+  const offer = await VC.peer.createOffer();
+  await VC.peer.setLocalDescription(offer);
+  await vcInsertSignal('offer', VC.peer.localDescription);
+}
+
+// ─── Rejeitar ───
+async function rejectCall(){
+  await vcInsertSignal('reject','');
+  vcCleanup();
+}
+
+// ─── Encerrar ───
+async function endCall(){
+  await vcInsertSignal('hangup','');
+  vcCleanup();
+}
+
+// ─── Limpeza ───
+function vcCleanup(){
+  vcRingStop(); vcTimerStop();
+  if(VC.peer){try{VC.peer.close();}catch(e){} VC.peer=null;}
+  if(VC.stream){VC.stream.getTracks().forEach(t=>t.stop()); VC.stream=null;}
+  if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){} VC.sigChannel=null;}
+  clearInterval(VC.pollInt); VC.pollInt=null;
+  document.getElementById('vcRemoteAudio').srcObject=null;
+  VC.role=null; VC.partner=null; VC.muted=false;
+  VC.secs=0; VC.iceBuf=[]; VC.lastSigId=null;
+  document.getElementById('callOverlay').classList.add('hidden');
+
+  // Limpar sinais antigos
+  if(me)sb.from('call_signals').delete().eq('to_nick',me.nick).then(()=>{});
+}
+
+// ─── Construir RTCPeerConnection ───
+function vcBuildPeer(){
+  const peer = new RTCPeerConnection(VC_ICE);
+
+  peer.onicecandidate = async e=>{
+    if(e.candidate){
+      await vcInsertSignal('ice', e.candidate.toJSON());
+    }
+  };
+
+  peer.ontrack = e=>{
+    const audio = document.getElementById('vcRemoteAudio');
+    audio.srcObject = e.streams[0];
+    audio.play().catch(()=>{});
+  };
+
+  peer.onconnectionstatechange = ()=>{
+    if(peer.connectionState==='failed'){
+      toast('Conexão perdida');endCall();
+    }
+    if(peer.connectionState==='disconnected'){
+      toast('Conexão interrompida');endCall();
+    }
+  };
+
+  return peer;
+}
+
+// ─── Quando conectado ───
+function vcOnConnected(){
+  document.getElementById('callStatus').textContent='Em chamada 🔵';
+  vcTimerStart();
+}
+
+// ─── Mudo ───
+function toggleMuteCall(){
+  if(!VC.stream)return;
+  VC.muted=!VC.muted;
+  VC.stream.getAudioTracks().forEach(t=>t.enabled=!VC.muted);
+  const btn=document.getElementById('muteBtn');
+  if(btn){btn.textContent=VC.muted?'🔇':'🎙️'; btn.className='call-btn '+(VC.muted?'muted':'mute');}
+}
+
+// ─── UI ───
+function vcShowUI(mode){
+  const ov=document.getElementById('callOverlay');
+  ov.classList.remove('hidden');
+  document.getElementById('callPartnerName').textContent=VC.partner||'';
+  document.getElementById('callAvatar').innerHTML=avatarOf(VC.partner||'?');
+  document.getElementById('callTimer').style.display='none';
+
+  if(mode==='calling'){
+    document.getElementById('callStatus').textContent='Chamando... 📞';
+    document.getElementById('callActions').innerHTML=
+      `<button class="call-btn hangup" onclick="endCall()">📵</button>`;
+  }
+  else if(mode==='incoming'){
+    document.getElementById('callStatus').textContent='Ligação entrante';
+    document.getElementById('callActions').innerHTML=
+      `<button class="call-btn accept call-ring" onclick="acceptCall()">📞</button>
+       <button class="call-btn hangup" onclick="rejectCall()">📵</button>`;
+  }
+  else if(mode==='connecting'){
+    document.getElementById('callStatus').textContent='Conectando...';
+    document.getElementById('callActions').innerHTML=vcInCallHTML();
+  }
+}
+
+function vcInCallHTML(){
+  return`<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
+         <button class="call-btn hangup" onclick="endCall()">📵</button>`;
+}
+
+// ─── Timer ───
+function vcTimerStart(){
+  VC.secs=0;
+  document.getElementById('callTimer').style.display='block';
+  document.getElementById('callActions').innerHTML=vcInCallHTML();
+  VC.timerInt=setInterval(()=>{
+    VC.secs++;
+    const m=Math.floor(VC.secs/60), s=VC.secs%60;
+    document.getElementById('callTimer').textContent=m+':'+(s<10?'0':'')+s;
+  },1000);
+}
+function vcTimerStop(){
+  clearInterval(VC.timerInt); VC.timerInt=null;
+  document.getElementById('callTimer').style.display='none';
+}
+
+// ─── Ringtone ───
+function vcRingStart(){
+  try{
+    if(window._vcRingCtx){try{window._vcRingCtx.close();}catch(e){}}
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    window._vcRingCtx=ctx; let on=true;
+    window._vcRingStop=()=>{on=false;try{ctx.close();}catch(e){}};
+    const beep=(f,d,dl)=>{
+      if(!on)return;
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=f; g.gain.setValueAtTime(0.1,ctx.currentTime+dl);
+      o.start(ctx.currentTime+dl); o.stop(ctx.currentTime+dl+d);
+    };
+    const loop=()=>{if(!on)return; beep(880,.2,0); beep(660,.2,.25); setTimeout(loop,1200);};
+    loop();
+  }catch(e){}
+}
+function vcRingStop(){
+  try{if(window._vcRingStop){window._vcRingStop();window._vcRingStop=null;}}catch(e){}
+}
+
+// ─── Escuta global (chamadas recebidas enquanto não está em DM) ───
+// Inicia quando o usuário faz login
+function vcStartGlobalListener(){
+  if(!me)return;
+  sb.channel('vc-global-'+me.nick)
+    .on('postgres_changes',{
+      event:'INSERT',schema:'public',table:'call_signals',
+      filter:`to_nick=eq.${me.nick}`
+    }, row=>{
+      if(row.new&&row.new.type==='ring'&&!VC.role){
+        VC.partner=row.new.from_nick;
+        VC.role='callee';
+        vcShowUI('incoming');
+        vcRingStart();
+      }
+    })
+    .subscribe();
+}
+</script>
+</body>
+</html>
