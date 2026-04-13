@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yakult - Nostalgia Social</title>
-  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -377,7 +377,7 @@
     <span class="pill" id="onlineTop">● 0 online</span>
     <span id="topUser"></span>
     <button class="btn-dark" id="darkBtn" onclick="toggleDark()" title="Modo escuro">🌙</button>
-    <button class="btn-sair" onclick="logout()">Sair</button>
+    <button class="btn-sair hidden" id="topLogoutBtn" onclick="logout()">Sair</button>
   </div>
 </div>
 
@@ -797,6 +797,7 @@ async function doLogin(data){
   $('loginPage').classList.add('hidden');
   $('homePage').classList.remove('hidden');
   $('mobileNav').classList.remove('hidden');
+  $('topLogoutBtn').classList.remove('hidden');
   $('topUser').textContent='👤 '+(me.display_name||me.nick);
   updateMyProfileUI();
   await sb.from('online').upsert({nick:me.nick,last_seen:new Date().toISOString()},{onConflict:'nick'});
@@ -850,6 +851,7 @@ async function logout(){
   $('homePage').classList.add('hidden');
   $('mobileNav').classList.add('hidden');
   $('loginPage').classList.remove('hidden');
+  $('topLogoutBtn').classList.add('hidden');
   $('topUser').textContent='';
 }
 
