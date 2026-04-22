@@ -329,6 +329,20 @@
     body.dark .dm-conv.active{background:#1e2a3a;}
     body.dark .dm-bubble.theirs{background:#1a2236;border-color:#2d3a50;}
     body.dark input[type=text],body.dark input[type=password]{background:#151c2c;color:#d4dbe8;}
+    body.dark .search-bar input{background:#151c2c;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .cmsg.theirs .cmsg-bubble{background:#1a2236;border-color:#2d3a50;}
+    body.dark #botPanel{background:#1e2130;border-color:#2d3a50;}
+    body.dark .bot-controls input[type=text]{background:#151c2c;color:#d4dbe8;}
+    body.dark .call-box{background:#0f1a2a;}
+    body.dark .comm-tab-btn{background:#1a2236;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .comm-tab-btn.active{background:var(--blue);color:#fff;}
+    body.dark .music-item{border-color:#2d3a50;}
+    body.dark .comm-item{border-color:#2d3a50;}
+    body.dark .online-user{border-color:#2d3a50;}
+    body.dark .fcard .fname{color:var(--blue);}
+    body.dark .modal-btns .cancel{background:#1a2236;color:#d4dbe8;}
+    body.dark #editBio,body.dark #scrapAnyNick{background:#151c2c;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .dm-input-row .label,body.dark label.comment-photo-btn{background:#1a2236;border-color:#2d3a50;color:#d4dbe8;}
 
     /* BOTÃO DARK MODE */
     .btn-dark{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;padding:3px 10px;border-radius:var(--radius);cursor:pointer;font-size:12px;}
@@ -418,6 +432,7 @@
         <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(this)">
         <div class="pname" id="myName"></div>
         <div class="pbio" id="myBio"></div>
+        <div id="mySite" style="font-size:11px;margin-bottom:2px;display:none"><a id="mySiteLink" href="#" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">🔗 <span id="mySiteTxt"></span></a></div>
         <div class="pcountry">🇧🇷 Brasil</div>
         <button class="btn-s" style="margin-top:8px;font-size:11px;padding:4px 10px" onclick="openEditProfile()">✏️ editar perfil</button>
         <div class="stats">
@@ -444,7 +459,7 @@
       <div id="tab-feed">
         <div class="card">
           <h3>🏠 nova postagem</h3>
-          <textarea class="stxt" id="postTxt" placeholder="O que você está pensando?" maxlength="500" oninput="updateCharCount('postTxt','postCharCount',500)"></textarea>
+          <textarea class="stxt" id="postTxt" placeholder="O que você está pensando? (Ctrl+Enter para postar)" maxlength="500" oninput="updateCharCount('postTxt','postCharCount',500)"></textarea>
           <div class="char-count" id="postCharCount">0/500</div>
           <div class="post-toolbar">
             <label class="file-btn" for="postImgInput">📷 Foto</label>
@@ -463,8 +478,13 @@
       <div id="tab-scraps" class="hidden">
         <div class="card">
           <h3>📩 escrever recado</h3>
-          <div class="target-sel"><select id="scrapTarget"><option value="">Para quem?</option></select></div>
-          <textarea class="stxt" id="scrapTxt" placeholder="Deixa um recado carinhoso..."></textarea>
+          <div class="target-sel"><select id="scrapTarget"><option value="">Para quem? (seus amigos)</option></select></div>
+          <div class="row-inp" style="margin-bottom:6px">
+            <input id="scrapAnyNick" placeholder="...ou digite qualquer nick" maxlength="20">
+            <button class="btn-s" style="white-space:nowrap" onclick="useAnyNickForScrap()">Usar</button>
+          </div>
+          <textarea class="stxt" id="scrapTxt" placeholder="Deixa um recado carinhoso..." maxlength="300" oninput="updateCharCount('scrapTxt','scrapCharCount',300)"></textarea>
+          <div class="char-count" id="scrapCharCount">0/300</div>
           <button class="btn-s" onclick="sendScrap()">Enviar recado ♥</button>
         </div>
         <div class="card"><h3>📬 mural de recados</h3><div id="scrapsWall"><div class="loading">Carregando...</div></div></div>
@@ -516,9 +536,16 @@
       <div id="tab-friends" class="hidden">
         <div class="card">
           <h3>👥 adicionar amigo</h3>
-          <div class="row-inp"><input id="friendInp" placeholder="nickname do amigo..." maxlength="20"><button class="btn-s" onclick="addFriend()">Adicionar</button></div>
+          <div class="row-inp">
+            <input id="friendInp" placeholder="nickname do amigo..." maxlength="20" oninput="searchUsers(this.value)">
+            <button class="btn-s" onclick="addFriend()">Adicionar</button>
+          </div>
+          <div id="friendSearchResults"></div>
         </div>
-        <div class="card"><h3>meus amigos</h3><div class="fgrid" id="fGrid"><div class="empty">Nenhum amigo ainda 😢</div></div></div>
+        <div class="card">
+          <h3>meus amigos <span id="friendCount" style="color:var(--muted);font-size:11px;font-weight:normal"></span></h3>
+          <div class="fgrid" id="fGrid"><div class="empty">Nenhum amigo ainda 😢</div></div>
+        </div>
       </div>
 
       <!-- COMMUNITIES -->
@@ -608,6 +635,9 @@
                 <div class="audio-progress-fill" id="audioProgressFill"></div>
               </div>
               <span class="audio-time" id="audioTime">0:00 / 0:00</span>
+              <input type="range" id="audioVol" min="0" max="1" step="0.05" value="1"
+                style="width:52px;accent-color:var(--pink);cursor:pointer;vertical-align:middle"
+                title="Volume" oninput="gAudio.volume=this.value">
             </div>
           </div>
           <div id="musicList"></div>
@@ -681,7 +711,13 @@
   <div class="modal">
     <h3>✏️ editar perfil</h3>
     <div class="ig"><label>nome de exibição</label><input id="editName" maxlength="30" placeholder="Seu nome"></div>
-    <div class="ig"><label>bio</label><textarea id="editBio" maxlength="100" placeholder="Fale um pouco sobre você..." style="height:60px;resize:none;"></textarea></div>
+    <div class="ig">
+      <label>bio <span id="editBioCount" style="font-size:10px;color:var(--muted)">0/100</span></label>
+      <textarea id="editBio" maxlength="100" placeholder="Fale um pouco sobre você..."
+        style="height:60px;resize:none;"
+        oninput="document.getElementById('editBioCount').textContent=this.value.length+'/100'"></textarea>
+    </div>
+    <div class="ig"><label>site / link (opcional)</label><input id="editSite" maxlength="80" placeholder="https://..."></div>
     <div class="modal-btns">
       <button class="cancel" onclick="closeEditProfile()">Cancelar</button>
       <button class="save" onclick="saveProfile()">Salvar</button>
@@ -705,6 +741,18 @@
   </div>
 </div>
 
+<!-- CHAMADA DE VOZ OVERLAY -->
+<div id="callOverlay" class="call-overlay hidden">
+  <div class="call-box">
+    <div class="call-avatar" id="callAvatar"></div>
+    <div class="call-name" id="callPartnerName"></div>
+    <div class="call-status" id="callStatus"></div>
+    <div class="call-timer" id="callTimer" style="display:none"></div>
+    <div class="call-actions" id="callActions"></div>
+  </div>
+</div>
+<audio id="vcRemoteAudio" autoplay playsinline style="display:none"></audio>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -713,7 +761,7 @@ const SUPA_KEY='sb_publishable_INuIEt9LcnACogCJNZE4xg_3heVJ8cQ';
 const {createClient}=supabase;
 const sb=createClient(SUPA_URL,SUPA_KEY);
 
-let me=null,myFriends=[],channels=[],onlineInterval=null;
+let me=null,myFriends=[],channels=[],onlineInterval=null,feedRefreshInterval=null;
 let currentDmPartner=null,dmChannel=null,unreadCounts={};
 let postImgBase64=null;
 let musicFileBase64=null;
@@ -802,6 +850,7 @@ async function doLogin(data){
   updateMyProfileUI();
   await sb.from('online').upsert({nick:me.nick,last_seen:new Date().toISOString()},{onConflict:'nick'});
   onlineInterval=setInterval(()=>sb.from('online').upsert({nick:me.nick,last_seen:new Date().toISOString()},{onConflict:'nick'}),20000);
+  feedRefreshInterval=setInterval(()=>{if(me)loadFeed();},60000);
   await loadAll();
   subscribeRealtime();
   vcStartGlobalListener();
@@ -837,10 +886,12 @@ function updateMyProfileUI(){
 }
 
 async function logout(){
+  if(!confirm('Tem certeza que quer sair?'))return;
   channels.forEach(c=>sb.removeChannel(c));channels=[];
   if(dmChannel){sb.removeChannel(dmChannel);dmChannel=null;}
   if(typingChannel){sb.removeChannel(typingChannel);typingChannel=null;}
   clearInterval(onlineInterval);
+  clearInterval(feedRefreshInterval);
   if(me)await sb.from('online').delete().eq('nick',me.nick);
   gAudio.pause();gAudio.src='';
   $('audioPlayerUI').classList.add('hidden');
@@ -859,20 +910,46 @@ async function logout(){
 function openEditProfile(){
   $('editName').value=me.display_name||me.nick;
   $('editBio').value=me.bio||'';
+  $('editSite').value=me.site||'';
+  $('editBioCount').textContent=(me.bio||'').length+'/100';
   $('editModal').classList.remove('hidden');
 }
 function closeEditProfile(){$('editModal').classList.add('hidden');}
 async function saveProfile(){
   const name=$('editName').value.trim();
   const bio=$('editBio').value.trim();
+  const site=$('editSite').value.trim();
   if(!name)return toast('Nome não pode ser vazio');
-  const{error}=await sb.from('users').update({display_name:name,bio}).eq('nick',me.nick);
+  const{error}=await sb.from('users').update({display_name:name,bio,site:site||null}).eq('nick',me.nick);
   if(error)return toast('Erro: '+error.message);
-  me.display_name=name;me.bio=bio;
+  me.display_name=name;me.bio=bio;me.site=site||null;
   updateMyProfileUI();
   $('topUser').textContent='👤 '+name;
   closeEditProfile();
   toast('Perfil atualizado! ✨');
+}
+
+function updateMyProfileUI(){
+  $('myName').textContent=me.display_name||me.nick;
+  $('myBio').textContent=me.bio||'';
+  // Site
+  const siteDiv=$('mySite');
+  if(me.site){
+    siteDiv.style.display='block';
+    $('mySiteTxt').textContent=me.site.replace(/^https?:\/\//,'');
+    $('mySiteLink').href=me.site.startsWith('http')?me.site:'https://'+me.site;
+  }else{
+    siteDiv.style.display='none';
+  }
+  if(me.photo){
+    $('myAvEmoji').style.display='none';
+    $('myAvImg').src=me.photo;
+    $('myAvImg').style.display='block';
+  } else {
+    $('myAvEmoji').textContent=avatarOf(me.nick);
+    $('myAvEmoji').style.display='';
+    $('myAvImg').style.display='none';
+  }
 }
 
 // ── FOTO DE PERFIL ──
@@ -890,6 +967,9 @@ async function uploadAvatar(input){
 }
 
 // ── POSTAGENS ──
+let feedPage=0;
+const FEED_PAGE_SIZE=20;
+
 function previewPostImg(input){
   if(!input.files[0]){postImgBase64=null;$('postImgPreview').style.display='none';return;}
   if(input.files[0].size>3*1024*1024){toast('Imagem muito grande! Máx 3MB');input.value='';return;}
@@ -900,34 +980,51 @@ function previewPostImg(input){
   });
 }
 
-async function loadFeed(){
-  const{data}=await sb.from('posts').select('*').order('created_at',{ascending:false}).limit(30);
-  allPosts=data||[];
-  renderFeed(allPosts);
+async function loadFeed(append=false){
+  if(!append)feedPage=0;
+  const from=feedPage*FEED_PAGE_SIZE;
+  const{data}=await sb.from('posts').select('*').order('created_at',{ascending:false}).range(from,from+FEED_PAGE_SIZE-1);
+  const posts=data||[];
+  if(!append){
+    allPosts=posts;
+    renderFeed(allPosts,posts.length===FEED_PAGE_SIZE);
+  } else {
+    allPosts=[...allPosts,...posts];
+    renderFeed(allPosts,posts.length===FEED_PAGE_SIZE);
+  }
   $('stPosts').textContent=allPosts.filter(p=>(p.author_nick||p.nick)===me.nick).length;
+}
+
+async function loadMoreFeed(){
+  feedPage++;
+  await loadFeed(true);
 }
 
 async function sendPost(){
   const text=$('postTxt').value.trim();
   if(!text&&!postImgBase64)return toast('Escreva algo ou adicione uma foto!');
+  const btn=document.querySelector('[onclick="sendPost()"]');
+  if(btn){btn.disabled=true;btn.textContent='Postando...';}
   const{error}=await sb.from('posts').insert({
     author_nick:me.nick,
     display_name:me.display_name||me.nick,
     author_photo:me.photo||null,
     content:esc(text),
-    image:postImgBase64||null,  // BUG CORRIGIDO: era postingBase64
+    image:postImgBase64||null,
     likes:[],
     created_at:new Date().toISOString()
   });
+  if(btn){btn.disabled=false;btn.textContent='Postar';}
   if(error)return toast('Erro: '+error.message);
   $('postTxt').value='';
+  updateCharCount('postTxt','postCharCount',500);
   postImgBase64=null;
   $('postImgPreview').style.display='none';
   $('postImgInput').value='';
   toast('Postagem publicada! 🎉');
 }
 
-function renderFeed(posts){
+function renderFeed(posts,hasMore=false){
   const w=$('feedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda. Seja o primeiro! 🌟</div>';return;}
   w.innerHTML=posts.map(p=>{
@@ -947,7 +1044,7 @@ function renderFeed(posts){
         <span class="post-time">${timeAgo(p.created_at)}</span>
       </div>
       ${content?`<div class="post-txt">${content}</div>`:''}
-      ${p.image?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
+      ${p.image?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
       <div class="post-actions">
         <button class="post-btn ${liked?'liked':''}" onclick="toggleLike('${p.id}',${JSON.stringify(likes)})">♥ ${likes.length}${liked?' curtido':' curtir'}</button>
         <button class="post-btn" onclick="toggleComments('${p.id}')">💬 comentar</button>
@@ -966,6 +1063,11 @@ function renderFeed(posts){
       </div>
     </div>`;
   }).join('');
+  if(hasMore){
+    w.innerHTML+=`<div style="text-align:center;padding:14px 0">
+      <button class="btn-s" style="background:var(--blue);padding:7px 22px;font-size:12px" onclick="loadMoreFeed()">⬇ Carregar mais</button>
+    </div>`;
+  }
 }
 
 // Guarda b64 temporário por postId
@@ -994,7 +1096,19 @@ async function toggleLike(postId,currentLikes){
   const idx=currentLikes.indexOf(me.nick);
   const newLikes=idx>=0?currentLikes.filter(n=>n!==me.nick):[...currentLikes,me.nick];
   await sb.from('posts').update({likes:newLikes}).eq('id',postId);
-  loadFeed();
+  // Atualizar botão localmente sem recarregar tudo
+  const post=allPosts.find(p=>p.id===postId);
+  if(post){
+    post.likes=newLikes;
+    const btn=document.querySelector(`#post-${postId} .post-btn.liked, #post-${postId} .post-btn:not(.liked)`);
+    const allBtns=document.querySelectorAll(`#post-${postId} .post-actions .post-btn`);
+    if(allBtns[0]){
+      const liked2=newLikes.includes(me.nick);
+      allBtns[0].className='post-btn'+(liked2?' liked':'');
+      allBtns[0].textContent=`♥ ${newLikes.length}${liked2?' curtido':' curtir'}`;
+      allBtns[0].setAttribute('onclick',`toggleLike('${postId}',${JSON.stringify(newLikes)})`);
+    }
+  }
 }
 
 async function toggleComments(postId){
@@ -1041,18 +1155,63 @@ async function loadScraps(){
   const{data}=await sb.from('scraps').select('*').order('created_at',{ascending:false}).limit(40);
   renderScraps(data||[]);
 }
+
+async function useAnyNickForScrap(){
+  const nick=$('scrapAnyNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  if(!nick)return toast('Digite um nickname');
+  if(nick===me.nick)return toast('Você não pode mandar recado pra si mesmo!');
+  const{data}=await sb.from('users').select('nick,display_name').eq('nick',nick).maybeSingle();
+  if(!data)return toast('Usuário "'+nick+'" não encontrado');
+  // Adicionar/selecionar no select
+  const sel=$('scrapTarget');
+  let opt=sel.querySelector('option[value="'+nick+'"]');
+  if(!opt){
+    opt=document.createElement('option');
+    opt.value=nick;
+    opt.textContent=(data.display_name||nick)+' (@'+nick+')';
+    sel.appendChild(opt);
+  }
+  sel.value=nick;
+  $('scrapAnyNick').value='';
+  toast('Destinatário: @'+nick+' ✓');
+}
+
 async function sendScrap(){
   const to=$('scrapTarget').value,text=$('scrapTxt').value.trim();
-  if(!to)return toast('Selecione para quem enviar!');
+  if(!to)return toast('Selecione ou busque para quem enviar!');
   if(!text)return toast('Escreva algo no recado!');
   const{error}=await sb.from('scraps').insert({from_nick:me.nick,to_nick:to,text:esc(text)});
   if(error)return toast('Erro: '+error.message);
-  $('scrapTxt').value='';toast('Recado enviado para '+to+' ♥');
+  $('scrapTxt').value='';
+  updateCharCount('scrapTxt','scrapCharCount',300);
+  toast('Recado enviado para @'+to+' ♥');
+  loadScraps();
 }
 function renderScraps(scraps){
   const w=$('scrapsWall');
   if(!scraps.length){w.innerHTML='<div class="empty">Nenhum recado ainda 📝</div>';return;}
-  w.innerHTML=scraps.map(s=>`<div class="scrap-item" id="scrap-${s.id}"><div class="scrap-hdr"><div><span class="scrap-from">${esc(s.from_nick)}</span><span class="scrap-arr">→</span><span class="scrap-to">${esc(s.to_nick)}</span></div><div style="display:flex;align-items:center;gap:8px"><span class="scrap-time">${timeAgo(s.created_at)}</span>${me&&me.nick==='kaua12345'?`<button class="post-btn" style="color:#c00;font-size:11px;padding:1px 6px" onclick="adminDeleteScrap('${s.id}')">🗑️</button>`:''}</div></div><div class="scrap-txt">${s.text}</div></div>`).join('');
+  w.innerHTML=scraps.map(s=>`
+    <div class="scrap-item" id="scrap-${s.id}">
+      <div class="scrap-hdr">
+        <div>
+          <span class="scrap-from">${esc(s.from_nick)}</span>
+          <span class="scrap-arr">→</span>
+          <span class="scrap-to">${esc(s.to_nick)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="scrap-time">${timeAgo(s.created_at)}</span>
+          ${s.from_nick===me.nick?`<button class="post-btn" style="color:#c00;font-size:11px;padding:1px 6px" onclick="deleteOwnScrap('${s.id}')" title="Apagar meu recado">🗑️</button>`:''}
+          ${me&&me.nick==='kaua12345'&&s.from_nick!==me.nick?`<button class="post-btn" style="color:#c00;font-size:11px;padding:1px 6px" onclick="adminDeleteScrap('${s.id}')">🗑️ adm</button>`:''}
+        </div>
+      </div>
+      <div class="scrap-txt">${esc(s.text)}</div>
+    </div>`).join('');
+}
+
+async function deleteOwnScrap(id){
+  if(!confirm('Apagar seu recado?'))return;
+  await sb.from('scraps').delete().eq('id',id).eq('from_nick',me.nick);
+  toast('Recado apagado 🗑️');loadScraps();
 }
 
 async function adminDeletePost(id){
@@ -1083,13 +1242,17 @@ function renderMusicList(tracks){
     const hasAudio=!!m.audio_data;
     const isCur=currentTrackIdx>=0&&playlist[currentTrackIdx]&&playlist[currentTrackIdx].id===m.id;
     const isPlay=isCur&&!gAudio.paused;
+    const canDelete=me&&(m.added_by===me.nick||me.nick==='kaua12345');
     return`<div class="music-item" id="mitem-${m.id}">
       <div class="music-icon">${hasAudio?'🎵':'📝'}</div>
       <div class="music-info">
         <div class="music-title">${esc(m.title)}</div>
         <div class="music-artist">${esc(m.artist)}${m.added_by?' · por '+esc(m.added_by):''}</div>
       </div>
-      ${hasAudio?`<button class="music-play${isCur?' playing':''}" id="playbtn-${m.id}" onclick="playTrackById('${m.id}')">${isPlay?'⏸ pausar':'▶ ouvir'}</button>`:`<span style="font-size:10px;color:var(--muted)">sem áudio</span>`}
+      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+        ${hasAudio?`<button class="music-play${isCur?' playing':''}" id="playbtn-${m.id}" onclick="playTrackById('${m.id}')">${isPlay?'⏸':'▶'}</button>`:`<span style="font-size:10px;color:var(--muted)">sem áudio</span>`}
+        ${canDelete?`<button onclick="deleteMusic('${m.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px" title="Remover">🗑️</button>`:''}
+      </div>
     </div>`;
   }).join('');
   const commEl=$('communityMusicList');
@@ -1104,7 +1267,7 @@ function refreshPlayButtons(){
     const id=btn.id.replace('playbtn-','');
     const isCur=id===String(cur.id);
     btn.classList.toggle('playing',isCur);
-    btn.textContent=isCur&&!gAudio.paused?'⏸ pausar':'▶ ouvir';
+    btn.textContent=isCur&&!gAudio.paused?'⏸':'▶';
   });
   $('playPauseBtn').textContent=gAudio.paused?'▶':'⏸';
 }
@@ -1209,6 +1372,20 @@ async function addMusic(){
   toast('Música adicionada! 🎵');
 }
 
+async function deleteMusic(id){
+  if(!confirm('Remover esta música?'))return;
+  // Se estiver tocando, parar
+  if(playlist[currentTrackIdx]&&String(playlist[currentTrackIdx].id)===String(id)){
+    gAudio.pause();gAudio.src='';
+    $('audioPlayerUI').classList.add('hidden');
+    $('nowPlayingCard').style.display='none';
+    currentTrackIdx=-1;
+  }
+  await sb.from('music').delete().eq('id',id);
+  toast('Música removida 🗑️');
+  await loadCommunityMusic();
+}
+
 // ── DM ──
 async function loadDmUnread(){
   const{data}=await sb.from('dms').select('from_nick').eq('to_nick',me.nick).eq('read',false);
@@ -1219,12 +1396,16 @@ async function loadDmUnread(){
 function updateDmBadge(){
   const total=Object.values(unreadCounts).reduce((a,b)=>a+b,0);
   const badge=$('dmBadge');const mbadge=$('mDmBadge');
+  if(!badge||!mbadge)return;
   if(total>0){
     badge.textContent=total;badge.classList.remove('hidden');
     mbadge.textContent=total;mbadge.classList.remove('hidden');
   } else {
     badge.classList.add('hidden');mbadge.classList.add('hidden');
   }
+  // Título dinâmico
+  const totalNotif=total+scrapUnread;
+  document.title=totalNotif>0?`(${totalNotif}) Yakult.br`:'Yakult.br';
 }
 async function loadDmList(){
   const{data:sent}=await sb.from('dms').select('to_nick,text,created_at').eq('from_nick',me.nick).order('created_at',{ascending:false});
@@ -1235,7 +1416,25 @@ async function loadDmList(){
   const convs=Object.values(convMap).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
   const el=$('dmList');
   if(!convs.length){el.innerHTML='<div class="empty">Nenhuma conversa ainda</div>';return;}
-  el.innerHTML=convs.map(c=>`<div class="dm-conv" onclick="openDmConv('${esc(c.partner)}')"><div class="dm-av">${avatarOf(c.partner)}</div><div class="dm-info"><div class="dm-nick">${esc(c.partner)}</div><div class="dm-preview">${esc(c.preview)}</div></div><div class="dm-meta"><span class="dm-time">${timeAgo(c.ts)}</span>${c.unread>0?`<span class="dm-unread">${c.unread}</span>`:''}</div></div>`).join('');
+  // Buscar fotos e nomes dos parceiros
+  const partners=convs.map(c=>c.partner);
+  const{data:usersData}=await sb.from('users').select('nick,photo,display_name').in('nick',partners.length?partners:['__none__']);
+  const uMap={};(usersData||[]).forEach(u=>{uMap[u.nick]={photo:u.photo,name:u.display_name||u.nick};});
+  el.innerHTML=convs.map(c=>{
+    const u=uMap[c.partner]||{};
+    const preview=c.preview?c.preview.substring(0,40)+(c.preview.length>40?'…':''):'[mídia]';
+    return`<div class="dm-conv" onclick="openDmConv('${esc(c.partner)}')">
+      <div class="dm-av">${avHtml(c.partner,u.photo||null,36)}</div>
+      <div class="dm-info">
+        <div class="dm-nick">${esc(u.name||c.partner)}</div>
+        <div class="dm-preview">${esc(preview)}</div>
+      </div>
+      <div class="dm-meta">
+        <span class="dm-time">${timeAgo(c.ts)}</span>
+        ${c.unread>0?`<span class="dm-unread">${c.unread}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 async function openDmWith(){
   const nick=$('dmNewNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
@@ -1248,7 +1447,10 @@ async function openDmWith(){
 async function openDmConv(partner){
   currentDmPartner=partner;
   $('dmConvList').classList.add('hidden');$('dmChatWindow').classList.remove('hidden');
-  $('dmChatAv').innerHTML=avatarOf(partner);$('dmChatName').textContent=partner;
+  // Buscar foto e nome do parceiro para o cabeçalho
+  const{data:pData}=await sb.from('users').select('nick,photo,display_name').eq('nick',partner).maybeSingle();
+  $('dmChatAv').innerHTML=avHtml(partner,pData?.photo||null,32);
+  $('dmChatName').textContent=pData?.display_name||partner;
   await sb.from('dms').update({read:true}).eq('to_nick',me.nick).eq('from_nick',partner);
   delete unreadCounts[partner];updateDmBadge();
   await loadDmMessages();subscribeDmChannel();subscribeTyping(partner);
@@ -1342,8 +1544,11 @@ async function sendDm(){
   const text=$('dmInput').value.trim();
   if((!text&&!dmMediaB64)||!currentDmPartner)return;
   const key=dmKey(me.nick,currentDmPartner);
-  const{error}=await sb.from('dms').insert({from_nick:me.nick,to_nick:currentDmPartner,text:esc(text||''),conv_key:key,read:false,media_data:dmMediaB64||null,media_type:dmMediaType||null});
   $('dmInput').value='';
+  const sendBtn=document.querySelector('[onclick="sendDm()"]');
+  if(sendBtn){sendBtn.disabled=true;}
+  const{error}=await sb.from('dms').insert({from_nick:me.nick,to_nick:currentDmPartner,text:esc(text||''),conv_key:key,read:false,media_data:dmMediaB64||null,media_type:dmMediaType||null});
+  if(sendBtn){sendBtn.disabled=false;}
   clearDmMedia();
   if(!error)loadDmMessages();
 }
@@ -1362,6 +1567,7 @@ async function loadFriends(){
   myFriends=(data||[]).map(r=>r.friend_nick);
   await renderFriends();populateTarget();
   $('stFriends').textContent=myFriends.length;
+  const fc=$('friendCount');if(fc)fc.textContent='('+myFriends.length+')';
 }
 async function addFriend(){
   const nick=$('friendInp').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
@@ -1371,20 +1577,75 @@ async function addFriend(){
   const{data}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
   if(!data)return toast('Usuário "'+nick+'" não encontrado');
   await sb.from('friends').upsert([{nick:me.nick,friend_nick:nick},{nick,friend_nick:me.nick}],{onConflict:'nick,friend_nick',ignoreDuplicates:true});
-  $('friendInp').value='';await loadFriends();toast(nick+' adicionado! 👋');
+  $('friendInp').value='';
+  $('friendSearchResults').innerHTML='';
+  await loadFriends();toast(nick+' adicionado! 👋');
+}
+
+let friendSearchTimer=null;
+async function searchUsers(q){
+  const res=$('friendSearchResults');
+  if(!res)return;
+  if(!q||q.length<2){res.innerHTML='';return;}
+  clearTimeout(friendSearchTimer);
+  friendSearchTimer=setTimeout(async()=>{
+    const{data}=await sb.from('users').select('nick,display_name,photo').ilike('nick','%'+q+'%').limit(6);
+    if(!data||!data.length){res.innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0">Nenhum usuário encontrado</div>';return;}
+    res.innerHTML=data.filter(u=>u.nick!==me.nick).map(u=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+        ${avHtml(u.nick,u.photo,28)}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:bold;color:var(--blue-dark)">${esc(u.display_name||u.nick)}</div>
+          <div style="font-size:10px;color:var(--muted)">@${esc(u.nick)}</div>
+        </div>
+        ${myFriends.includes(u.nick)
+          ?'<span style="font-size:10px;color:#2a9d2a">✓ amigo</span>'
+          :`<button class="btn-s" style="margin:0;padding:3px 10px;font-size:11px" onclick="quickAddFriend('${esc(u.nick)}')">+ Adicionar</button>`}
+      </div>`).join('');
+  },350);
+}
+
+async function quickAddFriend(nick){
+  if(myFriends.includes(nick))return toast(nick+' já é seu amigo!');
+  await sb.from('friends').upsert([{nick:me.nick,friend_nick:nick},{nick,friend_nick:me.nick}],{onConflict:'nick,friend_nick',ignoreDuplicates:true});
+  await loadFriends();
+  toast(nick+' adicionado! 👋');
+  searchUsers($('friendInp').value); // re-render search
 }
 async function renderFriends(){
   const{data:od}=await sb.from('online').select('nick').gte('last_seen',new Date(Date.now()-60000).toISOString());
   const os=new Set((od||[]).map(r=>r.nick));
   const{data:usersData}=await sb.from('users').select('nick,photo,display_name').in('nick',myFriends.length?myFriends:['__none__']);
   const photoMap={};(usersData||[]).forEach(u=>{photoMap[u.nick]={photo:u.photo,name:u.display_name||u.nick};});
-  const html=myFriends.length?myFriends.map(f=>`<div class="fcard" onclick="startDmFriend('${esc(f)}')" title="Mandar DM">${avHtml(f,photoMap[f]?.photo,50)}<div class="fname">${esc(photoMap[f]?.name||f)}</div><div class="fstatus ${os.has(f)?'on':'off'}">${os.has(f)?'● online':'○ offline'}</div></div>`).join(''):'<div class="empty">Nenhum amigo ainda 😢</div>';
+  const html=myFriends.length?myFriends.map(f=>`<div class="fcard" title="${esc(photoMap[f]?.name||f)}">
+    <div onclick="startDmFriend('${esc(f)}')">${avHtml(f,photoMap[f]?.photo,50)}</div>
+    <div class="fname" onclick="startDmFriend('${esc(f)}')">${esc(photoMap[f]?.name||f)}</div>
+    <div class="fstatus ${os.has(f)?'on':'off'}">${os.has(f)?'● online':'○ offline'}</div>
+    <button onclick="removeFriend('${esc(f)}')" style="margin-top:3px;background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:1px 4px;border-radius:3px" title="Remover amigo">✕</button>
+  </div>`).join(''):'<div class="empty">Nenhum amigo ainda 😢</div>';
   $('fGrid').innerHTML=html;$('fGridSide').innerHTML=html;
 }
 function startDmFriend(nick){showTab('dm');setTimeout(()=>openDmConv(nick),100);}
+async function removeFriend(nick){
+  if(!confirm('Remover '+nick+' da sua lista de amigos?'))return;
+  await sb.from('friends').delete().eq('nick',me.nick).eq('friend_nick',nick);
+  await sb.from('friends').delete().eq('nick',nick).eq('friend_nick',me.nick);
+  await loadFriends();toast(nick+' removido dos amigos');
+}
 function populateTarget(){
-  const sel=$('scrapTarget');sel.innerHTML='<option value="">Para quem?</option>';
-  myFriends.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+  const sel=$('scrapTarget');
+  sel.innerHTML='<option value="">Para quem? (seus amigos)</option>';
+  // Buscar nomes dos amigos para exibir melhor
+  if(!myFriends.length)return;
+  sb.from('users').select('nick,display_name').in('nick',myFriends).then(({data})=>{
+    const names={};(data||[]).forEach(u=>{names[u.nick]=u.display_name||u.nick;});
+    myFriends.forEach(f=>{
+      const o=document.createElement('option');
+      o.value=f;
+      o.textContent=names[f]?`${names[f]} (@${f})`:f;
+      sel.appendChild(o);
+    });
+  });
 }
 
 // ── COMUNIDADES ──
@@ -1413,7 +1674,9 @@ function renderCommunities(comms){
     <div class="comm-info"><div class="comm-name">${esc(c.name)}</div><div class="comm-members">${c.member_count||1} membro(s) · por ${esc(c.creator)}</div></div>
     <button class="btn-s" style="margin:0;padding:4px 10px;font-size:12px" onclick="openCommRoom('${c.id}','${esc(c.name).replace(/'/g,"\\'")}','${c.emoji||'🌐'}')">Entrar →</button>
   </div>`).join('');
-  $('stComms').textContent=comms.length;
+  // Contar comunidades criadas pelo usuário
+  const myCommsCount=comms.filter(c=>c.creator===me.nick).length;
+  $('stComms').textContent=myCommsCount;
 }
 
 // ── SALA DA COMUNIDADE ──
@@ -1777,8 +2040,8 @@ function renderCommFeed(posts){
     ${p.content?`<div class="post-txt">${p.content}</div>`:''}
     ${p.image&&p.media_type==='video'?`<video class="post-img" src="${p.image}" controls style="max-height:260px"></video>`:''}
     ${p.image&&p.media_type==='audio'?`<audio src="${p.image}" controls style="width:100%;margin-bottom:6px"></audio>`:''}
-    ${p.image&&p.media_type==='image'?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
-    ${p.image&&!p.media_type?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
+    ${p.image&&p.media_type==='image'?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
+    ${p.image&&!p.media_type?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
     <div class="post-actions">
       <button class="post-btn ${liked?'liked':''}" onclick="toggleCommLike('${p.id}',${JSON.stringify(likes)})">♥ ${likes.length}${liked?' curtido':' curtir'}</button>
       <button class="post-btn" onclick="toggleCommComments('${p.id}')">💬 comentar</button>
@@ -1805,7 +2068,14 @@ async function toggleCommLike(postId,currentLikes){
   const idx=currentLikes.indexOf(me.nick);
   const newLikes=idx>=0?currentLikes.filter(n=>n!==me.nick):[...currentLikes,me.nick];
   await sb.from('community_posts').update({likes:newLikes}).eq('id',postId);
-  loadCommFeed();
+  // Atualizar botão localmente
+  const allBtns=document.querySelectorAll(`#cpost-${postId} .post-actions .post-btn`);
+  if(allBtns[0]){
+    const liked=newLikes.includes(me.nick);
+    allBtns[0].className='post-btn'+(liked?' liked':'');
+    allBtns[0].textContent=`♥ ${newLikes.length}${liked?' curtido':' curtir'}`;
+    allBtns[0].setAttribute('onclick',`toggleCommLike('${postId}',${JSON.stringify(newLikes)})`);
+  }
 }
 
 async function toggleCommComments(postId){
@@ -1957,9 +2227,19 @@ async function loadOnline(){
   const{data}=await sb.from('online').select('nick,last_seen').gte('last_seen',cutoff);
   const users=data||[];
   $('onlineTop').textContent='● '+users.length+' online';
-  const html=users.length?users.map(u=>`<div class="online-user"><div class="odot"></div><span class="oname">${avatarOf(u.nick)} ${esc(u.nick)}</span></div>`).join(''):'<div class="empty">Ninguém online agora 😴</div>';
+  const html=users.length
+    ?users.map(u=>`<div class="online-user">
+        <div class="odot"></div>
+        <span class="oname" style="cursor:pointer;flex:1" onclick="showTab('dm');setTimeout(()=>openDmConv('${esc(u.nick)}'),120)" title="Mandar DM">
+          ${avatarOf(u.nick)} ${esc(u.nick)}
+        </span>
+        ${u.nick!==me.nick?`<button onclick="showTab('dm');setTimeout(()=>openDmConv('${esc(u.nick)}'),120)"
+          style="background:none;border:1px solid var(--border);color:var(--blue);border-radius:8px;padding:2px 7px;font-size:10px;cursor:pointer">
+          💬</button>`:''}
+      </div>`).join('')
+    :'<div class="empty">Ninguém online agora 😴</div>';
   $('onlineList').innerHTML=html;
-  $('onlineSide').innerHTML=users.slice(0,5).map(u=>`<div class="online-user"><div class="odot"></div><span class="oname">${esc(u.nick)}</span></div>`).join('')||'<div class="empty">Ninguém 😴</div>';
+  $('onlineSide').innerHTML=users.slice(0,6).map(u=>`<div class="online-user"><div class="odot"></div><span class="oname" style="cursor:pointer" onclick="showTab('dm');setTimeout(()=>openDmConv('${esc(u.nick)}'),120)">${esc(u.nick)}</span></div>`).join('')||'<div class="empty">Ninguém 😴</div>';
 }
 
 async function loadAll(){await Promise.all([loadFriends(),loadFeed(),loadScraps(),loadCommunities(),loadOnline(),loadDmUnread()]);}
@@ -1982,13 +2262,21 @@ function subscribeRealtime(){
       unreadCounts[from]=(unreadCounts[from]||0)+1;
       updateDmBadge();
       toast('💬 Nova mensagem de @'+from+' — toque em Mensagens para ver');
+      loadDmList(); // atualiza preview
     }
   }).subscribe();
-  // Realtime para comentários do feed principal
+  // Realtime para comentários do feed principal — notifica o dono do post
   const ch6=sb.channel('comments-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'comments'},payload=>{
     const postId=payload.new.post_id;
     const el=$('comments-'+postId);
     if(el&&!el.classList.contains('hidden'))loadComments(postId);
+    // Notificar o autor do post se for comentário de outro
+    if(payload.new.nick!==me.nick){
+      const post=allPosts.find(p=>p.id===postId);
+      if(post&&(post.author_nick||post.nick)===me.nick){
+        toast('💬 @'+payload.new.nick+' comentou no seu post!');
+      }
+    }
   }).subscribe();
   // Realtime para posts e comentários da comunidade
   const ch7=sb.channel('comm-posts-rt').on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},()=>{
@@ -2007,12 +2295,17 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){
     const id=document.activeElement.id;
     if(id==='lNick'||id==='lPass')login();
-    if(id==='rPass')register();
+    if(id==='rNick'||id==='rPass')register();
     if(id==='friendInp')addFriend();
+    if(id==='scrapAnyNick')useAnyNickForScrap();
     if(id==='commName'||id==='commEmoji')createCommunity();
-    if(id==='dmInput')sendDm();
+    if(id==='dmInput'){e.preventDefault();sendDm();}
     if(id==='dmNewNick')openDmWith();
-    if(id==='commChatInput')sendCommChat();
+    if(id==='commChatInput'){e.preventDefault();sendCommChat();}
+  }
+  // Ctrl+Enter envia post
+  if(e.key==='Enter'&&e.ctrlKey&&document.activeElement.id==='postTxt'){
+    e.preventDefault();sendPost();
   }
 });
 
@@ -2066,8 +2359,9 @@ function updateCharCount(textareaId,counterId,max){
 function updateScrapBadge(){
   const badge=$('scrapNotif');
   const mbadge=$('mScrapBadge');
+  if(!badge||!mbadge)return;
   if(scrapUnread>0){
-    badge.textContent=scrapUnread;badge.style.display='inline';
+    badge.textContent=scrapUnread;badge.style.display='inline-block';
     mbadge.textContent=scrapUnread;mbadge.classList.remove('hidden');
   }else{
     badge.style.display='none';mbadge.classList.add('hidden');
@@ -2075,8 +2369,6 @@ function updateScrapBadge(){
 }
 
 // Zerar badge ao abrir aba de scraps
-const _origShowTab=showTab;
-// Sobrescrever showTab para zerar badge de scraps
 function showTab(name){
   ['feed','scraps','dm','friends','communities','music','online'].forEach(t=>{
     const el=$('tab-'+t);if(el)el.classList.add('hidden');
@@ -2154,115 +2446,123 @@ document.addEventListener('keydown',e=>{
 (async()=>{
   await tryAutoLogin();
 })();
-</script>
-</body>
-</html>
 
-<!-- ══ CHAMADA DE VOZ ══ -->
-<div id="callOverlay" class="call-overlay hidden">
-  <div class="call-box">
-    <div class="call-avatar" id="callAvatar"></div>
-    <div class="call-name" id="callPartnerName"></div>
-    <div class="call-status" id="callStatus"></div>
-    <div class="call-timer" id="callTimer" style="display:none"></div>
-    <div class="call-actions" id="callActions"></div>
-  </div>
-</div>
-<audio id="vcRemoteAudio" autoplay playsinline></audio>
+// ═══════════════════════════════════════════════════════════════
+// ── CHAMADA DE VOZ — WebRTC com sinalização via Supabase       ──
+// ── Fluxo correto:                                             ──
+//   1. Caller → ring                                           ──
+//   2. Caller → getUserMedia + createOffer + setLocal + offer  ──
+//   3. Callee → getUserMedia + setRemote + createAnswer +       ──
+//               setLocal + answer                              ──
+//   4. Caller → setRemote(answer)                              ──
+//   5. ICE candidates trocados bidirecionalmente               ──
+// ═══════════════════════════════════════════════════════════════
 
-<script>
-/*
-  SINALIZAÇÃO via tabela Supabase "call_signals"
-  Colunas: id, from_nick, to_nick, type, payload, created_at
-  
-  Fluxo:
-  1. Caller insere {type:'ring'}
-  2. Callee vê pelo realtime → mostra tela de chamada
-  3. Callee aceita → getUserMedia → cria RTCPeer → cria offer → insere {type:'offer', payload: sdp}
-  4. Caller vê offer → setRemoteDescription → cria answer → insere {type:'answer', payload: sdp}
-  5. Callee vê answer → setRemoteDescription
-  6. ICE candidates trocados pelo mesmo canal
-  7. Áudio flui
-  
-  Motivo de o CALLEE criar o offer:
-  - Garante que o callee está 100% pronto antes de qualquer SDP ser trocado
-  - Elimina o race condition de timing
-*/
-
-// ─── Estado global ───
 let VC = {
-  peer: null, stream: null, role: null, partner: null,
-  muted: false, timerInt: null, secs: 0,
-  iceBuf: [],           // ICE recebidos antes de setRemoteDescription
-  sigChannel: null,     // canal Realtime para sinais
-  pollInt: null,        // fallback poll
-  lastSigId: null,      // evitar reprocessar
+  peer:null, stream:null, role:null, partner:null,
+  muted:false, timerInt:null, secs:0,
+  iceBuf:[],           // candidates recebidos antes de remoteDescription estar pronto
+  sigChannel:null,     // canal Realtime Supabase
+  processedIds:new Set(), // evitar reprocessar o mesmo sinal
 };
 
-const VC_ICE = {iceServers:[
-  {urls:'stun:stun.l.google.com:19302'},
-  {urls:'stun:stun1.l.google.com:19302'},
-  {urls:'stun:stun2.l.google.com:19302'},
-]};
+const VC_ICE = {
+  iceServers:[
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'stun:stun2.l.google.com:19302'},
+    {urls:'stun:stun3.l.google.com:19302'},
+    {urls:'stun:stun4.l.google.com:19302'},
+  ],
+  iceCandidatePoolSize:10,
+};
 
-const VC_AUDIO = {audio:{
-  echoCancellation:true, noiseSuppression:true,
-  autoGainControl:true, channelCount:1,
-  sampleRate:22050,
-}, video:false};
+// Sem sampleRate fixo — deixa o browser escolher para evitar rejeição
+const VC_AUDIO_CONSTRAINTS = {
+  audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true},
+  video:false
+};
 
-// ─── Inserir sinal no banco ───
+// ── Inserir sinal no banco ──
 async function vcInsertSignal(type, payload=''){
-  await sb.from('call_signals').insert({
-    from_nick: me.nick,
-    to_nick:   VC.partner,
-    type,
-    payload:   typeof payload==='string' ? payload : JSON.stringify(payload),
-    created_at: new Date().toISOString()
-  });
+  if(!me||!VC.partner) return;
+  const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  try{
+    await sb.from('call_signals').insert({
+      from_nick: me.nick,
+      to_nick:   VC.partner,
+      type,
+      payload:   body,
+      created_at: new Date().toISOString()
+    });
+  }catch(e){console.warn('vcInsertSignal error',e);}
 }
 
-// ─── Escutar sinais vindos do parceiro ───
+// ── Escutar sinais vindos do parceiro via Realtime ──
 function vcStartListening(){
-  // Limpa listener anterior
   if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){}}
-  clearInterval(VC.pollInt);
-
-  // Realtime INSERT na tabela call_signals
-  VC.sigChannel = sb.channel('vc-sig-'+me.nick)
+  // Canal dedicado ao nick do usuário atual
+  VC.sigChannel = sb.channel('vc-listen-'+me.nick+'-'+Date.now())
     .on('postgres_changes',{
       event:'INSERT', schema:'public', table:'call_signals',
       filter:`to_nick=eq.${me.nick}`
-    }, row => vcHandleSignal(row.new))
-    .subscribe();
-
-  // Fallback: poll a cada 1.5s (para redes onde realtime falha)
-  VC.pollInt = setInterval(async()=>{
-    const {data} = await sb.from('call_signals')
-      .select('*')
-      .eq('to_nick', me.nick)
-      .eq('from_nick', VC.partner||'__none__')
-      .order('created_at',{ascending:false})
-      .limit(1);
-    if(data&&data[0]&&data[0].id!==VC.lastSigId){
-      VC.lastSigId=data[0].id;
-      vcHandleSignal(data[0]);
-    }
-  }, 1500);
+    }, row => {
+      if(row.new) vcHandleSignal(row.new);
+    })
+    .subscribe(status=>{
+      // Se o Realtime não conectar, ativa o poll de fallback
+      if(status === 'SUBSCRIBED') vcStopPoll();
+      else vcStartPoll();
+    });
 }
 
-// ─── Processar sinal recebido ───
+// ── Poll de fallback caso Realtime falhe ──
+let _vcPollInt = null;
+let _vcPollAfter = null; // só busca sinais DEPOIS desta data
+
+function vcStartPoll(){
+  if(_vcPollInt) return;
+  _vcPollAfter = new Date().toISOString();
+  _vcPollInt = setInterval(async()=>{
+    if(!me||!VC.partner) return;
+    const{data} = await sb.from('call_signals')
+      .select('*')
+      .eq('to_nick', me.nick)
+      .eq('from_nick', VC.partner)
+      .gt('created_at', _vcPollAfter)
+      .order('created_at',{ascending:true});
+    if(data&&data.length){
+      _vcPollAfter = data[data.length-1].created_at;
+      for(const row of data) vcHandleSignal(row);
+    }
+  }, 1200);
+}
+
+function vcStopPoll(){
+  clearInterval(_vcPollInt);
+  _vcPollInt = null;
+}
+
+// ── Processar sinal recebido ──
 async function vcHandleSignal(row){
-  if(!row||row.from_nick===me.nick)return;
-  // Só processa sinais do parceiro atual (se já em chamada) ou qualquer um (se idle)
-  if(VC.partner && row.from_nick!==VC.partner)return;
+  if(!row) return;
+  if(row.from_nick === me.nick) return; // ignorar próprios sinais
+  if(VC.processedIds.has(row.id)) return; // já processado
+  VC.processedIds.add(row.id);
+
+  // Ignorar sinais de quem não é o parceiro atual (exceto ring)
+  if(row.type !== 'ring' && VC.partner && row.from_nick !== VC.partner) return;
 
   const type = row.type;
-  const payload = row.payload;
+  let payload;
+  try{ payload = row.payload ? JSON.parse(row.payload) : null; }
+  catch(e){ payload = row.payload; }
 
-  if(type==='ring'){
-    // Receber chamada
-    if(VC.peer){vcInsertSignal('busy','');return;}
+  console.log('[VC] sinal recebido:', type, 'de', row.from_nick);
+
+  // ── RING: receber chamada ──
+  if(type === 'ring'){
+    if(VC.peer){ await vcInsertSignal('busy',''); return; }
     VC.partner = row.from_nick;
     VC.role    = 'callee';
     vcShowUI('incoming');
@@ -2270,260 +2570,366 @@ async function vcHandleSignal(row){
     return;
   }
 
-  if(type==='offer'){
-    // Caller recebeu offer do callee → responde com answer
-    if(VC.role!=='caller'||!VC.peer)return;
-    const sdp = JSON.parse(payload);
-    await VC.peer.setRemoteDescription(new RTCSessionDescription(sdp));
-    // Aplicar ICE buffer
-    for(const c of VC.iceBuf){try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){}}
-    VC.iceBuf=[];
-    const answer = await VC.peer.createAnswer();
-    await VC.peer.setLocalDescription(answer);
-    await vcInsertSignal('answer', VC.peer.localDescription);
-    vcOnConnected();
+  // ── OFFER: callee recebe offer do caller → cria answer ──
+  if(type === 'offer'){
+    if(VC.role !== 'callee' || !VC.peer) return;
+    try{
+      await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
+      // Aplicar ICE buffered antes do remoteDescription
+      for(const c of VC.iceBuf){
+        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
+      }
+      VC.iceBuf = [];
+      const answer = await VC.peer.createAnswer();
+      await VC.peer.setLocalDescription(answer);
+      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      vcOnConnected();
+    }catch(e){ console.error('[VC] offer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
   }
 
-  if(type==='answer'){
-    // Callee recebeu answer do caller
-    if(VC.role!=='callee'||!VC.peer)return;
-    const sdp = JSON.parse(payload);
-    await VC.peer.setRemoteDescription(new RTCSessionDescription(sdp));
-    for(const c of VC.iceBuf){try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){}}
-    VC.iceBuf=[];
-    vcOnConnected();
+  // ── ANSWER: caller recebe answer do callee → conecta ──
+  if(type === 'answer'){
+    if(VC.role !== 'caller' || !VC.peer) return;
+    try{
+      await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
+      for(const c of VC.iceBuf){
+        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
+      }
+      VC.iceBuf = [];
+      vcOnConnected();
+    }catch(e){ console.error('[VC] answer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
   }
 
-  if(type==='ice'){
-    const candidate = JSON.parse(payload);
-    if(VC.peer&&VC.peer.remoteDescription){
-      try{await VC.peer.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){}
-    }else{
-      VC.iceBuf.push(candidate);
+  // ── ICE candidate ──
+  if(type === 'ice'){
+    if(!payload) return;
+    if(VC.peer && VC.peer.remoteDescription && VC.peer.remoteDescription.type){
+      try{ await VC.peer.addIceCandidate(new RTCIceCandidate(payload)); }catch(e){}
+    } else {
+      VC.iceBuf.push(payload);
     }
     return;
   }
 
-  if(type==='hangup'||type==='reject'){
-    const msg = type==='reject'
-      ? (VC.partner+' recusou a chamada 📵')
-      : (VC.partner+' encerrou a chamada');
+  // ── HANGUP / REJECT ──
+  if(type === 'hangup' || type === 'reject'){
+    const savedPartner = VC.partner || row.from_nick;
     vcCleanup();
-    toast(msg);
+    toast(type === 'reject'
+      ? (savedPartner + ' recusou a chamada 📵')
+      : (savedPartner + ' encerrou a chamada'));
     return;
   }
 
-  if(type==='busy'){
+  // ── BUSY ──
+  if(type === 'busy'){
+    const savedPartner = VC.partner || row.from_nick;
     vcCleanup();
-    toast(VC.partner+' está em outra chamada');
+    toast(savedPartner + ' está em outra chamada 📵');
     return;
   }
 }
 
-// ─── Caller: iniciar chamada ───
+// ── CALLER: iniciar chamada ──
 async function startVoiceCall(){
-  if(!currentDmPartner||!me)return;
-  if(VC.peer||VC.role)return toast('Já existe uma chamada ativa');
+  if(!currentDmPartner || !me) return;
+  if(VC.peer || VC.role) return toast('Já existe uma chamada ativa');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    return toast('Seu navegador não suporta chamadas de voz');
+  }
 
   VC.partner = currentDmPartner;
   VC.role    = 'caller';
   VC.iceBuf  = [];
+  VC.processedIds = new Set();
 
   vcShowUI('calling');
   vcStartListening();
 
-  // Criar peer e stream já (para ter ICE candidates prontos)
+  // 1. Pegar microfone
   try{
-    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO);
+    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
   }catch(err){
-    toast('Microfone bloqueado: '+err.message);
+    toast('Microfone: '+err.message);
     vcCleanup(); return;
   }
 
+  // 2. Criar peer e adicionar tracks
   VC.peer = vcBuildPeer();
-  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
+  VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
 
-  // Avisar o callee que está sendo chamado
-  await vcInsertSignal('ring','');
+  // 3. Criar offer
+  try{
+    const offer = await VC.peer.createOffer({offerToReceiveAudio:true});
+    await VC.peer.setLocalDescription(offer);
+    // 4. Avisar callee (ring) e já enviar offer junto
+    await vcInsertSignal('ring', '');
+    // Pequena pausa para garantir que o ring chegue antes do offer
+    await new Promise(r => setTimeout(r, 300));
+    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp});
+  }catch(err){
+    toast('Erro ao iniciar chamada: '+err.message);
+    vcCleanup(); return;
+  }
 }
 
-// ─── Callee: aceitar chamada ───
+// ── CALLEE: aceitar chamada ──
 async function acceptCall(){
   vcRingStop();
   vcShowUI('connecting');
-
   VC.iceBuf = [];
-  vcStartListening();
+  VC.processedIds = new Set();
 
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    return toast('Seu navegador não suporta chamadas de voz');
+  }
+
+  // Pegar microfone
   try{
-    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO);
+    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
   }catch(err){
-    toast('Microfone bloqueado: '+err.message);
+    toast('Microfone: '+err.message);
     vcCleanup(); return;
   }
 
+  // Criar peer e adicionar tracks
   VC.peer = vcBuildPeer();
-  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
+  VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
 
-  // CALLEE cria o offer → elimina race condition
-  const offer = await VC.peer.createOffer();
-  await VC.peer.setLocalDescription(offer);
-  await vcInsertSignal('offer', VC.peer.localDescription);
+  // Começar a escutar sinais futuros
+  vcStartListening();
+
+  // Buscar sinais já existentes no banco (offer pode ter chegado antes do listener)
+  await vcFetchPendingSignals();
 }
 
-// ─── Rejeitar ───
 async function rejectCall(){
+  const partner = VC.partner;
+  VC.partner = VC.partner || partner;
   await vcInsertSignal('reject','');
   vcCleanup();
 }
 
-// ─── Encerrar ───
+// Busca sinais já pendentes no banco (para o callee que acabou de aceitar)
+async function vcFetchPendingSignals(){
+  if(!me || !VC.partner) return;
+  try{
+    const since = new Date(Date.now() - 30000).toISOString(); // últimos 30s
+    const{data} = await sb.from('call_signals')
+      .select('*')
+      .eq('to_nick', me.nick)
+      .eq('from_nick', VC.partner)
+      .gt('created_at', since)
+      .order('created_at', {ascending: true});
+    for(const row of (data||[])){
+      await vcHandleSignal(row);
+    }
+  }catch(e){ console.warn('[VC] fetchPending error', e); }
+}
+
 async function endCall(){
   await vcInsertSignal('hangup','');
   vcCleanup();
 }
 
-// ─── Limpeza ───
+// ── Limpeza ──
 function vcCleanup(){
-  vcRingStop(); vcTimerStop();
+  vcRingStop();
+  vcTimerStop();
+  vcStopPoll();
   if(VC.peer){try{VC.peer.close();}catch(e){} VC.peer=null;}
   if(VC.stream){VC.stream.getTracks().forEach(t=>t.stop()); VC.stream=null;}
   if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){} VC.sigChannel=null;}
-  clearInterval(VC.pollInt); VC.pollInt=null;
-  document.getElementById('vcRemoteAudio').srcObject=null;
+  const audio = $('vcRemoteAudio');
+  if(audio){ audio.srcObject=null; audio.src=''; }
   VC.role=null; VC.partner=null; VC.muted=false;
-  VC.secs=0; VC.iceBuf=[]; VC.lastSigId=null;
-  document.getElementById('callOverlay').classList.add('hidden');
-
-  // Limpar sinais antigos
-  if(me)sb.from('call_signals').delete().eq('to_nick',me.nick).then(()=>{});
+  VC.secs=0; VC.iceBuf=[]; VC.processedIds=new Set();
+  $('callOverlay').classList.add('hidden');
+  // Só apaga sinais endereçados a MIM (não prejudica o parceiro)
+  if(me) sb.from('call_signals').delete().eq('to_nick',me.nick)
+    .lt('created_at', new Date(Date.now()-5000).toISOString()).then(()=>{});
 }
 
-// ─── Construir RTCPeerConnection ───
+// ── Construir RTCPeerConnection ──
 function vcBuildPeer(){
   const peer = new RTCPeerConnection(VC_ICE);
 
-  peer.onicecandidate = async e=>{
+  // Enviar ICE candidate assim que gerado
+  peer.onicecandidate = async e => {
     if(e.candidate){
       await vcInsertSignal('ice', e.candidate.toJSON());
     }
   };
 
-  peer.ontrack = e=>{
-    const audio = document.getElementById('vcRemoteAudio');
-    audio.srcObject = e.streams[0];
-    audio.play().catch(()=>{});
+  // Receber áudio remoto
+  peer.ontrack = e => {
+    console.log('[VC] ontrack recebido', e.streams);
+    const audio = $('vcRemoteAudio');
+    if(!audio) return;
+    if(e.streams && e.streams[0]){
+      audio.srcObject = e.streams[0];
+    } else {
+      // Fallback: criar stream do track
+      const stream = new MediaStream([e.track]);
+      audio.srcObject = stream;
+    }
+    // Garantir play (pode precisar de interação do usuário)
+    const playPromise = audio.play();
+    if(playPromise){
+      playPromise.catch(err=>{
+        console.warn('[VC] autoplay bloqueado:', err.message);
+        // Mostrar botão para o usuário clicar e desbloquear
+        vcShowUnmuteButton();
+      });
+    }
   };
 
-  peer.onconnectionstatechange = ()=>{
-    if(peer.connectionState==='failed'){
-      toast('Conexão perdida');endCall();
+  peer.oniceconnectionstatechange = () => {
+    console.log('[VC] ICE state:', peer.iceConnectionState);
+    if(peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed'){
+      vcOnConnected();
     }
-    if(peer.connectionState==='disconnected'){
-      toast('Conexão interrompida');endCall();
+    if(peer.iceConnectionState === 'failed'){
+      toast('Conexão falhou. Tente novamente.');
+      endCall();
     }
+    if(peer.iceConnectionState === 'disconnected'){
+      toast('Conexão interrompida 📵');
+      endCall();
+    }
+  };
+
+  peer.onconnectionstatechange = () => {
+    console.log('[VC] connection state:', peer.connectionState);
   };
 
   return peer;
 }
 
-// ─── Quando conectado ───
+// ── Desbloquear áudio se autoplay for bloqueado ──
+function vcShowUnmuteButton(){
+  const actions = $('callActions');
+  if(!actions) return;
+  const existing = document.getElementById('vcUnmuteBtn');
+  if(existing) return;
+  const btn = document.createElement('button');
+  btn.id = 'vcUnmuteBtn';
+  btn.className = 'call-btn mute';
+  btn.textContent = '🔊';
+  btn.title = 'Clique para ouvir';
+  btn.onclick = () => {
+    $('vcRemoteAudio').play().catch(()=>{});
+    btn.remove();
+  };
+  actions.prepend(btn);
+}
+
+// ── Quando ICE conectar ──
+let _vcConnectedOnce = false;
 function vcOnConnected(){
-  document.getElementById('callStatus').textContent='Em chamada 🔵';
+  if(_vcConnectedOnce) return; // evitar chamar 2x
+  _vcConnectedOnce = true;
+  $('callStatus').textContent = 'Em chamada 🔵';
   vcTimerStart();
 }
 
-// ─── Mudo ───
+// ── Mudo ──
 function toggleMuteCall(){
-  if(!VC.stream)return;
-  VC.muted=!VC.muted;
-  VC.stream.getAudioTracks().forEach(t=>t.enabled=!VC.muted);
-  const btn=document.getElementById('muteBtn');
-  if(btn){btn.textContent=VC.muted?'🔇':'🎙️'; btn.className='call-btn '+(VC.muted?'muted':'mute');}
+  if(!VC.stream) return;
+  VC.muted = !VC.muted;
+  VC.stream.getAudioTracks().forEach(t => t.enabled = !VC.muted);
+  const btn = $('muteBtn');
+  if(btn){ btn.textContent = VC.muted ? '🔇' : '🎙️'; btn.className = 'call-btn '+(VC.muted?'muted':'mute'); }
 }
 
-// ─── UI ───
+// ── UI da chamada ──
 function vcShowUI(mode){
-  const ov=document.getElementById('callOverlay');
-  ov.classList.remove('hidden');
-  document.getElementById('callPartnerName').textContent=VC.partner||'';
-  document.getElementById('callAvatar').innerHTML=avatarOf(VC.partner||'?');
-  document.getElementById('callTimer').style.display='none';
-
-  if(mode==='calling'){
-    document.getElementById('callStatus').textContent='Chamando... 📞';
-    document.getElementById('callActions').innerHTML=
-      `<button class="call-btn hangup" onclick="endCall()">📵</button>`;
-  }
-  else if(mode==='incoming'){
-    document.getElementById('callStatus').textContent='Ligação entrante';
-    document.getElementById('callActions').innerHTML=
+  _vcConnectedOnce = false;
+  $('callOverlay').classList.remove('hidden');
+  $('callPartnerName').textContent = VC.partner || '';
+  $('callAvatar').innerHTML = avatarOf(VC.partner || '?');
+  $('callTimer').style.display = 'none';
+  if(mode === 'calling'){
+    $('callStatus').textContent = 'Chamando... 📞';
+    $('callActions').innerHTML = `<button class="call-btn hangup" onclick="endCall()">📵</button>`;
+  } else if(mode === 'incoming'){
+    $('callStatus').textContent = 'Ligação entrante 📲';
+    $('callActions').innerHTML =
       `<button class="call-btn accept call-ring" onclick="acceptCall()">📞</button>
        <button class="call-btn hangup" onclick="rejectCall()">📵</button>`;
-  }
-  else if(mode==='connecting'){
-    document.getElementById('callStatus').textContent='Conectando...';
-    document.getElementById('callActions').innerHTML=vcInCallHTML();
+  } else if(mode === 'connecting'){
+    $('callStatus').textContent = 'Conectando...';
+    $('callActions').innerHTML = vcInCallHTML();
   }
 }
 
 function vcInCallHTML(){
-  return`<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
-         <button class="call-btn hangup" onclick="endCall()">📵</button>`;
+  return `<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
+          <button class="call-btn hangup" onclick="endCall()">📵</button>`;
 }
 
-// ─── Timer ───
+// ── Timer ──
 function vcTimerStart(){
-  VC.secs=0;
-  document.getElementById('callTimer').style.display='block';
-  document.getElementById('callActions').innerHTML=vcInCallHTML();
-  VC.timerInt=setInterval(()=>{
+  VC.secs = 0;
+  $('callTimer').style.display = 'block';
+  $('callActions').innerHTML = vcInCallHTML();
+  VC.timerInt = setInterval(()=>{
     VC.secs++;
-    const m=Math.floor(VC.secs/60), s=VC.secs%60;
-    document.getElementById('callTimer').textContent=m+':'+(s<10?'0':'')+s;
-  },1000);
+    const m = Math.floor(VC.secs/60), s = VC.secs%60;
+    $('callTimer').textContent = m+':'+(s<10?'0':'')+s;
+  }, 1000);
 }
 function vcTimerStop(){
   clearInterval(VC.timerInt); VC.timerInt=null;
-  document.getElementById('callTimer').style.display='none';
+  $('callTimer').style.display = 'none';
 }
 
-// ─── Ringtone ───
+// ── Toque de chamada ──
 function vcRingStart(){
   try{
-    if(window._vcRingCtx){try{window._vcRingCtx.close();}catch(e){}}
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    window._vcRingCtx=ctx; let on=true;
-    window._vcRingStop=()=>{on=false;try{ctx.close();}catch(e){}};
-    const beep=(f,d,dl)=>{
-      if(!on)return;
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.connect(g);g.connect(ctx.destination);
-      o.frequency.value=f; g.gain.setValueAtTime(0.1,ctx.currentTime+dl);
-      o.start(ctx.currentTime+dl); o.stop(ctx.currentTime+dl+d);
+    if(window._vcRingCtx){ try{window._vcRingCtx.close();}catch(e){} }
+    const ctx = new(window.AudioContext||window.webkitAudioContext)();
+    window._vcRingCtx = ctx;
+    let on = true;
+    window._vcRingStop = ()=>{ on=false; try{ctx.close();}catch(e){} };
+    const beep = (freq, dur, delay) => {
+      if(!on) return;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.12, ctx.currentTime+delay);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+dur);
+      o.start(ctx.currentTime+delay);
+      o.stop(ctx.currentTime+delay+dur);
     };
-    const loop=()=>{if(!on)return; beep(880,.2,0); beep(660,.2,.25); setTimeout(loop,1200);};
+    const loop = () => {
+      if(!on) return;
+      beep(880, 0.2, 0);
+      beep(660, 0.2, 0.25);
+      setTimeout(loop, 1400);
+    };
     loop();
-  }catch(e){}
+  }catch(e){ console.warn('[VC] ring error', e); }
 }
 function vcRingStop(){
-  try{if(window._vcRingStop){window._vcRingStop();window._vcRingStop=null;}}catch(e){}
+  try{ if(window._vcRingStop){ window._vcRingStop(); window._vcRingStop=null; } }catch(e){}
 }
 
-// ─── Escuta global (chamadas recebidas enquanto não está em DM) ───
-// Inicia quando o usuário faz login
+// ── Listener global (chamadas recebidas em qualquer aba) ──
 function vcStartGlobalListener(){
-  if(!me)return;
+  if(!me) return;
   sb.channel('vc-global-'+me.nick)
     .on('postgres_changes',{
-      event:'INSERT',schema:'public',table:'call_signals',
+      event:'INSERT', schema:'public', table:'call_signals',
       filter:`to_nick=eq.${me.nick}`
-    }, row=>{
-      if(row.new&&row.new.type==='ring'&&!VC.role){
-        VC.partner=row.new.from_nick;
-        VC.role='callee';
+    }, row => {
+      if(!row.new) return;
+      if(row.new.type === 'ring' && !VC.role){
+        VC.partner = row.new.from_nick;
+        VC.role    = 'callee';
+        VC.processedIds = new Set();
         vcShowUI('incoming');
         vcRingStart();
       }
