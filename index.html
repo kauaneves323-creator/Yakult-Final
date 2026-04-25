@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>yakult.br</title>
+  <title>Yakult - Nostalgia Social</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -221,7 +222,35 @@
     .upload-prog{display:none;height:4px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden;}
     .upload-prog-bar{height:100%;background:var(--pink);width:0%;transition:width .3s;}
 
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* SOLITAIRE */
+    .sol-area{display:flex;flex-direction:column;gap:12px;padding:4px;}
+    .sol-top{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;}
+    .sol-tableau{display:flex;gap:8px;align-items:flex-start;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;}
+    .sol-pile{position:relative;width:62px;min-height:88px;border:2px dashed var(--border);border-radius:6px;background:rgba(255,255,255,.3);}
+    .sol-card{
+      position:absolute;width:60px;height:86px;border-radius:6px;border:1px solid #aaa;
+      background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.15);
+      display:flex;flex-direction:column;justify-content:space-between;
+      padding:3px 4px;font-size:13px;font-weight:bold;cursor:pointer;
+      transition:transform .1s;box-sizing:border-box;
+    }
+    .sol-card:hover{transform:translateY(-2px);}
+    .sol-card.face-down{background:repeating-linear-gradient(135deg,#3a62aa,#3a62aa 5px,#628ad2 5px,#628ad2 10px);cursor:default;}
+    .sol-card.face-down:hover{transform:none;}
+    .sol-card.selected{outline:3px solid var(--pink);transform:translateY(-4px);}
+    .sol-card.red{color:#c00;}
+    .sol-card.black{color:#222;}
+    .sol-card .c-top{font-size:11px;line-height:1;}
+    .sol-card .c-mid{font-size:22px;text-align:center;line-height:1;}
+    .sol-card .c-bot{font-size:11px;line-height:1;transform:rotate(180deg);}
+    .sol-stock{cursor:pointer;background:var(--blue-bg);border:2px dashed var(--blue);}
+    .sol-stock:hover{background:var(--blue-light);}
+    .sol-empty-found{border:2px dashed #2a9d2a;background:rgba(42,157,42,.07);}
+    .sol-found-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;opacity:.4;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+    .sol-win{text-align:center;padding:30px;font-size:20px;font-weight:bold;color:var(--blue-dark);animation:fadeIn .5s ease;}
+
 
     /* EDITAR PERFIL */
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;}
@@ -328,6 +357,20 @@
     body.dark .dm-conv.active{background:#1e2a3a;}
     body.dark .dm-bubble.theirs{background:#1a2236;border-color:#2d3a50;}
     body.dark input[type=text],body.dark input[type=password]{background:#151c2c;color:#d4dbe8;}
+    body.dark .search-bar input{background:#151c2c;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .cmsg.theirs .cmsg-bubble{background:#1a2236;border-color:#2d3a50;}
+    body.dark #botPanel{background:#1e2130;border-color:#2d3a50;}
+    body.dark .bot-controls input[type=text]{background:#151c2c;color:#d4dbe8;}
+    body.dark .call-box{background:#0f1a2a;}
+    body.dark .comm-tab-btn{background:#1a2236;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .comm-tab-btn.active{background:var(--blue);color:#fff;}
+    body.dark .music-item{border-color:#2d3a50;}
+    body.dark .comm-item{border-color:#2d3a50;}
+    body.dark .online-user{border-color:#2d3a50;}
+    body.dark .fcard .fname{color:var(--blue);}
+    body.dark .modal-btns .cancel{background:#1a2236;color:#d4dbe8;}
+    body.dark #editBio,body.dark #scrapAnyNick{background:#151c2c;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .dm-input-row .label,body.dark label.comment-photo-btn{background:#1a2236;border-color:#2d3a50;color:#d4dbe8;}
 
     /* BOTÃO DARK MODE */
     .btn-dark{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;padding:3px 10px;border-radius:var(--radius);cursor:pointer;font-size:12px;}
@@ -362,6 +405,69 @@
     .char-count{font-size:10px;color:var(--muted);text-align:right;margin-top:2px;}
     .char-count.warn{color:#e08000;}
     .char-count.over{color:#c00;font-weight:bold;}
+
+    /* ── NOTIFICAÇÕES ── */
+    .notif-bell{position:relative;cursor:pointer;background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;}
+    .notif-bell:hover{background:rgba(255,255,255,.35);}
+    .notif-bell-badge{position:absolute;top:-3px;right:-3px;background:var(--pink);color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:bold;display:flex;align-items:center;justify-content:center;display:none;}
+    .notif-panel{position:fixed;top:50px;right:12px;z-index:300;background:var(--white);border:1px solid var(--border);border-radius:10px;width:310px;max-height:400px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:none;flex-direction:column;}
+    .notif-panel.open{display:flex;}
+    .notif-panel-hdr{background:var(--blue-dark);color:#fff;padding:10px 14px;border-radius:9px 9px 0 0;display:flex;align-items:center;justify-content:space-between;font-weight:bold;font-size:13px;}
+    .notif-panel-hdr button{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:12px;padding:2px 8px;border-radius:4px;}
+    .notif-panel-hdr button:hover{color:#fff;background:rgba(255,255,255,.15);}
+    .notif-list{flex:1;overflow-y:auto;max-height:330px;}
+    .notif-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+    .notif-item:hover{background:var(--scrap-bg);}
+    .notif-item.unread{background:var(--blue-light);}
+    body.dark .notif-item.unread{background:#1a2a3a;}
+    .notif-icon{font-size:20px;flex-shrink:0;}
+    .notif-body{flex:1;min-width:0;}
+    .notif-txt{font-size:12px;color:var(--text);line-height:1.4;}
+    .notif-time{font-size:10px;color:var(--muted);margin-top:2px;}
+    .notif-empty{text-align:center;color:var(--muted);padding:30px 0;font-size:12px;}
+    body.dark .notif-panel{background:#1e2130;border-color:#2d3a50;}
+    body.dark .notif-item{border-color:#2d3a50;}
+    body.dark .notif-item:hover{background:#1a2236;}
+
+    /* ── MODAL PERFIL DE OUTRO USUÁRIO ── */
+    .profile-modal{background:var(--white);border-radius:12px;padding:0;width:340px;max-width:96vw;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+    .profile-modal-cover{height:70px;background:linear-gradient(135deg,var(--blue-dark),var(--blue));position:relative;}
+    .profile-modal-av{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);width:64px;height:64px;border-radius:50%;border:3px solid var(--white);background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;}
+    .profile-modal-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .profile-modal-body{padding:40px 20px 18px;text-align:center;}
+    .profile-modal-name{font-weight:bold;font-size:15px;color:var(--blue-dark);margin-bottom:2px;}
+    .profile-modal-nick{font-size:11px;color:var(--muted);margin-bottom:6px;}
+    .profile-modal-bio{font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5;}
+    .profile-modal-stats{display:flex;justify-content:space-around;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 0;margin-bottom:12px;}
+    .profile-modal-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .profile-modal-actions .btn-s{margin:0;padding:6px 16px;font-size:12px;}
+    .profile-modal-actions .btn-blue{background:var(--blue);color:#fff;border:none;padding:6px 16px;border-radius:var(--radius);font-size:12px;font-weight:bold;cursor:pointer;}
+    .profile-modal-actions .btn-blue:hover{background:var(--blue-dark);}
+    body.dark .profile-modal{background:#1e2130;}
+    body.dark .profile-modal-av{border-color:#1e2130;}
+
+    /* ── ADM REAL ── */
+    .adm-panel-tab{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+    .adm-tab-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:4px 12px;border-radius:12px;font-size:11px;cursor:pointer;font-weight:bold;}
+    .adm-tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+    .adm-user-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .adm-user-row:last-child{border-bottom:none;}
+    .adm-actions{margin-left:auto;display:flex;gap:4px;}
+    .adm-btn{background:none;border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer;color:var(--muted);}
+    .adm-btn.danger{border-color:#f5c0c0;color:#c00;}
+    .adm-btn.danger:hover{background:#fff0f0;}
+    .adm-btn:hover{background:var(--blue-bg);}
+    .adm-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+    .adm-stat-card{background:var(--blue-bg);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;}
+    .adm-stat-card .n{font-size:22px;font-weight:bold;color:var(--blue-dark);}
+    .adm-stat-card .l{font-size:10px;color:var(--muted);}
+    body.dark .adm-stat-card{background:#1a2236;border-color:#2d3a50;}
+    body.dark .adm-tab-btn{background:#1a2236;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .adm-user-row{border-color:#2d3a50;}
+
+    /* ── CLIQUE EM NICK PARA VER PERFIL ── */
+    .clickable-nick{cursor:pointer;color:var(--blue-dark);font-weight:bold;}
+    .clickable-nick:hover{text-decoration:underline;}
   </style>
 </head>
 <body>
@@ -376,7 +482,10 @@
     <span class="pill" id="onlineTop">● 0 online</span>
     <span id="topUser"></span>
     <button class="btn-dark" id="darkBtn" onclick="toggleDark()" title="Modo escuro">🌙</button>
-    <button class="btn-sair" onclick="logout()">Sair</button>
+    <button class="notif-bell hidden" id="notifBellBtn" onclick="toggleNotifPanel()" title="Notificações" style="position:relative">
+      🔔<span class="notif-bell-badge" id="notifBadge">0</span>
+    </button>
+    <button class="btn-sair hidden" id="topLogoutBtn" onclick="logout()">Sair</button>
   </div>
 </div>
 
@@ -386,8 +495,8 @@
   <!-- LOGIN -->
   <div id="loginPage">
     <div class="card">
-      <div class="login-logo">yakult<span>.</span>br</div>
-      <div class="login-tag">a rede social mais fresquinha do Brasil 🥛</div>
+      <div class="login-logo">Yakult<span>.</span>br</div>
+      <div class="login-tag">Porque a melhor parte da vida é feita com pessoas!</div>
       <div class="ig"><label>nickname</label><input id="lNick" placeholder="ex: brunosilva2008" maxlength="20" autocomplete="off"></div>
       <div class="ig"><label>senha</label><input id="lPass" type="password" placeholder="mínimo 4 caracteres"></div>
       <div class="remember-row">
@@ -417,6 +526,7 @@
         <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(this)">
         <div class="pname" id="myName"></div>
         <div class="pbio" id="myBio"></div>
+        <div id="mySite" style="font-size:11px;margin-bottom:2px;display:none"><a id="mySiteLink" href="#" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">🔗 <span id="mySiteTxt"></span></a></div>
         <div class="pcountry">🇧🇷 Brasil</div>
         <button class="btn-s" style="margin-top:8px;font-size:11px;padding:4px 10px" onclick="openEditProfile()">✏️ editar perfil</button>
         <div class="stats">
@@ -430,9 +540,10 @@
         <a onclick="showTab('feed')" class="active" id="nav-feed">🏠 Feed</a>
         <a onclick="showTab('scraps')" id="nav-scraps">📩 Recados <span id="scrapNotif" class="badge">0</span></a>
         <a onclick="showTab('dm')" id="nav-dm">💬 Mensagens <span id="dmBadge" class="badge hidden">0</span></a>
-        <a onclick="showTab('friends')" id="nav-friends">👥 Amigos</a>
         <a onclick="showTab('communities')" id="nav-communities">🏘️ Comunidades</a>
+        <a onclick="showTab('friends')" id="nav-friends">👥 Amigos <span id="friendReqBadge" class="badge" style="display:none">0</span></a>
         <a onclick="showTab('music')" id="nav-music">🎵 Músicas</a>
+        <a onclick="showTab('games')" id="nav-games">🃏 Jogos</a>
         <a onclick="showTab('online')" id="nav-online">🌐 Online agora</a>
       </div>
     </div>
@@ -443,7 +554,7 @@
       <div id="tab-feed">
         <div class="card">
           <h3>🏠 nova postagem</h3>
-          <textarea class="stxt" id="postTxt" placeholder="O que você está pensando?" maxlength="500" oninput="updateCharCount('postTxt','postCharCount',500)"></textarea>
+          <textarea class="stxt" id="postTxt" placeholder="O que você está pensando? (Ctrl+Enter para postar)" maxlength="500" oninput="updateCharCount('postTxt','postCharCount',500)"></textarea>
           <div class="char-count" id="postCharCount">0/500</div>
           <div class="post-toolbar">
             <label class="file-btn" for="postImgInput">📷 Foto</label>
@@ -462,8 +573,13 @@
       <div id="tab-scraps" class="hidden">
         <div class="card">
           <h3>📩 escrever recado</h3>
-          <div class="target-sel"><select id="scrapTarget"><option value="">Para quem?</option></select></div>
-          <textarea class="stxt" id="scrapTxt" placeholder="Deixa um recado carinhoso..."></textarea>
+          <div class="target-sel"><select id="scrapTarget"><option value="">Para quem? (seus amigos)</option></select></div>
+          <div class="row-inp" style="margin-bottom:6px">
+            <input id="scrapAnyNick" placeholder="...ou digite qualquer nick" maxlength="20">
+            <button class="btn-s" style="white-space:nowrap" onclick="useAnyNickForScrap()">Usar</button>
+          </div>
+          <textarea class="stxt" id="scrapTxt" placeholder="Deixa um recado carinhoso..." maxlength="300" oninput="updateCharCount('scrapTxt','scrapCharCount',300)"></textarea>
+          <div class="char-count" id="scrapCharCount">0/300</div>
           <button class="btn-s" onclick="sendScrap()">Enviar recado ♥</button>
         </div>
         <div class="card"><h3>📬 mural de recados</h3><div id="scrapsWall"><div class="loading">Carregando...</div></div></div>
@@ -515,9 +631,16 @@
       <div id="tab-friends" class="hidden">
         <div class="card">
           <h3>👥 adicionar amigo</h3>
-          <div class="row-inp"><input id="friendInp" placeholder="nickname do amigo..." maxlength="20"><button class="btn-s" onclick="addFriend()">Adicionar</button></div>
+          <div class="row-inp">
+            <input id="friendInp" placeholder="nickname do amigo..." maxlength="20" oninput="searchUsers(this.value)">
+            <button class="btn-s" onclick="addFriend()">Adicionar</button>
+          </div>
+          <div id="friendSearchResults"></div>
         </div>
-        <div class="card"><h3>meus amigos</h3><div class="fgrid" id="fGrid"><div class="empty">Nenhum amigo ainda 😢</div></div></div>
+        <div class="card">
+          <h3>meus amigos <span id="friendCount" style="color:var(--muted);font-size:11px;font-weight:normal"></span></h3>
+          <div class="fgrid" id="fGrid"><div class="empty">Nenhum amigo ainda 😢</div></div>
+        </div>
       </div>
 
       <!-- COMMUNITIES -->
@@ -607,6 +730,9 @@
                 <div class="audio-progress-fill" id="audioProgressFill"></div>
               </div>
               <span class="audio-time" id="audioTime">0:00 / 0:00</span>
+              <input type="range" id="audioVol" min="0" max="1" step="0.05" value="1"
+                style="width:52px;accent-color:var(--pink);cursor:pointer;vertical-align:middle"
+                title="Volume" oninput="gAudio.volume=this.value">
             </div>
           </div>
           <div id="musicList"></div>
@@ -635,6 +761,40 @@
       <!-- ONLINE -->
       <div id="tab-online" class="hidden">
         <div class="card"><h3>🌐 online agora</h3><div id="onlineList"><div class="loading">Carregando...</div></div></div>
+      </div>
+
+      <!-- JOGOS -->
+      <div id="tab-games" class="hidden">
+        <div class="card">
+          <h3>🃏 jogos yakult</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <button class="btn-s" style="background:var(--blue);margin:0" onclick="startSolitaire()">🃏 Paciência (Klondike)</button>
+          </div>
+        </div>
+        <div id="solitaireGame" style="display:none">
+          <div class="card" style="padding:8px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+              <h3 style="margin:0;border:none;padding:0">🃏 Paciência</h3>
+              <span id="solScore" style="font-size:12px;color:var(--muted)">Pontos: 0</span>
+              <span id="solMoves" style="font-size:12px;color:var(--muted)">Movimentos: 0</span>
+              <button class="btn-s" style="margin:0;padding:3px 10px;font-size:11px" onclick="newSolitaireGame()">↺ Novo jogo</button>
+              <button class="btn-s" style="margin:0;padding:3px 10px;font-size:11px;background:var(--blue)" onclick="solAutoComplete()">⚡ Auto</button>
+            </div>
+            <div id="solBoard" style="overflow-x:auto;min-height:420px;user-select:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICAÇÕES -->
+      <div id="tab-notifications" class="hidden">
+        <div class="card">
+          <h3>🔔 notificações</h3>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button class="btn-s" style="margin:0;background:var(--blue);font-size:11px;padding:4px 12px" onclick="markAllNotifsRead()">✓ Marcar todas lidas</button>
+            <button class="btn-s" style="margin:0;background:#999;font-size:11px;padding:4px 12px" onclick="clearAllNotifs()">🗑️ Limpar tudo</button>
+          </div>
+          <div id="notifTabList"><div class="empty">Nenhuma notificação ainda 🔕</div></div>
+        </div>
       </div>
     </div>
 
@@ -666,6 +826,8 @@
   <div class="modal" style="width:280px;">
     <h3>Menu</h3>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+      <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();showTab('notifications')">🔔 Notificações</button>
+      <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();showTab('games')">🃏 Jogos</button>
       <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();showTab('communities')">🏘️ Comunidades</button>
       <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();showTab('online')">🌐 Online agora</button>
       <button class="btn-p" style="background:var(--blue)" onclick="closeMobileMenu();openEditProfile()">✏️ Editar perfil</button>
@@ -680,7 +842,13 @@
   <div class="modal">
     <h3>✏️ editar perfil</h3>
     <div class="ig"><label>nome de exibição</label><input id="editName" maxlength="30" placeholder="Seu nome"></div>
-    <div class="ig"><label>bio</label><textarea id="editBio" maxlength="100" placeholder="Fale um pouco sobre você..." style="height:60px;resize:none;"></textarea></div>
+    <div class="ig">
+      <label>bio <span id="editBioCount" style="font-size:10px;color:var(--muted)">0/100</span></label>
+      <textarea id="editBio" maxlength="100" placeholder="Fale um pouco sobre você..."
+        style="height:60px;resize:none;"
+        oninput="document.getElementById('editBioCount').textContent=this.value.length+'/100'"></textarea>
+    </div>
+    <div class="ig"><label>site / link (opcional)</label><input id="editSite" maxlength="80" placeholder="https://..."></div>
     <div class="modal-btns">
       <button class="cancel" onclick="closeEditProfile()">Cancelar</button>
       <button class="save" onclick="saveProfile()">Salvar</button>
@@ -688,21 +856,90 @@
   </div>
 </div>
 
-<!-- BOT ADM PANEL -->
-<button class="bot-toggle" id="botToggleBtn" onclick="toggleBot()" title="Bot ADM" style="display:none">🤖</button>
-<div id="botPanel">
-  <div class="bot-hdr">🤖 Bot ADM <button class="close-bot" onclick="toggleBot()">✕</button></div>
-  <div class="bot-log" id="botLog"><div style="color:var(--muted);text-align:center;padding:20px 0">Bot ativo. Monitorando mensagens...</div></div>
-  <div class="bot-controls">
-    <label>Palavras proibidas (separadas por vírgula):</label>
-    <input type="text" id="botBadWords" value="spam,xingamento,ódio,palavrao" placeholder="ex: spam,ofensa">
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-      <input type="checkbox" id="botAutoDelete" checked style="accent-color:var(--pink)">
-      Deletar automaticamente
-    </label>
-    <button class="btn-s" style="margin:0" onclick="clearBotLog()">Limpar log</button>
+<!-- PAINEL DE NOTIFICAÇÕES -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-hdr">
+    🔔 Notificações
+    <div style="display:flex;gap:6px">
+      <button onclick="markAllNotifsRead()">Marcar lidas</button>
+      <button onclick="toggleNotifPanel()">✕</button>
+    </div>
+  </div>
+  <div class="notif-list" id="notifList"><div class="notif-empty">Nenhuma notificação ainda 🔕</div></div>
+</div>
+
+<!-- MODAL PERFIL DE OUTRO USUÁRIO -->
+<div id="userProfileModal" class="modal-bg hidden">
+  <div class="profile-modal">
+    <div class="profile-modal-cover">
+      <div class="profile-modal-av" id="pmAv"></div>
+    </div>
+    <div class="profile-modal-body">
+      <div class="profile-modal-name" id="pmName"></div>
+      <div class="profile-modal-nick" id="pmNick"></div>
+      <div class="profile-modal-bio" id="pmBio"></div>
+      <div class="profile-modal-stats">
+        <div class="stat"><div class="stat-n" id="pmPosts">0</div><div class="stat-l">posts</div></div>
+        <div class="stat"><div class="stat-n" id="pmFriends">0</div><div class="stat-l">amigos</div></div>
+      </div>
+      <div class="profile-modal-actions" id="pmActions"></div>
+    </div>
+    <div style="text-align:center;padding:0 20px 16px">
+      <button class="btn-s" style="background:var(--blue);margin:0;width:100%" onclick="closeUserProfile()">Fechar</button>
+    </div>
   </div>
 </div>
+
+<!-- BOT ADM PANEL -->
+<button class="bot-toggle" id="botToggleBtn" onclick="toggleBot()" title="Painel ADM" style="display:none">🛡️</button>
+<div id="botPanel">
+  <div class="bot-hdr">🛡️ Painel ADM <button class="close-bot" onclick="toggleBot()">✕</button></div>
+  <div class="bot-log" id="botLog"><div style="color:var(--muted);text-align:center;padding:20px 0">Bot ativo. Monitorando mensagens...</div></div>
+  <div class="bot-controls">
+    <!-- Abas ADM -->
+    <div class="adm-panel-tab" id="admTabRow">
+      <button class="adm-tab-btn active" onclick="switchAdmTab('bot')">🤖 Bot</button>
+      <button class="adm-tab-btn" onclick="switchAdmTab('users')">👥 Usuários</button>
+      <button class="adm-tab-btn" onclick="switchAdmTab('stats')">📊 Stats</button>
+    </div>
+    <!-- Aba Bot -->
+    <div id="admTab-bot">
+      <label>Palavras proibidas (separadas por vírgula):</label>
+      <input type="text" id="botBadWords" value="spam,xingamento,ódio,palavrao" placeholder="ex: spam,ofensa">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px">
+        <input type="checkbox" id="botAutoDelete" checked style="accent-color:var(--pink)">
+        Deletar automaticamente
+      </label>
+      <button class="btn-s" style="margin:4px 0 0" onclick="clearBotLog()">Limpar log</button>
+    </div>
+    <!-- Aba Usuários -->
+    <div id="admTab-users" style="display:none">
+      <input type="text" id="admUserSearch" placeholder="Buscar usuário..." style="width:100%;margin-bottom:6px" oninput="admSearchUsers(this.value)">
+      <div id="admUserList" style="max-height:160px;overflow-y:auto"><div style="color:var(--muted);font-size:11px;text-align:center;padding:10px">Digite para buscar</div></div>
+    </div>
+    <!-- Aba Stats -->
+    <div id="admTab-stats" style="display:none">
+      <div class="adm-stats-grid" id="admStatsGrid">
+        <div class="adm-stat-card"><div class="n" id="admStatUsers">—</div><div class="l">usuários</div></div>
+        <div class="adm-stat-card"><div class="n" id="admStatPosts">—</div><div class="l">posts</div></div>
+        <div class="adm-stat-card"><div class="n" id="admStatScraps">—</div><div class="l">recados</div></div>
+      </div>
+      <button class="btn-s" style="margin:0;width:100%" onclick="loadAdmStats()">↺ Atualizar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAMADA DE VOZ OVERLAY -->
+<div id="callOverlay" class="call-overlay hidden">
+  <div class="call-box">
+    <div class="call-avatar" id="callAvatar"></div>
+    <div class="call-name" id="callPartnerName"></div>
+    <div class="call-status" id="callStatus"></div>
+    <div class="call-timer" id="callTimer" style="display:none"></div>
+    <div class="call-actions" id="callActions"></div>
+  </div>
+</div>
+<audio id="vcRemoteAudio" autoplay playsinline style="display:none"></audio>
 
 <div class="toast" id="toast"></div>
 
@@ -712,7 +949,9 @@ const SUPA_KEY='sb_publishable_INuIEt9LcnACogCJNZE4xg_3heVJ8cQ';
 const {createClient}=supabase;
 const sb=createClient(SUPA_URL,SUPA_KEY);
 
-let me=null,myFriends=[],channels=[],onlineInterval=null;
+let me=null,myFriends=[],channels=[],onlineInterval=null,feedRefreshInterval=null;
+let friendRequests=[]; // pedidos recebidos ainda pendentes
+let sentFriendRequests=new Set(); // pedidos que eu enviei
 let currentDmPartner=null,dmChannel=null,unreadCounts={};
 let postImgBase64=null;
 let musicFileBase64=null;
@@ -796,15 +1035,21 @@ async function doLogin(data){
   $('loginPage').classList.add('hidden');
   $('homePage').classList.remove('hidden');
   $('mobileNav').classList.remove('hidden');
+  $('topLogoutBtn').classList.remove('hidden');
+  $('notifBellBtn').classList.remove('hidden');
   $('topUser').textContent='👤 '+(me.display_name||me.nick);
   updateMyProfileUI();
   await sb.from('online').upsert({nick:me.nick,last_seen:new Date().toISOString()},{onConflict:'nick'});
   onlineInterval=setInterval(()=>sb.from('online').upsert({nick:me.nick,last_seen:new Date().toISOString()},{onConflict:'nick'}),20000);
+  feedRefreshInterval=setInterval(()=>{if(me)loadFeed();},60000);
   await loadAll();
   subscribeRealtime();
   vcStartGlobalListener();
-  // Bot ADM
-  if(me.nick==='kaua12345'){
+  loadNotifications();
+  // Bot ADM — verifica se é admin real do banco
+  const isAdmin = me.is_admin === true || me.nick === 'kaua12345';
+  if(isAdmin){
+    me._isAdmin = true;
     $('botToggleBtn').style.display='flex';
     subscribeBotChannel();
   }
@@ -835,10 +1080,12 @@ function updateMyProfileUI(){
 }
 
 async function logout(){
+  if(!confirm('Tem certeza que quer sair?'))return;
   channels.forEach(c=>sb.removeChannel(c));channels=[];
   if(dmChannel){sb.removeChannel(dmChannel);dmChannel=null;}
   if(typingChannel){sb.removeChannel(typingChannel);typingChannel=null;}
   clearInterval(onlineInterval);
+  clearInterval(feedRefreshInterval);
   if(me)await sb.from('online').delete().eq('nick',me.nick);
   gAudio.pause();gAudio.src='';
   $('audioPlayerUI').classList.add('hidden');
@@ -849,6 +1096,7 @@ async function logout(){
   $('homePage').classList.add('hidden');
   $('mobileNav').classList.add('hidden');
   $('loginPage').classList.remove('hidden');
+  $('topLogoutBtn').classList.add('hidden');
   $('topUser').textContent='';
 }
 
@@ -856,20 +1104,46 @@ async function logout(){
 function openEditProfile(){
   $('editName').value=me.display_name||me.nick;
   $('editBio').value=me.bio||'';
+  $('editSite').value=me.site||'';
+  $('editBioCount').textContent=(me.bio||'').length+'/100';
   $('editModal').classList.remove('hidden');
 }
 function closeEditProfile(){$('editModal').classList.add('hidden');}
 async function saveProfile(){
   const name=$('editName').value.trim();
   const bio=$('editBio').value.trim();
+  const site=$('editSite').value.trim();
   if(!name)return toast('Nome não pode ser vazio');
-  const{error}=await sb.from('users').update({display_name:name,bio}).eq('nick',me.nick);
+  const{error}=await sb.from('users').update({display_name:name,bio,site:site||null}).eq('nick',me.nick);
   if(error)return toast('Erro: '+error.message);
-  me.display_name=name;me.bio=bio;
+  me.display_name=name;me.bio=bio;me.site=site||null;
   updateMyProfileUI();
   $('topUser').textContent='👤 '+name;
   closeEditProfile();
   toast('Perfil atualizado! ✨');
+}
+
+function updateMyProfileUI(){
+  $('myName').textContent=me.display_name||me.nick;
+  $('myBio').textContent=me.bio||'';
+  // Site
+  const siteDiv=$('mySite');
+  if(me.site){
+    siteDiv.style.display='block';
+    $('mySiteTxt').textContent=me.site.replace(/^https?:\/\//,'');
+    $('mySiteLink').href=me.site.startsWith('http')?me.site:'https://'+me.site;
+  }else{
+    siteDiv.style.display='none';
+  }
+  if(me.photo){
+    $('myAvEmoji').style.display='none';
+    $('myAvImg').src=me.photo;
+    $('myAvImg').style.display='block';
+  } else {
+    $('myAvEmoji').textContent=avatarOf(me.nick);
+    $('myAvEmoji').style.display='';
+    $('myAvImg').style.display='none';
+  }
 }
 
 // ── FOTO DE PERFIL ──
@@ -887,6 +1161,9 @@ async function uploadAvatar(input){
 }
 
 // ── POSTAGENS ──
+let feedPage=0;
+const FEED_PAGE_SIZE=20;
+
 function previewPostImg(input){
   if(!input.files[0]){postImgBase64=null;$('postImgPreview').style.display='none';return;}
   if(input.files[0].size>3*1024*1024){toast('Imagem muito grande! Máx 3MB');input.value='';return;}
@@ -897,36 +1174,54 @@ function previewPostImg(input){
   });
 }
 
-async function loadFeed(){
-  const{data}=await sb.from('posts').select('*').order('created_at',{ascending:false}).limit(30);
-  allPosts=data||[];
-  renderFeed(allPosts);
+async function loadFeed(append=false){
+  if(!append)feedPage=0;
+  const from=feedPage*FEED_PAGE_SIZE;
+  const{data}=await sb.from('posts').select('*').order('created_at',{ascending:false}).range(from,from+FEED_PAGE_SIZE-1);
+  const posts=data||[];
+  if(!append){
+    allPosts=posts;
+    renderFeed(allPosts,posts.length===FEED_PAGE_SIZE);
+  } else {
+    allPosts=[...allPosts,...posts];
+    renderFeed(allPosts,posts.length===FEED_PAGE_SIZE);
+  }
   $('stPosts').textContent=allPosts.filter(p=>(p.author_nick||p.nick)===me.nick).length;
+}
+
+async function loadMoreFeed(){
+  feedPage++;
+  await loadFeed(true);
 }
 
 async function sendPost(){
   const text=$('postTxt').value.trim();
   if(!text&&!postImgBase64)return toast('Escreva algo ou adicione uma foto!');
+  const btn=document.querySelector('[onclick="sendPost()"]');
+  if(btn){btn.disabled=true;btn.textContent='Postando...';}
   const{error}=await sb.from('posts').insert({
     author_nick:me.nick,
     display_name:me.display_name||me.nick,
     author_photo:me.photo||null,
     content:esc(text),
-    image:postImgBase64||null,  // BUG CORRIGIDO: era postingBase64
+    image:postImgBase64||null,
     likes:[],
     created_at:new Date().toISOString()
   });
+  if(btn){btn.disabled=false;btn.textContent='Postar';}
   if(error)return toast('Erro: '+error.message);
   $('postTxt').value='';
+  updateCharCount('postTxt','postCharCount',500);
   postImgBase64=null;
   $('postImgPreview').style.display='none';
   $('postImgInput').value='';
   toast('Postagem publicada! 🎉');
 }
 
-function renderFeed(posts){
+function renderFeed(posts,hasMore=false){
   const w=$('feedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda. Seja o primeiro! 🌟</div>';return;}
+  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
   w.innerHTML=posts.map(p=>{
     const nick=p.author_nick||p.nick||'?';
     const photo=p.author_photo||p.photo||null;
@@ -934,22 +1229,23 @@ function renderFeed(posts){
     const content=p.content||p.text||'';
     const likes=Array.isArray(p.likes)?p.likes:[];
     const liked=likes.includes(me.nick);
+    const likesStr=JSON.stringify(likes).replace(/"/g,'&quot;');
     return`<div class="post-item" id="post-${p.id}">
       <div class="post-hdr">
-        ${avHtml(nick,photo,32)}
+        <div onclick="showUserProfile('${esc(nick)}')" style="cursor:pointer">${avHtml(nick,photo,32)}</div>
         <div>
-          <div class="post-nick">${esc(name)}</div>
+          <div class="clickable-nick" onclick="showUserProfile('${esc(nick)}')">${esc(name)}</div>
           <div style="font-size:10px;color:var(--muted)">@${esc(nick)}</div>
         </div>
         <span class="post-time">${timeAgo(p.created_at)}</span>
       </div>
       ${content?`<div class="post-txt">${content}</div>`:''}
-      ${p.image?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
+      ${p.image?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
       <div class="post-actions">
         <button class="post-btn ${liked?'liked':''}" onclick="toggleLike('${p.id}',${JSON.stringify(likes)})">♥ ${likes.length}${liked?' curtido':' curtir'}</button>
         <button class="post-btn" onclick="toggleComments('${p.id}')">💬 comentar</button>
         <button class="post-btn" onclick="sharePost('${p.id}','${esc(name).replace(/'/g,"\\'")}','${(p.content||p.text||'').replace(/'/g,"\\'").replace(/\n/g,' ').substring(0,80)}')" title="Compartilhar">↗ share</button>
-        ${me.nick==='kaua12345'?`<button class="post-btn delete-own" onclick="adminDeletePost('${p.id}')">🗑️ apagar</button>`:(nick===me.nick?`<button class="post-btn delete-own" onclick="deleteOwnPost('${p.id}')">🗑️</button>`:'')}
+        ${isAdmin&&nick!==me.nick?`<button class="post-btn delete-own" onclick="adminDeletePost('${p.id}')">🗑️ adm</button>`:(nick===me.nick?`<button class="post-btn delete-own" onclick="deleteOwnPost('${p.id}')">🗑️</button>`:'')}
       </div>
       <div id="comments-${p.id}" class="post-comments hidden">
         <div id="comments-list-${p.id}"><div class="loading" style="padding:6px">Carregando...</div></div>
@@ -963,6 +1259,11 @@ function renderFeed(posts){
       </div>
     </div>`;
   }).join('');
+  if(hasMore){
+    w.innerHTML+=`<div style="text-align:center;padding:14px 0">
+      <button class="btn-s" style="background:var(--blue);padding:7px 22px;font-size:12px" onclick="loadMoreFeed()">⬇ Carregar mais</button>
+    </div>`;
+  }
 }
 
 // Guarda b64 temporário por postId
@@ -991,7 +1292,19 @@ async function toggleLike(postId,currentLikes){
   const idx=currentLikes.indexOf(me.nick);
   const newLikes=idx>=0?currentLikes.filter(n=>n!==me.nick):[...currentLikes,me.nick];
   await sb.from('posts').update({likes:newLikes}).eq('id',postId);
-  loadFeed();
+  // Atualizar botão localmente sem recarregar tudo
+  const post=allPosts.find(p=>p.id===postId);
+  if(post){
+    post.likes=newLikes;
+    const btn=document.querySelector(`#post-${postId} .post-btn.liked, #post-${postId} .post-btn:not(.liked)`);
+    const allBtns=document.querySelectorAll(`#post-${postId} .post-actions .post-btn`);
+    if(allBtns[0]){
+      const liked2=newLikes.includes(me.nick);
+      allBtns[0].className='post-btn'+(liked2?' liked':'');
+      allBtns[0].textContent=`♥ ${newLikes.length}${liked2?' curtido':' curtir'}`;
+      allBtns[0].setAttribute('onclick',`toggleLike('${postId}',${JSON.stringify(newLikes)})`);
+    }
+  }
 }
 
 async function toggleComments(postId){
@@ -1038,18 +1351,64 @@ async function loadScraps(){
   const{data}=await sb.from('scraps').select('*').order('created_at',{ascending:false}).limit(40);
   renderScraps(data||[]);
 }
+
+async function useAnyNickForScrap(){
+  const nick=$('scrapAnyNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  if(!nick)return toast('Digite um nickname');
+  if(nick===me.nick)return toast('Você não pode mandar recado pra si mesmo!');
+  const{data}=await sb.from('users').select('nick,display_name').eq('nick',nick).maybeSingle();
+  if(!data)return toast('Usuário "'+nick+'" não encontrado');
+  // Adicionar/selecionar no select
+  const sel=$('scrapTarget');
+  let opt=sel.querySelector('option[value="'+nick+'"]');
+  if(!opt){
+    opt=document.createElement('option');
+    opt.value=nick;
+    opt.textContent=(data.display_name||nick)+' (@'+nick+')';
+    sel.appendChild(opt);
+  }
+  sel.value=nick;
+  $('scrapAnyNick').value='';
+  toast('Destinatário: @'+nick+' ✓');
+}
+
 async function sendScrap(){
   const to=$('scrapTarget').value,text=$('scrapTxt').value.trim();
-  if(!to)return toast('Selecione para quem enviar!');
+  if(!to)return toast('Selecione ou busque para quem enviar!');
   if(!text)return toast('Escreva algo no recado!');
   const{error}=await sb.from('scraps').insert({from_nick:me.nick,to_nick:to,text:esc(text)});
   if(error)return toast('Erro: '+error.message);
-  $('scrapTxt').value='';toast('Recado enviado para '+to+' ♥');
+  $('scrapTxt').value='';
+  updateCharCount('scrapTxt','scrapCharCount',300);
+  toast('Recado enviado para @'+to+' ♥');
+  loadScraps();
 }
 function renderScraps(scraps){
   const w=$('scrapsWall');
   if(!scraps.length){w.innerHTML='<div class="empty">Nenhum recado ainda 📝</div>';return;}
-  w.innerHTML=scraps.map(s=>`<div class="scrap-item" id="scrap-${s.id}"><div class="scrap-hdr"><div><span class="scrap-from">${esc(s.from_nick)}</span><span class="scrap-arr">→</span><span class="scrap-to">${esc(s.to_nick)}</span></div><div style="display:flex;align-items:center;gap:8px"><span class="scrap-time">${timeAgo(s.created_at)}</span>${me&&me.nick==='kaua12345'?`<button class="post-btn" style="color:#c00;font-size:11px;padding:1px 6px" onclick="adminDeleteScrap('${s.id}')">🗑️</button>`:''}</div></div><div class="scrap-txt">${s.text}</div></div>`).join('');
+  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
+  w.innerHTML=scraps.map(s=>`
+    <div class="scrap-item" id="scrap-${s.id}">
+      <div class="scrap-hdr">
+        <div>
+          <span class="clickable-nick" onclick="showUserProfile('${esc(s.from_nick)}')">${esc(s.from_nick)}</span>
+          <span class="scrap-arr">→</span>
+          <span class="clickable-nick scrap-to" onclick="showUserProfile('${esc(s.to_nick)}')">${esc(s.to_nick)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="scrap-time">${timeAgo(s.created_at)}</span>
+          ${s.from_nick===me.nick?`<button class="post-btn" style="color:#c00;font-size:11px;padding:1px 6px" onclick="deleteOwnScrap('${s.id}')" title="Apagar meu recado">🗑️</button>`:''}
+          ${isAdmin&&s.from_nick!==me.nick?`<button class="post-btn" style="color:#c00;font-size:11px;padding:1px 6px" onclick="adminDeleteScrap('${s.id}')">🗑️ adm</button>`:''}
+        </div>
+      </div>
+      <div class="scrap-txt">${esc(s.text)}</div>
+    </div>`).join('');
+}
+
+async function deleteOwnScrap(id){
+  if(!confirm('Apagar seu recado?'))return;
+  await sb.from('scraps').delete().eq('id',id).eq('from_nick',me.nick);
+  toast('Recado apagado 🗑️');loadScraps();
 }
 
 async function adminDeletePost(id){
@@ -1080,13 +1439,17 @@ function renderMusicList(tracks){
     const hasAudio=!!m.audio_data;
     const isCur=currentTrackIdx>=0&&playlist[currentTrackIdx]&&playlist[currentTrackIdx].id===m.id;
     const isPlay=isCur&&!gAudio.paused;
+    const canDelete=me&&(m.added_by===me.nick||me.nick==='kaua12345');
     return`<div class="music-item" id="mitem-${m.id}">
       <div class="music-icon">${hasAudio?'🎵':'📝'}</div>
       <div class="music-info">
         <div class="music-title">${esc(m.title)}</div>
         <div class="music-artist">${esc(m.artist)}${m.added_by?' · por '+esc(m.added_by):''}</div>
       </div>
-      ${hasAudio?`<button class="music-play${isCur?' playing':''}" id="playbtn-${m.id}" onclick="playTrackById('${m.id}')">${isPlay?'⏸ pausar':'▶ ouvir'}</button>`:`<span style="font-size:10px;color:var(--muted)">sem áudio</span>`}
+      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+        ${hasAudio?`<button class="music-play${isCur?' playing':''}" id="playbtn-${m.id}" onclick="playTrackById('${m.id}')">${isPlay?'⏸':'▶'}</button>`:`<span style="font-size:10px;color:var(--muted)">sem áudio</span>`}
+        ${canDelete?`<button onclick="deleteMusic('${m.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px" title="Remover">🗑️</button>`:''}
+      </div>
     </div>`;
   }).join('');
   const commEl=$('communityMusicList');
@@ -1101,7 +1464,7 @@ function refreshPlayButtons(){
     const id=btn.id.replace('playbtn-','');
     const isCur=id===String(cur.id);
     btn.classList.toggle('playing',isCur);
-    btn.textContent=isCur&&!gAudio.paused?'⏸ pausar':'▶ ouvir';
+    btn.textContent=isCur&&!gAudio.paused?'⏸':'▶';
   });
   $('playPauseBtn').textContent=gAudio.paused?'▶':'⏸';
 }
@@ -1206,6 +1569,20 @@ async function addMusic(){
   toast('Música adicionada! 🎵');
 }
 
+async function deleteMusic(id){
+  if(!confirm('Remover esta música?'))return;
+  // Se estiver tocando, parar
+  if(playlist[currentTrackIdx]&&String(playlist[currentTrackIdx].id)===String(id)){
+    gAudio.pause();gAudio.src='';
+    $('audioPlayerUI').classList.add('hidden');
+    $('nowPlayingCard').style.display='none';
+    currentTrackIdx=-1;
+  }
+  await sb.from('music').delete().eq('id',id);
+  toast('Música removida 🗑️');
+  await loadCommunityMusic();
+}
+
 // ── DM ──
 async function loadDmUnread(){
   const{data}=await sb.from('dms').select('from_nick').eq('to_nick',me.nick).eq('read',false);
@@ -1216,12 +1593,16 @@ async function loadDmUnread(){
 function updateDmBadge(){
   const total=Object.values(unreadCounts).reduce((a,b)=>a+b,0);
   const badge=$('dmBadge');const mbadge=$('mDmBadge');
+  if(!badge||!mbadge)return;
   if(total>0){
     badge.textContent=total;badge.classList.remove('hidden');
     mbadge.textContent=total;mbadge.classList.remove('hidden');
   } else {
     badge.classList.add('hidden');mbadge.classList.add('hidden');
   }
+  // Título dinâmico
+  const totalNotif=total+scrapUnread;
+  document.title=totalNotif>0?`(${totalNotif}) Yakult.br`:'Yakult.br';
 }
 async function loadDmList(){
   const{data:sent}=await sb.from('dms').select('to_nick,text,created_at').eq('from_nick',me.nick).order('created_at',{ascending:false});
@@ -1232,7 +1613,25 @@ async function loadDmList(){
   const convs=Object.values(convMap).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
   const el=$('dmList');
   if(!convs.length){el.innerHTML='<div class="empty">Nenhuma conversa ainda</div>';return;}
-  el.innerHTML=convs.map(c=>`<div class="dm-conv" onclick="openDmConv('${esc(c.partner)}')"><div class="dm-av">${avatarOf(c.partner)}</div><div class="dm-info"><div class="dm-nick">${esc(c.partner)}</div><div class="dm-preview">${esc(c.preview)}</div></div><div class="dm-meta"><span class="dm-time">${timeAgo(c.ts)}</span>${c.unread>0?`<span class="dm-unread">${c.unread}</span>`:''}</div></div>`).join('');
+  // Buscar fotos e nomes dos parceiros
+  const partners=convs.map(c=>c.partner);
+  const{data:usersData}=await sb.from('users').select('nick,photo,display_name').in('nick',partners.length?partners:['__none__']);
+  const uMap={};(usersData||[]).forEach(u=>{uMap[u.nick]={photo:u.photo,name:u.display_name||u.nick};});
+  el.innerHTML=convs.map(c=>{
+    const u=uMap[c.partner]||{};
+    const preview=c.preview?c.preview.substring(0,40)+(c.preview.length>40?'…':''):'[mídia]';
+    return`<div class="dm-conv" onclick="openDmConv('${esc(c.partner)}')">
+      <div class="dm-av">${avHtml(c.partner,u.photo||null,36)}</div>
+      <div class="dm-info">
+        <div class="dm-nick">${esc(u.name||c.partner)}</div>
+        <div class="dm-preview">${esc(preview)}</div>
+      </div>
+      <div class="dm-meta">
+        <span class="dm-time">${timeAgo(c.ts)}</span>
+        ${c.unread>0?`<span class="dm-unread">${c.unread}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 async function openDmWith(){
   const nick=$('dmNewNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
@@ -1245,7 +1644,10 @@ async function openDmWith(){
 async function openDmConv(partner){
   currentDmPartner=partner;
   $('dmConvList').classList.add('hidden');$('dmChatWindow').classList.remove('hidden');
-  $('dmChatAv').innerHTML=avatarOf(partner);$('dmChatName').textContent=partner;
+  // Buscar foto e nome do parceiro para o cabeçalho
+  const{data:pData}=await sb.from('users').select('nick,photo,display_name').eq('nick',partner).maybeSingle();
+  $('dmChatAv').innerHTML=avHtml(partner,pData?.photo||null,32);
+  $('dmChatName').textContent=pData?.display_name||partner;
   await sb.from('dms').update({read:true}).eq('to_nick',me.nick).eq('from_nick',partner);
   delete unreadCounts[partner];updateDmBadge();
   await loadDmMessages();subscribeDmChannel();subscribeTyping(partner);
@@ -1339,8 +1741,11 @@ async function sendDm(){
   const text=$('dmInput').value.trim();
   if((!text&&!dmMediaB64)||!currentDmPartner)return;
   const key=dmKey(me.nick,currentDmPartner);
-  const{error}=await sb.from('dms').insert({from_nick:me.nick,to_nick:currentDmPartner,text:esc(text||''),conv_key:key,read:false,media_data:dmMediaB64||null,media_type:dmMediaType||null});
   $('dmInput').value='';
+  const sendBtn=document.querySelector('[onclick="sendDm()"]');
+  if(sendBtn){sendBtn.disabled=true;}
+  const{error}=await sb.from('dms').insert({from_nick:me.nick,to_nick:currentDmPartner,text:esc(text||''),conv_key:key,read:false,media_data:dmMediaB64||null,media_type:dmMediaType||null});
+  if(sendBtn){sendBtn.disabled=false;}
   clearDmMedia();
   if(!error)loadDmMessages();
 }
@@ -1359,29 +1764,151 @@ async function loadFriends(){
   myFriends=(data||[]).map(r=>r.friend_nick);
   await renderFriends();populateTarget();
   $('stFriends').textContent=myFriends.length;
+  const fc=$('friendCount');if(fc)fc.textContent='('+myFriends.length+')';
 }
 async function addFriend(){
   const nick=$('friendInp').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   if(!nick)return toast('Digite um nickname');
+  await sendFriendRequest(nick);
+  $('friendInp').value='';
+  $('friendSearchResults').innerHTML='';
+}
+
+// ── SISTEMA DE PEDIDOS DE AMIZADE ──
+async function sendFriendRequest(nick){
+  if(!nick)return toast('Digite um nickname');
   if(nick===me.nick)return toast('Você não pode se adicionar!');
   if(myFriends.includes(nick))return toast(nick+' já é seu amigo!');
+  if(sentFriendRequests.has(nick))return toast('Pedido já enviado para '+nick+'!');
   const{data}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
   if(!data)return toast('Usuário "'+nick+'" não encontrado');
-  await sb.from('friends').upsert([{nick:me.nick,friend_nick:nick},{nick,friend_nick:me.nick}],{onConflict:'nick,friend_nick',ignoreDuplicates:true});
-  $('friendInp').value='';await loadFriends();toast(nick+' adicionado! 👋');
+  // Verificar se já tem pedido pendente desse nick para mim (aceita direto)
+  const pending=friendRequests.find(r=>r.from_nick===nick);
+  if(pending){
+    await acceptFriendRequest(nick);
+    return;
+  }
+  // Inserir na tabela friend_requests
+  const{error}=await sb.from('friend_requests').insert({from_nick:me.nick,to_nick:nick,status:'pending'}).select().maybeSingle().catch(()=>({error:null}));
+  if(error&&!error.message.includes('duplicate'))return toast('Erro: '+error.message);
+  sentFriendRequests.add(nick);
+  toast('Pedido de amizade enviado para @'+nick+' 💌');
+}
+
+async function acceptFriendRequest(fromNick){
+  await sb.from('friends').upsert([
+    {nick:me.nick,friend_nick:fromNick},
+    {nick:fromNick,friend_nick:me.nick}
+  ],{onConflict:'nick,friend_nick',ignoreDuplicates:true});
+  await sb.from('friend_requests').delete().eq('from_nick',fromNick).eq('to_nick',me.nick);
+  friendRequests=friendRequests.filter(r=>r.from_nick!==fromNick);
+  await loadFriends();
+  toast('@'+fromNick+' agora é seu amigo! 🎉');
+  renderNotifTab();
+}
+
+async function rejectFriendRequest(fromNick){
+  await sb.from('friend_requests').delete().eq('from_nick',fromNick).eq('to_nick',me.nick);
+  friendRequests=friendRequests.filter(r=>r.from_nick!==fromNick);
+  renderNotifTab();
+  toast('Pedido de @'+fromNick+' recusado.');
+}
+
+async function loadFriendRequests(){
+  if(!me)return;
+  const{data}=await sb.from('friend_requests').select('*').eq('to_nick',me.nick).eq('status','pending');
+  friendRequests=data||[];
+  // Também carregar pedidos que eu enviei
+  const{data:sent}=await sb.from('friend_requests').select('to_nick').eq('from_nick',me.nick).eq('status','pending');
+  sentFriendRequests=new Set((sent||[]).map(r=>r.to_nick));
+  // Adicionar às notificações
+  friendRequests.forEach(r=>{
+    const exists=notifications.find(n=>n.type==='friend_req'&&n.nick===r.from_nick);
+    if(!exists){
+      addNotifSilent('friend_req','👋 @'+r.from_nick+' quer ser seu amigo!',r.from_nick);
+    }
+  });
+  updateNotifBadge();
+  renderNotifTab();
+  renderNotifPanel();
+  // Atualizar badge de pedidos
+  const fReqBadge=$('friendReqBadge');
+  if(fReqBadge){
+    fReqBadge.textContent=friendRequests.length;
+    fReqBadge.style.display=friendRequests.length>0?'inline-block':'none';
+  }
+}
+
+// Adicionar notificação silenciosamente (sem incrementar contador se já existe)
+function addNotifSilent(type,text,nick=''){
+  const n={id:Date.now()+Math.random(),type,text,nick,time:new Date().toISOString(),read:false};
+  notifications.unshift(n);
+  if(notifications.length>50)notifications=notifications.slice(0,50);
+  notifUnread++;
+  try{localStorage.setItem('yk_notifs_'+me.nick,JSON.stringify(notifications.slice(0,30)));}catch(e){}
+}
+
+let friendSearchTimer=null;
+async function searchUsers(q){
+  const res=$('friendSearchResults');
+  if(!res)return;
+  if(!q||q.length<2){res.innerHTML='';return;}
+  clearTimeout(friendSearchTimer);
+  friendSearchTimer=setTimeout(async()=>{
+    const{data}=await sb.from('users').select('nick,display_name,photo').ilike('nick','%'+q+'%').limit(6);
+    if(!data||!data.length){res.innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0">Nenhum usuário encontrado</div>';return;}
+    res.innerHTML=data.filter(u=>u.nick!==me.nick).map(u=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+        ${avHtml(u.nick,u.photo,28)}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:bold;color:var(--blue-dark)">${esc(u.display_name||u.nick)}</div>
+          <div style="font-size:10px;color:var(--muted)">@${esc(u.nick)}</div>
+        </div>
+        ${myFriends.includes(u.nick)
+          ?'<span style="font-size:10px;color:#2a9d2a">✓ amigo</span>'
+          :`<button class="btn-s" style="margin:0;padding:3px 10px;font-size:11px" onclick="quickAddFriend('${esc(u.nick)}')">+ Adicionar</button>`}
+      </div>`).join('');
+  },350);
+}
+
+async function quickAddFriend(nick){
+  await sendFriendRequest(nick);
+  searchUsers($('friendInp').value);
 }
 async function renderFriends(){
   const{data:od}=await sb.from('online').select('nick').gte('last_seen',new Date(Date.now()-60000).toISOString());
   const os=new Set((od||[]).map(r=>r.nick));
   const{data:usersData}=await sb.from('users').select('nick,photo,display_name').in('nick',myFriends.length?myFriends:['__none__']);
   const photoMap={};(usersData||[]).forEach(u=>{photoMap[u.nick]={photo:u.photo,name:u.display_name||u.nick};});
-  const html=myFriends.length?myFriends.map(f=>`<div class="fcard" onclick="startDmFriend('${esc(f)}')" title="Mandar DM">${avHtml(f,photoMap[f]?.photo,50)}<div class="fname">${esc(photoMap[f]?.name||f)}</div><div class="fstatus ${os.has(f)?'on':'off'}">${os.has(f)?'● online':'○ offline'}</div></div>`).join(''):'<div class="empty">Nenhum amigo ainda 😢</div>';
+  const html=myFriends.length?myFriends.map(f=>`<div class="fcard" title="${esc(photoMap[f]?.name||f)}">
+    <div onclick="showUserProfile('${esc(f)}')">${avHtml(f,photoMap[f]?.photo,50)}</div>
+    <div class="fname" onclick="showUserProfile('${esc(f)}')">${esc(photoMap[f]?.name||f)}</div>
+    <div class="fstatus ${os.has(f)?'on':'off'}">${os.has(f)?'● online':'○ offline'}</div>
+    <button onclick="removeFriend('${esc(f)}')" style="margin-top:3px;background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:1px 4px;border-radius:3px" title="Remover amigo">✕</button>
+  </div>`).join(''):'<div class="empty">Nenhum amigo ainda 😢</div>';
   $('fGrid').innerHTML=html;$('fGridSide').innerHTML=html;
 }
 function startDmFriend(nick){showTab('dm');setTimeout(()=>openDmConv(nick),100);}
+async function removeFriend(nick){
+  if(!confirm('Remover '+nick+' da sua lista de amigos?'))return;
+  await sb.from('friends').delete().eq('nick',me.nick).eq('friend_nick',nick);
+  await sb.from('friends').delete().eq('nick',nick).eq('friend_nick',me.nick);
+  await loadFriends();toast(nick+' removido dos amigos');
+}
 function populateTarget(){
-  const sel=$('scrapTarget');sel.innerHTML='<option value="">Para quem?</option>';
-  myFriends.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+  const sel=$('scrapTarget');
+  sel.innerHTML='<option value="">Para quem? (seus amigos)</option>';
+  // Buscar nomes dos amigos para exibir melhor
+  if(!myFriends.length)return;
+  sb.from('users').select('nick,display_name').in('nick',myFriends).then(({data})=>{
+    const names={};(data||[]).forEach(u=>{names[u.nick]=u.display_name||u.nick;});
+    myFriends.forEach(f=>{
+      const o=document.createElement('option');
+      o.value=f;
+      o.textContent=names[f]?`${names[f]} (@${f})`:f;
+      sel.appendChild(o);
+    });
+  });
 }
 
 // ── COMUNIDADES ──
@@ -1410,7 +1937,9 @@ function renderCommunities(comms){
     <div class="comm-info"><div class="comm-name">${esc(c.name)}</div><div class="comm-members">${c.member_count||1} membro(s) · por ${esc(c.creator)}</div></div>
     <button class="btn-s" style="margin:0;padding:4px 10px;font-size:12px" onclick="openCommRoom('${c.id}','${esc(c.name).replace(/'/g,"\\'")}','${c.emoji||'🌐'}')">Entrar →</button>
   </div>`).join('');
-  $('stComms').textContent=comms.length;
+  // Contar comunidades criadas pelo usuário
+  const myCommsCount=comms.filter(c=>c.creator===me.nick).length;
+  $('stComms').textContent=myCommsCount;
 }
 
 // ── SALA DA COMUNIDADE ──
@@ -1469,12 +1998,12 @@ function renderCommChat(msgs){
         :m.media_type.startsWith('audio')?`<audio src="${m.media_data}" controls></audio>`
         :''
       :'';
-    const isAdm=me.nick==='kaua12345';
+    const isAdm=me&&(me._isAdmin||me.nick==='kaua12345');
     return`<div class="cmsg ${isMine?'mine':'theirs'}">
-      ${!isMine?`<div class="cmsg-nick">${esc(m.display_name||m.nick)}</div>`:''}
+      ${!isMine?`<div class="cmsg-nick clickable-nick" onclick="showUserProfile('${esc(m.nick)}')">${esc(m.display_name||m.nick)}</div>`:''}
       <div class="cmsg-bubble">
         ${m.text?esc(m.text):''}${mediaHtml}
-        <div class="cmsg-time">${timeAgo(m.created_at)}${isAdm?` <button class="cmsg-del" onclick="adminDeleteChatMsg('${m.id}')">🗑️</button>`:''}</div>
+        <div class="cmsg-time">${timeAgo(m.created_at)}${isAdm?` <button class="cmsg-del" onclick="adminDeleteChatMsg('${m.id}')">🗑️</button>`:isMine?` <button class="cmsg-del" onclick="adminDeleteChatMsg('${m.id}')">🗑️</button>`:''}</div>
       </div>
     </div>`;
   }).join('');
@@ -1762,24 +2291,25 @@ async function sendCommPost(){
 function renderCommFeed(posts){
   const w=$('commFeedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda nesta comunidade! 🌟</div>';return;}
+  const isAdmin=me&&(me._isAdmin||me.nick==='kaua12345');
   w.innerHTML=posts.map(p=>{
     const likes=Array.isArray(p.likes)?p.likes:[];
     const liked=likes.includes(me.nick);
     return`<div class="post-item" id="cpost-${p.id}">
     <div class="post-hdr">
-      ${avHtml(p.author_nick,p.author_photo,32)}
-      <div><div class="post-nick">${esc(p.display_name||p.author_nick)}</div><div style="font-size:10px;color:var(--muted)">@${esc(p.author_nick)}</div></div>
+      <div onclick="showUserProfile('${esc(p.author_nick)}')" style="cursor:pointer">${avHtml(p.author_nick,p.author_photo,32)}</div>
+      <div><div class="clickable-nick" onclick="showUserProfile('${esc(p.author_nick)}')">${esc(p.display_name||p.author_nick)}</div><div style="font-size:10px;color:var(--muted)">@${esc(p.author_nick)}</div></div>
       <span class="post-time">${timeAgo(p.created_at)}</span>
     </div>
     ${p.content?`<div class="post-txt">${p.content}</div>`:''}
     ${p.image&&p.media_type==='video'?`<video class="post-img" src="${p.image}" controls style="max-height:260px"></video>`:''}
     ${p.image&&p.media_type==='audio'?`<audio src="${p.image}" controls style="width:100%;margin-bottom:6px"></audio>`:''}
-    ${p.image&&p.media_type==='image'?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
-    ${p.image&&!p.media_type?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight?'':'none'">`:''}
+    ${p.image&&p.media_type==='image'?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
+    ${p.image&&!p.media_type?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
     <div class="post-actions">
       <button class="post-btn ${liked?'liked':''}" onclick="toggleCommLike('${p.id}',${JSON.stringify(likes)})">♥ ${likes.length}${liked?' curtido':' curtir'}</button>
       <button class="post-btn" onclick="toggleCommComments('${p.id}')">💬 comentar</button>
-      ${me.nick==='kaua12345'?`<button class="post-btn delete-own" onclick="adminDeleteCommPost('${p.id}')">🗑️ apagar</button>`:(p.author_nick===me.nick?`<button class="post-btn delete-own" onclick="deleteOwnCommPost('${p.id}')">🗑️</button>`:'')}
+      ${isAdmin&&p.author_nick!==me.nick?`<button class="post-btn delete-own" onclick="adminDeleteCommPost('${p.id}')">🗑️ apagar</button>`:(p.author_nick===me.nick?`<button class="post-btn delete-own" onclick="deleteOwnCommPost('${p.id}')">🗑️</button>`:'')}
     </div>
     <div id="ccomments-${p.id}" class="post-comments hidden">
       <div id="ccomments-list-${p.id}"><div class="loading" style="padding:6px">Carregando...</div></div>
@@ -1802,7 +2332,14 @@ async function toggleCommLike(postId,currentLikes){
   const idx=currentLikes.indexOf(me.nick);
   const newLikes=idx>=0?currentLikes.filter(n=>n!==me.nick):[...currentLikes,me.nick];
   await sb.from('community_posts').update({likes:newLikes}).eq('id',postId);
-  loadCommFeed();
+  // Atualizar botão localmente
+  const allBtns=document.querySelectorAll(`#cpost-${postId} .post-actions .post-btn`);
+  if(allBtns[0]){
+    const liked=newLikes.includes(me.nick);
+    allBtns[0].className='post-btn'+(liked?' liked':'');
+    allBtns[0].textContent=`♥ ${newLikes.length}${liked?' curtido':' curtir'}`;
+    allBtns[0].setAttribute('onclick',`toggleCommLike('${postId}',${JSON.stringify(newLikes)})`);
+  }
 }
 
 async function toggleCommComments(postId){
@@ -1902,6 +2439,23 @@ async function adminDeleteCommPost(id){
 // alter publication supabase_realtime add table public.community_post_comments;
 //
 // ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// ⚠️  EXECUTE TAMBÉM NO SUPABASE → SQL Editor:
+//
+// -- Tabela de pedidos de amizade
+// create table if not exists public.friend_requests (
+//   id uuid primary key default gen_random_uuid(),
+//   from_nick text not null,
+//   to_nick text not null,
+//   status text default 'pending',
+//   created_at timestamptz default now(),
+//   unique(from_nick, to_nick)
+// );
+// alter table public.friend_requests enable row level security;
+// create policy "allow all friend_requests" on public.friend_requests for all using (true) with check (true);
+// alter publication supabase_realtime add table public.friend_requests;
+//
+// ══════════════════════════════════════════════════════════════════
 const BOT_ADMIN='kaua12345';
 function toggleBot(){
   const p=$('botPanel');
@@ -1944,7 +2498,7 @@ function botScanMessage(msg){
 // Escutar TODAS as msgs do grupo ativo para o bot
 function subscribeBotChannel(){
   sb.channel('bot-monitor').on('postgres_changes',{event:'INSERT',schema:'public',table:'community_chat'},payload=>{
-    if(me&&me.nick===BOT_ADMIN)botScanMessage(payload.new);
+    if(me&&(me._isAdmin||me.nick===BOT_ADMIN))botScanMessage(payload.new);
   }).subscribe();
 }
 
@@ -1954,12 +2508,22 @@ async function loadOnline(){
   const{data}=await sb.from('online').select('nick,last_seen').gte('last_seen',cutoff);
   const users=data||[];
   $('onlineTop').textContent='● '+users.length+' online';
-  const html=users.length?users.map(u=>`<div class="online-user"><div class="odot"></div><span class="oname">${avatarOf(u.nick)} ${esc(u.nick)}</span></div>`).join(''):'<div class="empty">Ninguém online agora 😴</div>';
+  const html=users.length
+    ?users.map(u=>`<div class="online-user">
+        <div class="odot"></div>
+        <span class="oname" style="cursor:pointer;flex:1" onclick="showTab('dm');setTimeout(()=>openDmConv('${esc(u.nick)}'),120)" title="Mandar DM">
+          ${avatarOf(u.nick)} ${esc(u.nick)}
+        </span>
+        ${u.nick!==me.nick?`<button onclick="showTab('dm');setTimeout(()=>openDmConv('${esc(u.nick)}'),120)"
+          style="background:none;border:1px solid var(--border);color:var(--blue);border-radius:8px;padding:2px 7px;font-size:10px;cursor:pointer">
+          💬</button>`:''}
+      </div>`).join('')
+    :'<div class="empty">Ninguém online agora 😴</div>';
   $('onlineList').innerHTML=html;
-  $('onlineSide').innerHTML=users.slice(0,5).map(u=>`<div class="online-user"><div class="odot"></div><span class="oname">${esc(u.nick)}</span></div>`).join('')||'<div class="empty">Ninguém 😴</div>';
+  $('onlineSide').innerHTML=users.slice(0,6).map(u=>`<div class="online-user"><div class="odot"></div><span class="oname" style="cursor:pointer" onclick="showTab('dm');setTimeout(()=>openDmConv('${esc(u.nick)}'),120)">${esc(u.nick)}</span></div>`).join('')||'<div class="empty">Ninguém 😴</div>';
 }
 
-async function loadAll(){await Promise.all([loadFriends(),loadFeed(),loadScraps(),loadCommunities(),loadOnline(),loadDmUnread()]);}
+async function loadAll(){await Promise.all([loadFriends(),loadFeed(),loadScraps(),loadCommunities(),loadOnline(),loadDmUnread(),loadFriendRequests()]);}
 
 // ── REALTIME ──
 function subscribeRealtime(){
@@ -1968,6 +2532,7 @@ function subscribeRealtime(){
     loadScraps();
     if(payload.new&&payload.new.to_nick===me.nick){
       scrapUnread++;updateScrapBadge();
+      addNotif('scrap','📩 @'+payload.new.from_nick+' te enviou um recado!', payload.new.from_nick);
       toast('📩 Novo recado de @'+payload.new.from_nick+'!');
     }
   }).subscribe();
@@ -1978,7 +2543,9 @@ function subscribeRealtime(){
     if(from!==currentDmPartner){
       unreadCounts[from]=(unreadCounts[from]||0)+1;
       updateDmBadge();
+      addNotif('dm','💬 Nova mensagem de @'+from, from);
       toast('💬 Nova mensagem de @'+from+' — toque em Mensagens para ver');
+      loadDmList();
     }
   }).subscribe();
   // Realtime para comentários do feed principal
@@ -1986,6 +2553,52 @@ function subscribeRealtime(){
     const postId=payload.new.post_id;
     const el=$('comments-'+postId);
     if(el&&!el.classList.contains('hidden'))loadComments(postId);
+    if(payload.new.nick!==me.nick){
+      const post=allPosts.find(p=>p.id===postId);
+      if(post&&(post.author_nick||post.nick)===me.nick){
+        addNotif('comment','💬 @'+payload.new.nick+' comentou no seu post!', payload.new.nick);
+        toast('💬 @'+payload.new.nick+' comentou no seu post!');
+      }
+    }
+  }).subscribe();
+  // Realtime para curtidas — detectar quando alguém curtiu seu post
+  const ch6b=sb.channel('likes-rt').on('postgres_changes',{event:'UPDATE',schema:'public',table:'posts'},payload=>{
+    if(!payload.new||!me) return;
+    const post=payload.new;
+    const isMyPost=(post.author_nick||post.nick)===me.nick;
+    if(isMyPost){
+      const oldLikes=Array.isArray(payload.old?.likes)?payload.old.likes:[];
+      const newLikes=Array.isArray(post.likes)?post.likes:[];
+      const newLiker=newLikes.find(n=>!oldLikes.includes(n)&&n!==me.nick);
+      if(newLiker){
+        addNotif('like','♥ @'+newLiker+' curtiu sua postagem!', newLiker);
+        // toast sutil sem interferir
+      }
+    }
+  }).subscribe();
+  // Realtime para amizades novas
+  const ch6c=sb.channel('friends-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'friends',filter:`friend_nick=eq.${me.nick}`},payload=>{
+    if(!payload.new) return;
+    const who=payload.new.nick;
+    if(who!==me.nick){
+      addNotif('follow','👥 @'+who+' agora é seu amigo!', who);
+      toast('👥 @'+who+' te adicionou como amigo!');
+      loadFriends();
+    }
+  }).subscribe();
+  // Realtime para pedidos de amizade recebidos
+  const ch6d=sb.channel('freq-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'friend_requests',filter:`to_nick=eq.${me.nick}`},payload=>{
+    if(!payload.new) return;
+    const who=payload.new.from_nick;
+    if(who!==me.nick){
+      friendRequests.unshift(payload.new);
+      toast('👋 @'+who+' quer ser seu amigo!');
+      updateNotifBadge();
+      renderNotifPanel();
+      renderNotifTab();
+      const fReqBadge=$('friendReqBadge');
+      if(fReqBadge){fReqBadge.textContent=friendRequests.length;fReqBadge.style.display='inline-block';}
+    }
   }).subscribe();
   // Realtime para posts e comentários da comunidade
   const ch7=sb.channel('comm-posts-rt').on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},()=>{
@@ -1996,7 +2609,7 @@ function subscribeRealtime(){
     const el=$('ccomments-'+postId);
     if(el&&!el.classList.contains('hidden'))loadCommComments(postId);
   }).subscribe();
-  channels=[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8];
+  channels=[ch1,ch2,ch3,ch4,ch5,ch6,ch6b,ch6c,ch6d,ch7,ch8];
 }
 
 // ── ENTER ──
@@ -2004,12 +2617,17 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){
     const id=document.activeElement.id;
     if(id==='lNick'||id==='lPass')login();
-    if(id==='rPass')register();
+    if(id==='rNick'||id==='rPass')register();
     if(id==='friendInp')addFriend();
+    if(id==='scrapAnyNick')useAnyNickForScrap();
     if(id==='commName'||id==='commEmoji')createCommunity();
-    if(id==='dmInput')sendDm();
+    if(id==='dmInput'){e.preventDefault();sendDm();}
     if(id==='dmNewNick')openDmWith();
-    if(id==='commChatInput')sendCommChat();
+    if(id==='commChatInput'){e.preventDefault();sendCommChat();}
+  }
+  // Ctrl+Enter envia post
+  if(e.key==='Enter'&&e.ctrlKey&&document.activeElement.id==='postTxt'){
+    e.preventDefault();sendPost();
   }
 });
 
@@ -2063,8 +2681,9 @@ function updateCharCount(textareaId,counterId,max){
 function updateScrapBadge(){
   const badge=$('scrapNotif');
   const mbadge=$('mScrapBadge');
+  if(!badge||!mbadge)return;
   if(scrapUnread>0){
-    badge.textContent=scrapUnread;badge.style.display='inline';
+    badge.textContent=scrapUnread;badge.style.display='inline-block';
     mbadge.textContent=scrapUnread;mbadge.classList.remove('hidden');
   }else{
     badge.style.display='none';mbadge.classList.add('hidden');
@@ -2072,20 +2691,19 @@ function updateScrapBadge(){
 }
 
 // Zerar badge ao abrir aba de scraps
-const _origShowTab=showTab;
-// Sobrescrever showTab para zerar badge de scraps
 function showTab(name){
-  ['feed','scraps','dm','friends','communities','music','online'].forEach(t=>{
+  ['feed','scraps','dm','friends','communities','music','games','online','notifications'].forEach(t=>{
     const el=$('tab-'+t);if(el)el.classList.add('hidden');
     const nav=$('nav-'+t);if(nav)nav.classList.remove('active');
     const mnav=$('mnav-'+t);if(mnav)mnav.classList.remove('active');
   });
-  $('tab-'+name).classList.remove('hidden');
+  const tab=$('tab-'+name);if(tab)tab.classList.remove('hidden');
   const nav=$('nav-'+name);if(nav)nav.classList.add('active');
   const mnav=$('mnav-'+name);if(mnav)mnav.classList.add('active');
   if(name==='dm')loadDmList();
   if(name==='music')loadCommunityMusic();
   if(name==='scraps'){scrapUnread=0;updateScrapBadge();}
+  if(name==='notifications'){renderNotifTab();notifUnread=0;updateNotifBadge();}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -2147,119 +2765,577 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+// ══════════════════════════════════════════════════════════════════
+// ── NOTIFICAÇÕES ──
+// ══════════════════════════════════════════════════════════════════
+let notifications = [];
+let notifUnread = 0;
+
+function addNotif(type, text, nick='', action=null){
+  const n = {
+    id: Date.now()+Math.random(),
+    type, text, nick, action,
+    time: new Date().toISOString(),
+    read: false
+  };
+  notifications.unshift(n);
+  if(notifications.length > 50) notifications = notifications.slice(0,50);
+  notifUnread++;
+  updateNotifBadge();
+  renderNotifPanel();
+  // Salvar no localStorage
+  try{ localStorage.setItem('yk_notifs_'+me.nick, JSON.stringify(notifications.slice(0,30))); }catch(e){}
+}
+
+function loadNotifications(){
+  try{
+    const saved = localStorage.getItem('yk_notifs_'+me.nick);
+    if(saved) notifications = JSON.parse(saved);
+  }catch(e){ notifications=[]; }
+  notifUnread = notifications.filter(n=>!n.read).length;
+  updateNotifBadge();
+  renderNotifPanel();
+}
+
+function updateNotifBadge(){
+  const badge = $('notifBadge');
+  const navBadge = $('notifNavBadge');
+  if(notifUnread>0){
+    if(badge){ badge.textContent=notifUnread; badge.style.display='flex'; }
+    if(navBadge){ navBadge.textContent=notifUnread; navBadge.classList.remove('hidden'); }
+  } else {
+    if(badge) badge.style.display='none';
+    if(navBadge) navBadge.classList.add('hidden');
+  }
+}
+
+function toggleNotifPanel(){
+  const p = $('notifPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')){
+    // Fechar ao clicar fora
+    setTimeout(()=>{
+      document.addEventListener('click', closeNotifOutside, {once:true});
+    }, 10);
+  }
+}
+
+function closeNotifOutside(e){
+  const p = $('notifPanel');
+  if(p && !p.contains(e.target) && !$('notifBellBtn').contains(e.target)){
+    p.classList.remove('open');
+  }
+}
+
+function markAllNotifsRead(){
+  notifications.forEach(n=>n.read=true);
+  notifUnread=0;
+  updateNotifBadge();
+  renderNotifPanel();
+  renderNotifTab();
+  try{ localStorage.setItem('yk_notifs_'+me.nick, JSON.stringify(notifications.slice(0,30))); }catch(e){}
+}
+
+function clearAllNotifs(){
+  notifications=[];notifUnread=0;
+  updateNotifBadge();renderNotifPanel();renderNotifTab();
+  try{ localStorage.removeItem('yk_notifs_'+me.nick); }catch(e){}
+}
+
+const notifIcons = {like:'♥',comment:'💬',scrap:'📩',dm:'💬',follow:'👥',system:'🔔'};
+
+function renderNotifPanel(){
+  const el = $('notifList');
+  if(!el) return;
+  const reqHtml = friendRequests.slice(0,3).map(r=>`
+    <div class="notif-item unread" style="flex-direction:column;align-items:flex-start;gap:5px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="notif-icon">👋</div>
+        <div class="notif-txt"><b>@${esc(r.from_nick)}</b> quer ser seu amigo!</div>
+      </div>
+      <div style="display:flex;gap:6px;padding-left:26px">
+        <button class="btn-s" style="margin:0;padding:2px 10px;font-size:10px;background:#2a9d2a" onclick="acceptFriendRequest('${esc(r.from_nick)}')">✓ Aceitar</button>
+        <button class="btn-s" style="margin:0;padding:2px 10px;font-size:10px;background:#888" onclick="rejectFriendRequest('${esc(r.from_nick)}')">✕ Recusar</button>
+      </div>
+    </div>`).join('');
+  const notifHtml = notifications.filter(n=>n.type!=='friend_req').slice(0,12).map(n=>`
+    <div class="notif-item${n.read?'':' unread'}" onclick="onNotifClick('${n.id}')">
+      <div class="notif-icon">${notifIcons[n.type]||'🔔'}</div>
+      <div class="notif-body">
+        <div class="notif-txt">${esc(n.text)}</div>
+        <div class="notif-time">${timeAgo(n.time)}</div>
+      </div>
+    </div>`).join('');
+  if(!reqHtml&&!notifHtml){ el.innerHTML='<div class="notif-empty">Nenhuma notificação ainda 🔕</div>'; return; }
+  el.innerHTML = reqHtml + notifHtml;
+}
+
+function renderNotifTab(){
+  const el = $('notifTabList');
+  if(!el) return;
+  // Pedidos de amizade pendentes primeiro
+  const reqHtml = friendRequests.map(r=>`
+    <div class="notif-item unread" style="border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="notif-icon">👋</div>
+      <div class="notif-body" style="flex:1">
+        <div class="notif-txt"><b>@${esc(r.from_nick)}</b> quer ser seu amigo!</div>
+        <div style="display:flex;gap:6px;margin-top:5px">
+          <button class="btn-s" style="margin:0;padding:3px 12px;font-size:11px;background:#2a9d2a" onclick="acceptFriendRequest('${esc(r.from_nick)}')">✓ Aceitar</button>
+          <button class="btn-s" style="margin:0;padding:3px 12px;font-size:11px;background:#888" onclick="rejectFriendRequest('${esc(r.from_nick)}')">✕ Recusar</button>
+        </div>
+      </div>
+    </div>`).join('');
+  const notifHtml = notifications.filter(n=>n.type!=='friend_req').map(n=>`
+    <div class="notif-item${n.read?'':' unread'}" onclick="onNotifClick('${n.id}')" style="border-radius:6px;margin-bottom:4px">
+      <div class="notif-icon">${notifIcons[n.type]||'🔔'}</div>
+      <div class="notif-body">
+        <div class="notif-txt">${esc(n.text)}</div>
+        <div class="notif-time">${timeAgo(n.time)}</div>
+      </div>
+    </div>`).join('');
+  if(!reqHtml&&!notifHtml){ el.innerHTML='<div class="empty">Nenhuma notificação ainda 🔕</div>'; return; }
+  el.innerHTML = reqHtml + notifHtml;
+}
+
+function onNotifClick(id){
+  const n = notifications.find(x=>String(x.id)===String(id));
+  if(!n) return;
+  n.read = true;
+  updateNotifBadge();
+  renderNotifPanel();
+  $('notifPanel').classList.remove('open');
+  try{ localStorage.setItem('yk_notifs_'+me.nick, JSON.stringify(notifications.slice(0,30))); }catch(e){}
+  // Navegar para a aba relevante
+  if(n.type==='scrap'){ showTab('scraps'); }
+  else if(n.type==='dm'){ showTab('dm'); if(n.nick)setTimeout(()=>openDmConv(n.nick),100); }
+  else if(n.type==='like'||n.type==='comment'){ showTab('feed'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── PERFIL DE OUTRO USUÁRIO ──
+// ══════════════════════════════════════════════════════════════════
+async function showUserProfile(nick){
+  if(!nick || nick === me.nick){ openEditProfile(); return; }
+  const modal = $('userProfileModal');
+  modal.classList.remove('hidden');
+  $('pmAv').innerHTML = avatarOf(nick);
+  $('pmName').textContent = '...';
+  $('pmNick').textContent = '@'+nick;
+  $('pmBio').textContent = '';
+  $('pmPosts').textContent = '—';
+  $('pmFriends').textContent = '—';
+  $('pmActions').innerHTML = '<div class="loading" style="padding:6px">Carregando...</div>';
+  // Buscar dados do usuário
+  const [uRes, postsRes, friendsRes] = await Promise.all([
+    sb.from('users').select('nick,display_name,bio,photo,site').eq('nick',nick).maybeSingle(),
+    sb.from('posts').select('*',{count:'exact',head:true}).eq('author_nick',nick),
+    sb.from('friends').select('*',{count:'exact',head:true}).eq('nick',nick)
+  ]);
+  const uData = uRes.data;
+  if(!uData){ $('pmName').textContent='Usuário não encontrado'; $('pmActions').innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px">Este usuário não existe ou foi removido.</div>'; return; }
+  $('pmAv').innerHTML = avHtml(nick, uData.photo, 64);
+  $('pmName').textContent = uData.display_name || nick;
+  $('pmNick').textContent = '@'+nick;
+  $('pmBio').textContent = uData.bio || 'Sem bio ainda.';
+  $('pmPosts').textContent = postsRes.count || 0;
+  $('pmFriends').textContent = friendsRes.count || 0;
+  const isFriend = myFriends.includes(nick);
+  const hasPendingReq = friendRequests.some(r=>r.from_nick===nick);
+  const iSentReq = sentFriendRequests.has(nick);
+  const isAdmin = me._isAdmin || me.nick==='kaua12345';
+  $('pmActions').innerHTML = `
+    <button class="btn-blue" onclick="closeUserProfile();showTab('dm');setTimeout(()=>openDmConv('${esc(nick)}'),100)">💬 Mensagem</button>
+    ${isFriend
+      ? `<button class="btn-s" style="background:#888;margin:0" onclick="closeUserProfile();removeFriend('${esc(nick)}')">✕ Remover amigo</button>`
+      : hasPendingReq
+        ? `<button class="btn-s" style="background:#2a9d2a;margin:0" onclick="closeUserProfile();acceptFriendRequest('${esc(nick)}')">✓ Aceitar pedido</button>`
+        : iSentReq
+          ? `<button class="btn-s" style="background:#888;margin:0" disabled>Pedido enviado ✓</button>`
+          : `<button class="btn-s" style="margin:0" onclick="closeUserProfile();sendFriendRequest('${esc(nick)}')">+ Adicionar amigo</button>`
+    }
+    ${isAdmin ? `<button class="btn-s" style="background:#e07000;margin:0" onclick="adminRenameUser('${esc(nick)}')">✏️ Renomear</button>` : ''}
+    ${isAdmin ? `<button class="btn-s" style="background:#c00;margin:0" onclick="adminBanUser('${esc(nick)}')">🚫 Banir</button>` : ''}
+  `;
+}
+
+function closeUserProfile(){
+  $('userProfileModal').classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── PAINEL ADM REAL ──
+// ══════════════════════════════════════════════════════════════════
+function switchAdmTab(tab){
+  ['bot','users','stats'].forEach(t=>{
+    const el=$('admTab-'+t); if(el) el.style.display=t===tab?'block':'none';
+    const btn=document.querySelector(`[onclick="switchAdmTab('${t}')"]`);
+    if(btn) btn.classList.toggle('active',t===tab);
+  });
+  if(tab==='stats') loadAdmStats();
+}
+
+async function admSearchUsers(q){
+  const el = $('admUserList');
+  if(!q||q.length<2){ el.innerHTML='<div style="color:var(--muted);font-size:11px;text-align:center;padding:10px">Digite para buscar</div>'; return; }
+  const {data} = await sb.from('users').select('nick,display_name,photo,is_admin').ilike('nick','%'+q+'%').limit(10);
+  if(!data||!data.length){ el.innerHTML='<div style="color:var(--muted);font-size:11px;text-align:center;padding:10px">Nenhum usuário encontrado</div>'; return; }
+  el.innerHTML = data.map(u=>`
+    <div class="adm-user-row">
+      ${avHtml(u.nick,u.photo,24)}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:bold;font-size:11px;color:var(--blue-dark)">${esc(u.display_name||u.nick)}</div>
+        <div style="font-size:10px;color:var(--muted)">@${esc(u.nick)}${u.is_admin?' 🛡️ ADM':''}</div>
+      </div>
+      <div class="adm-actions">
+        <button class="adm-btn" onclick="admViewUser('${esc(u.nick)}')">👤</button>
+        <button class="adm-btn" onclick="admToggleAdmin('${esc(u.nick)}',${!!u.is_admin})" title="${u.is_admin?'Remover ADM':'Tornar ADM'}">${u.is_admin?'⬇ ADM':'⬆ ADM'}</button>
+        <button class="adm-btn danger" onclick="adminBanUser('${esc(u.nick)}')">🚫</button>
+      </div>
+    </div>`).join('');
+}
+
+async function admToggleAdmin(nick, isAdmin){
+  if(nick===me.nick) return toast('Você não pode alterar seu próprio ADM!');
+  if(!confirm((isAdmin?'Remover admin de ':'Tornar admin ')+'@'+nick+'?')) return;
+  const {error} = await sb.from('users').update({is_admin:!isAdmin}).eq('nick',nick);
+  if(error) return toast('Erro: '+error.message);
+  toast((isAdmin?'Admin removido de ':'Admin dado para ')+'@'+nick+' ✓');
+  admSearchUsers($('admUserSearch').value);
+  botLog((isAdmin?'❌ ADM removido':'✅ ADM dado')+' para @'+nick+' por @'+me.nick);
+}
+
+async function admViewUser(nick){
+  closeUserProfile(); // fechar se já aberto
+  $('botPanel').classList.remove('open');
+  showUserProfile(nick);
+}
+
+async function adminRenameUser(nick){
+  if(nick===me.nick) return toast('Use "editar perfil" para você mesmo!');
+  const newName=prompt('Novo nome de exibição para @'+nick+':');
+  if(!newName||!newName.trim()) return;
+  const {error}=await sb.from('users').update({display_name:newName.trim()}).eq('nick',nick);
+  if(error) return toast('Erro: '+error.message);
+  toast('@'+nick+' renomeado para "'+newName.trim()+'" ✓');
+  botLog('✏️ @'+nick+' renomeado para "'+newName.trim()+'" por @'+me.nick);
+  closeUserProfile();
+  loadFeed();loadScraps();
+}
+
+
+async function adminBanUser(nick){
+  if(nick===me.nick) return toast('Você não pode banir a si mesmo!');
+  if(!confirm('Banir e apagar todas as postagens de @'+nick+'? Esta ação é irreversível!')) return;
+  // Apagar posts, comentários, recados
+  await Promise.all([
+    sb.from('posts').delete().eq('author_nick',nick),
+    sb.from('comments').delete().eq('nick',nick),
+    sb.from('scraps').delete().eq('from_nick',nick),
+    sb.from('dms').delete().eq('from_nick',nick),
+    sb.from('community_chat').delete().eq('nick',nick)
+  ]);
+  toast('@'+nick+' banido e conteúdo removido 🚫');
+  botLog('🚫 @'+nick+' banido por @'+me.nick, true);
+  loadFeed(); loadScraps();
+}
+
+async function loadAdmStats(){
+  const [{count:uCount},{count:pCount},{count:sCount}] = await Promise.all([
+    sb.from('users').select('*',{count:'exact',head:true}),
+    sb.from('posts').select('*',{count:'exact',head:true}),
+    sb.from('scraps').select('*',{count:'exact',head:true})
+  ]);
+  const admStatUsers=$('admStatUsers'); if(admStatUsers) admStatUsers.textContent=uCount||0;
+  const admStatPosts=$('admStatPosts'); if(admStatPosts) admStatPosts.textContent=pCount||0;
+  const admStatScraps=$('admStatScraps'); if(admStatScraps) admStatScraps.textContent=sCount||0;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── JOGO PACIÊNCIA (KLONDIKE SOLITAIRE) ──
+// ══════════════════════════════════════════════════════════════════
+const SUITS=['♠','♥','♦','♣'];
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const RED_SUITS=new Set(['♥','♦']);
+let sol={deck:[],stock:[],waste:[],found:[[],[],[],[]],tab:[[],[],[],[],[],[],[]],score:0,moves:0,selected:null,history:[]};
+function solCard(suit,rank){return{suit,rank,up:false};}
+function solVal(rank){return RANKS.indexOf(rank);}
+function solIsRed(suit){return RED_SUITS.has(suit);}
+function solOpposite(a,b){return solIsRed(a.suit)!==solIsRed(b.suit);}
+function startSolitaire(){
+  $('solitaireGame').style.display='block';
+  $('solitaireGame').scrollIntoView({behavior:'smooth',block:'nearest'});
+  newSolitaireGame();
+}
+function newSolitaireGame(){
+  let deck=[];
+  SUITS.forEach(s=>RANKS.forEach(r=>deck.push(solCard(s,r))));
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  sol={stock:[],waste:[],found:[[],[],[],[]],tab:[[],[],[],[],[],[],[]],score:0,moves:0,selected:null,history:[]};
+  for(let c=0;c<7;c++){for(let r=0;r<=c;r++){const card=deck.pop();card.up=(r===c);sol.tab[c].push(card);}}
+  sol.stock=[...deck].map(c=>({...c,up:false}));
+  renderSolitaire();
+}
+function solSave(){
+  sol.history.push(JSON.parse(JSON.stringify({stock:sol.stock,waste:sol.waste,found:sol.found,tab:sol.tab,score:sol.score,moves:sol.moves})));
+  if(sol.history.length>60)sol.history.shift();
+}
+function solUndo(){
+  if(!sol.history.length)return toast('Nada para desfazer');
+  const prev=sol.history.pop();
+  Object.assign(sol,prev);sol.selected=null;renderSolitaire();
+}
+function solDraw(){
+  solSave();
+  if(!sol.stock.length){
+    if(!sol.waste.length)return;
+    sol.stock=sol.waste.reverse().map(c=>({...c,up:false}));sol.waste=[];sol.score=Math.max(0,sol.score-100);
+  } else {const c=sol.stock.pop();c.up=true;sol.waste.push(c);sol.moves++;sol.score+=5;}
+  sol.selected=null;renderSolitaire();
+}
+function removeFromSource(area,col,n){
+  if(area==='waste')sol.waste.pop();
+  else if(area==='found')sol.found[col].pop();
+  else if(area==='tab')sol.tab[col].splice(sol.tab[col].length-n,n);
+}
+function solTryMove(from,toArea,toCol){
+  const {area:fa,col:fc,cards}=from;const topCard=cards[0];let valid=false;
+  if(toArea==='found'){
+    if(cards.length!==1)return false;
+    const pile=sol.found[toCol];
+    if(!pile.length&&topCard.rank==='A')valid=true;
+    else if(pile.length&&pile[pile.length-1].suit===topCard.suit&&solVal(pile[pile.length-1].rank)+1===solVal(topCard.rank))valid=true;
+    if(valid){
+      solSave();sol.found[toCol].push(topCard);removeFromSource(fa,fc,1);sol.moves++;sol.score+=10;
+      if(fa==='tab'&&sol.tab[fc].length&&!sol.tab[fc][sol.tab[fc].length-1].up){sol.tab[fc][sol.tab[fc].length-1].up=true;sol.score+=5;}
+      return true;
+    }
+  }
+  if(toArea==='tab'){
+    const pile=sol.tab[toCol];
+    if(!pile.length&&topCard.rank==='K')valid=true;
+    else if(pile.length){const bot=pile[pile.length-1];if(bot.up&&solOpposite(topCard,bot)&&solVal(bot.rank)-1===solVal(topCard.rank))valid=true;}
+    if(valid){
+      solSave();cards.forEach(c=>sol.tab[toCol].push(c));removeFromSource(fa,fc,cards.length);sol.moves++;sol.score+=5;
+      if(fa==='tab'&&sol.tab[fc].length&&!sol.tab[fc][sol.tab[fc].length-1].up){sol.tab[fc][sol.tab[fc].length-1].up=true;sol.score+=5;}
+      return true;
+    }
+  }
+  return false;
+}
+function solSelect(area,col,idx){
+  if(area==='stock'){solDraw();return;}
+  let card=null,cards=[];
+  if(area==='waste'&&sol.waste.length){card=sol.waste[sol.waste.length-1];cards=[card];}
+  else if(area==='found'&&sol.found[col].length){card=sol.found[col][sol.found[col].length-1];cards=[card];}
+  else if(area==='tab'&&sol.tab[col].length>idx&&sol.tab[col][idx].up){cards=sol.tab[col].slice(idx);card=cards[0];}
+  if(!card)return;
+  if(sol.selected){
+    const s=sol.selected;
+    if(s.area===area&&s.col===col&&s.idx===idx){sol.selected=null;renderSolitaire();return;}
+    if(solTryMove(s,area,col)){sol.selected=null;renderSolitaire();solCheckWin();return;}
+    sol.selected={area,col,idx,card,cards};renderSolitaire();return;
+  }
+  sol.selected={area,col,idx,card,cards};renderSolitaire();
+}
+function solAutoMove(){
+  let moved=false;
+  const tryF=(card,fromArea,fromCol)=>{
+    for(let f=0;f<4;f++){
+      const pile=sol.found[f];
+      if((!pile.length&&card.rank==='A')||(pile.length&&pile[pile.length-1].suit===card.suit&&solVal(pile[pile.length-1].rank)+1===solVal(card.rank))){
+        sol.selected={area:fromArea,col:fromCol,idx:0,card,cards:[card]};
+        if(solTryMove(sol.selected,'found',f)){sol.selected=null;return true;}
+      }
+    }
+    return false;
+  };
+  if(sol.waste.length){const c=sol.waste[sol.waste.length-1];if(tryF(c,'waste',0))moved=true;}
+  for(let c=0;c<7;c++){if(sol.tab[c].length){const card=sol.tab[c][sol.tab[c].length-1];if(card.up&&tryF(card,'tab',c)){moved=true;break;}}}
+  return moved;
+}
+function solAutoComplete(){
+  let limit=200;
+  const step=()=>{if(solCheckWin(true))return;if(solAutoMove()){renderSolitaire();if(--limit>0)setTimeout(step,60);}else renderSolitaire();};
+  step();
+}
+function solCheckWin(silent=false){
+  if(sol.found.every(p=>p.length===13)){
+    renderSolitaire();
+    setTimeout(()=>{$('solBoard').innerHTML=`<div class="sol-win">🎉 Parabéns! Você ganhou!<br><span style="font-size:14px;font-weight:normal;color:var(--muted)">Pontos: ${sol.score} · Movimentos: ${sol.moves}</span><br><button class="btn-s" style="margin-top:14px" onclick="newSolitaireGame()">↺ Jogar de novo</button></div>`;},400);
+    return true;
+  }
+  return false;
+}
+function renderSolitaire(){
+  const board=$('solBoard');if(!board)return;
+  $('solScore').textContent='Pontos: '+sol.score;
+  $('solMoves').textContent='Movimentos: '+sol.moves;
+  const W=62,H=86,OV=22;
+  const cardFace=(card,area,col,idx,sel)=>{
+    const red=solIsRed(card.suit);
+    return`<div class="sol-card${red?' red':' black'}${sel?' selected':''}" style="position:absolute;top:${idx*OV}px;left:0" onclick="solSelect('${area}',${col},${idx})">
+      <div class="c-top">${card.rank}${card.suit}</div><div class="c-mid">${card.suit}</div><div class="c-bot">${card.rank}${card.suit}</div>
+    </div>`;
+  };
+  const cardBack=(i)=>`<div class="sol-card face-down" style="position:absolute;top:${i*OV}px;left:0"></div>`;
+  // Stock
+  const stockHtml=`<div class="sol-pile sol-stock" style="width:${W}px;height:${H}px;position:relative;cursor:pointer" onclick="solSelect('stock',0,0)">
+    ${sol.stock.length?`<div class="sol-card face-down" style="position:absolute;top:0;left:0;pointer-events:none"></div>`:`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;opacity:.35">↺</div>`}
+  </div>`;
+  // Waste
+  const wTop=sol.waste.length?sol.waste[sol.waste.length-1]:null;
+  const selW=sol.selected&&sol.selected.area==='waste';
+  const wasteHtml=`<div class="sol-pile" style="width:${W}px;height:${H}px;position:relative">${wTop?cardFace(wTop,'waste',0,0,selW):''}</div>`;
+  // Foundations
+  const fIcons=['♠','♥','♦','♣'];
+  const foundHtml=sol.found.map((pile,f)=>{
+    const top=pile.length?pile[pile.length-1]:null;
+    const selF=sol.selected&&sol.selected.area==='found'&&sol.selected.col===f;
+    return`<div class="sol-pile sol-empty-found" style="width:${W}px;height:${H}px;position:relative" onclick="solSelect('found',${f},0)">
+      <div class="sol-found-label">${fIcons[f]}</div>${top?cardFace(top,'found',f,0,selF):''}
+    </div>`;
+  }).join('');
+  // Tableau
+  const tabHtml=sol.tab.map((col,c)=>{
+    const colH=col.length<=1?H:H+(col.length-1)*OV;
+    const inner=col.map((card,i)=>{
+      const isSel=sol.selected&&sol.selected.area==='tab'&&sol.selected.col===c&&i>=sol.selected.idx&&card.up;
+      return card.up?cardFace(card,'tab',c,i,isSel):cardBack(i);
+    }).join('');
+    return`<div class="sol-pile" style="width:${W}px;height:${colH+4}px;position:relative;flex-shrink:0" onclick="${col.length?'':'solSelect(\'tab\','+c+',0)'}">${inner}</div>`;
+  }).join('');
+  board.innerHTML=`<div class="sol-area">
+    <div class="sol-top" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px">
+      ${stockHtml}${wasteHtml}
+      <div style="flex:1;min-width:8px"></div>
+      ${foundHtml}
+      <button class="btn-s" style="margin:0;padding:4px 10px;font-size:11px;background:#888;align-self:center" onclick="solUndo()">↩</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;overflow-x:auto;padding-bottom:60px">${tabHtml}</div>
+  </div>`;
+}
+
 // ── INIT ──
 (async()=>{
   await tryAutoLogin();
 })();
-</script>
-</body>
-</html>
 
-<!-- ══ CHAMADA DE VOZ ══ -->
-<div id="callOverlay" class="call-overlay hidden">
-  <div class="call-box">
-    <div class="call-avatar" id="callAvatar"></div>
-    <div class="call-name" id="callPartnerName"></div>
-    <div class="call-status" id="callStatus"></div>
-    <div class="call-timer" id="callTimer" style="display:none"></div>
-    <div class="call-actions" id="callActions"></div>
-  </div>
-</div>
-<audio id="vcRemoteAudio" autoplay playsinline></audio>
+// ═══════════════════════════════════════════════════════════════
+// ── CHAMADA DE VOZ — WebRTC com sinalização via Supabase       ──
+// ── Fluxo correto:                                             ──
+//   1. Caller → ring                                           ──
+//   2. Caller → getUserMedia + createOffer + setLocal + offer  ──
+//   3. Callee → getUserMedia + setRemote + createAnswer +       ──
+//               setLocal + answer                              ──
+//   4. Caller → setRemote(answer)                              ──
+//   5. ICE candidates trocados bidirecionalmente               ──
+// ═══════════════════════════════════════════════════════════════
 
-<script>
-/*
-  SINALIZAÇÃO via tabela Supabase "call_signals"
-  Colunas: id, from_nick, to_nick, type, payload, created_at
-  
-  Fluxo:
-  1. Caller insere {type:'ring'}
-  2. Callee vê pelo realtime → mostra tela de chamada
-  3. Callee aceita → getUserMedia → cria RTCPeer → cria offer → insere {type:'offer', payload: sdp}
-  4. Caller vê offer → setRemoteDescription → cria answer → insere {type:'answer', payload: sdp}
-  5. Callee vê answer → setRemoteDescription
-  6. ICE candidates trocados pelo mesmo canal
-  7. Áudio flui
-  
-  Motivo de o CALLEE criar o offer:
-  - Garante que o callee está 100% pronto antes de qualquer SDP ser trocado
-  - Elimina o race condition de timing
-*/
-
-// ─── Estado global ───
 let VC = {
-  peer: null, stream: null, role: null, partner: null,
-  muted: false, timerInt: null, secs: 0,
-  iceBuf: [],           // ICE recebidos antes de setRemoteDescription
-  sigChannel: null,     // canal Realtime para sinais
-  pollInt: null,        // fallback poll
-  lastSigId: null,      // evitar reprocessar
+  peer:null, stream:null, role:null, partner:null,
+  muted:false, timerInt:null, secs:0,
+  iceBuf:[],           // candidates recebidos antes de remoteDescription estar pronto
+  sigChannel:null,     // canal Realtime Supabase
+  processedIds:new Set(), // evitar reprocessar o mesmo sinal
 };
 
-const VC_ICE = {iceServers:[
-  {urls:'stun:stun.l.google.com:19302'},
-  {urls:'stun:stun1.l.google.com:19302'},
-  {urls:'stun:stun2.l.google.com:19302'},
-]};
+const VC_ICE = {
+  iceServers:[
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'stun:stun2.l.google.com:19302'},
+    {urls:'stun:stun3.l.google.com:19302'},
+    {urls:'stun:stun4.l.google.com:19302'},
+  ],
+  iceCandidatePoolSize:10,
+};
 
-const VC_AUDIO = {audio:{
-  echoCancellation:true, noiseSuppression:true,
-  autoGainControl:true, channelCount:1,
-  sampleRate:22050,
-}, video:false};
+// Sem sampleRate fixo — deixa o browser escolher para evitar rejeição
+const VC_AUDIO_CONSTRAINTS = {
+  audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true},
+  video:false
+};
 
-// ─── Inserir sinal no banco ───
+// ── Inserir sinal no banco ──
 async function vcInsertSignal(type, payload=''){
-  await sb.from('call_signals').insert({
-    from_nick: me.nick,
-    to_nick:   VC.partner,
-    type,
-    payload:   typeof payload==='string' ? payload : JSON.stringify(payload),
-    created_at: new Date().toISOString()
-  });
+  if(!me||!VC.partner) return;
+  const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  try{
+    await sb.from('call_signals').insert({
+      from_nick: me.nick,
+      to_nick:   VC.partner,
+      type,
+      payload:   body,
+      created_at: new Date().toISOString()
+    });
+  }catch(e){console.warn('vcInsertSignal error',e);}
 }
 
-// ─── Escutar sinais vindos do parceiro ───
+// ── Escutar sinais vindos do parceiro via Realtime ──
 function vcStartListening(){
-  // Limpa listener anterior
   if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){}}
-  clearInterval(VC.pollInt);
-
-  // Realtime INSERT na tabela call_signals
-  VC.sigChannel = sb.channel('vc-sig-'+me.nick)
+  // Canal dedicado ao nick do usuário atual
+  VC.sigChannel = sb.channel('vc-listen-'+me.nick+'-'+Date.now())
     .on('postgres_changes',{
       event:'INSERT', schema:'public', table:'call_signals',
       filter:`to_nick=eq.${me.nick}`
-    }, row => vcHandleSignal(row.new))
-    .subscribe();
-
-  // Fallback: poll a cada 1.5s (para redes onde realtime falha)
-  VC.pollInt = setInterval(async()=>{
-    const {data} = await sb.from('call_signals')
-      .select('*')
-      .eq('to_nick', me.nick)
-      .eq('from_nick', VC.partner||'__none__')
-      .order('created_at',{ascending:false})
-      .limit(1);
-    if(data&&data[0]&&data[0].id!==VC.lastSigId){
-      VC.lastSigId=data[0].id;
-      vcHandleSignal(data[0]);
-    }
-  }, 1500);
+    }, row => {
+      if(row.new) vcHandleSignal(row.new);
+    })
+    .subscribe(status=>{
+      // Se o Realtime não conectar, ativa o poll de fallback
+      if(status === 'SUBSCRIBED') vcStopPoll();
+      else vcStartPoll();
+    });
 }
 
-// ─── Processar sinal recebido ───
+// ── Poll de fallback caso Realtime falhe ──
+let _vcPollInt = null;
+let _vcPollAfter = null; // só busca sinais DEPOIS desta data
+
+function vcStartPoll(){
+  if(_vcPollInt) return;
+  _vcPollAfter = new Date().toISOString();
+  _vcPollInt = setInterval(async()=>{
+    if(!me||!VC.partner) return;
+    const{data} = await sb.from('call_signals')
+      .select('*')
+      .eq('to_nick', me.nick)
+      .eq('from_nick', VC.partner)
+      .gt('created_at', _vcPollAfter)
+      .order('created_at',{ascending:true});
+    if(data&&data.length){
+      _vcPollAfter = data[data.length-1].created_at;
+      for(const row of data) vcHandleSignal(row);
+    }
+  }, 1200);
+}
+
+function vcStopPoll(){
+  clearInterval(_vcPollInt);
+  _vcPollInt = null;
+}
+
+// ── Processar sinal recebido ──
 async function vcHandleSignal(row){
-  if(!row||row.from_nick===me.nick)return;
-  // Só processa sinais do parceiro atual (se já em chamada) ou qualquer um (se idle)
-  if(VC.partner && row.from_nick!==VC.partner)return;
+  if(!row) return;
+  if(row.from_nick === me.nick) return; // ignorar próprios sinais
+  if(VC.processedIds.has(row.id)) return; // já processado
+  VC.processedIds.add(row.id);
+
+  // Ignorar sinais de quem não é o parceiro atual (exceto ring)
+  if(row.type !== 'ring' && VC.partner && row.from_nick !== VC.partner) return;
 
   const type = row.type;
-  const payload = row.payload;
+  let payload;
+  try{ payload = row.payload ? JSON.parse(row.payload) : null; }
+  catch(e){ payload = row.payload; }
 
-  if(type==='ring'){
-    // Receber chamada
-    if(VC.peer){vcInsertSignal('busy','');return;}
+  console.log('[VC] sinal recebido:', type, 'de', row.from_nick);
+
+  // ── RING: receber chamada ──
+  if(type === 'ring'){
+    if(VC.peer){ await vcInsertSignal('busy',''); return; }
     VC.partner = row.from_nick;
     VC.role    = 'callee';
     vcShowUI('incoming');
@@ -2267,260 +3343,366 @@ async function vcHandleSignal(row){
     return;
   }
 
-  if(type==='offer'){
-    // Caller recebeu offer do callee → responde com answer
-    if(VC.role!=='caller'||!VC.peer)return;
-    const sdp = JSON.parse(payload);
-    await VC.peer.setRemoteDescription(new RTCSessionDescription(sdp));
-    // Aplicar ICE buffer
-    for(const c of VC.iceBuf){try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){}}
-    VC.iceBuf=[];
-    const answer = await VC.peer.createAnswer();
-    await VC.peer.setLocalDescription(answer);
-    await vcInsertSignal('answer', VC.peer.localDescription);
-    vcOnConnected();
+  // ── OFFER: callee recebe offer do caller → cria answer ──
+  if(type === 'offer'){
+    if(VC.role !== 'callee' || !VC.peer) return;
+    try{
+      await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
+      // Aplicar ICE buffered antes do remoteDescription
+      for(const c of VC.iceBuf){
+        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
+      }
+      VC.iceBuf = [];
+      const answer = await VC.peer.createAnswer();
+      await VC.peer.setLocalDescription(answer);
+      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      vcOnConnected();
+    }catch(e){ console.error('[VC] offer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
   }
 
-  if(type==='answer'){
-    // Callee recebeu answer do caller
-    if(VC.role!=='callee'||!VC.peer)return;
-    const sdp = JSON.parse(payload);
-    await VC.peer.setRemoteDescription(new RTCSessionDescription(sdp));
-    for(const c of VC.iceBuf){try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){}}
-    VC.iceBuf=[];
-    vcOnConnected();
+  // ── ANSWER: caller recebe answer do callee → conecta ──
+  if(type === 'answer'){
+    if(VC.role !== 'caller' || !VC.peer) return;
+    try{
+      await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
+      for(const c of VC.iceBuf){
+        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
+      }
+      VC.iceBuf = [];
+      vcOnConnected();
+    }catch(e){ console.error('[VC] answer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
   }
 
-  if(type==='ice'){
-    const candidate = JSON.parse(payload);
-    if(VC.peer&&VC.peer.remoteDescription){
-      try{await VC.peer.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){}
-    }else{
-      VC.iceBuf.push(candidate);
+  // ── ICE candidate ──
+  if(type === 'ice'){
+    if(!payload) return;
+    if(VC.peer && VC.peer.remoteDescription && VC.peer.remoteDescription.type){
+      try{ await VC.peer.addIceCandidate(new RTCIceCandidate(payload)); }catch(e){}
+    } else {
+      VC.iceBuf.push(payload);
     }
     return;
   }
 
-  if(type==='hangup'||type==='reject'){
-    const msg = type==='reject'
-      ? (VC.partner+' recusou a chamada 📵')
-      : (VC.partner+' encerrou a chamada');
+  // ── HANGUP / REJECT ──
+  if(type === 'hangup' || type === 'reject'){
+    const savedPartner = VC.partner || row.from_nick;
     vcCleanup();
-    toast(msg);
+    toast(type === 'reject'
+      ? (savedPartner + ' recusou a chamada 📵')
+      : (savedPartner + ' encerrou a chamada'));
     return;
   }
 
-  if(type==='busy'){
+  // ── BUSY ──
+  if(type === 'busy'){
+    const savedPartner = VC.partner || row.from_nick;
     vcCleanup();
-    toast(VC.partner+' está em outra chamada');
+    toast(savedPartner + ' está em outra chamada 📵');
     return;
   }
 }
 
-// ─── Caller: iniciar chamada ───
+// ── CALLER: iniciar chamada ──
 async function startVoiceCall(){
-  if(!currentDmPartner||!me)return;
-  if(VC.peer||VC.role)return toast('Já existe uma chamada ativa');
+  if(!currentDmPartner || !me) return;
+  if(VC.peer || VC.role) return toast('Já existe uma chamada ativa');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    return toast('Seu navegador não suporta chamadas de voz');
+  }
 
   VC.partner = currentDmPartner;
   VC.role    = 'caller';
   VC.iceBuf  = [];
+  VC.processedIds = new Set();
 
   vcShowUI('calling');
   vcStartListening();
 
-  // Criar peer e stream já (para ter ICE candidates prontos)
+  // 1. Pegar microfone
   try{
-    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO);
+    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
   }catch(err){
-    toast('Microfone bloqueado: '+err.message);
+    toast('Microfone: '+err.message);
     vcCleanup(); return;
   }
 
+  // 2. Criar peer e adicionar tracks
   VC.peer = vcBuildPeer();
-  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
+  VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
 
-  // Avisar o callee que está sendo chamado
-  await vcInsertSignal('ring','');
+  // 3. Criar offer
+  try{
+    const offer = await VC.peer.createOffer({offerToReceiveAudio:true});
+    await VC.peer.setLocalDescription(offer);
+    // 4. Avisar callee (ring) e já enviar offer junto
+    await vcInsertSignal('ring', '');
+    // Pequena pausa para garantir que o ring chegue antes do offer
+    await new Promise(r => setTimeout(r, 300));
+    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp});
+  }catch(err){
+    toast('Erro ao iniciar chamada: '+err.message);
+    vcCleanup(); return;
+  }
 }
 
-// ─── Callee: aceitar chamada ───
+// ── CALLEE: aceitar chamada ──
 async function acceptCall(){
   vcRingStop();
   vcShowUI('connecting');
-
   VC.iceBuf = [];
-  vcStartListening();
+  VC.processedIds = new Set();
 
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    return toast('Seu navegador não suporta chamadas de voz');
+  }
+
+  // Pegar microfone
   try{
-    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO);
+    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
   }catch(err){
-    toast('Microfone bloqueado: '+err.message);
+    toast('Microfone: '+err.message);
     vcCleanup(); return;
   }
 
+  // Criar peer e adicionar tracks
   VC.peer = vcBuildPeer();
-  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
+  VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
 
-  // CALLEE cria o offer → elimina race condition
-  const offer = await VC.peer.createOffer();
-  await VC.peer.setLocalDescription(offer);
-  await vcInsertSignal('offer', VC.peer.localDescription);
+  // Começar a escutar sinais futuros
+  vcStartListening();
+
+  // Buscar sinais já existentes no banco (offer pode ter chegado antes do listener)
+  await vcFetchPendingSignals();
 }
 
-// ─── Rejeitar ───
 async function rejectCall(){
+  const partner = VC.partner;
+  VC.partner = VC.partner || partner;
   await vcInsertSignal('reject','');
   vcCleanup();
 }
 
-// ─── Encerrar ───
+// Busca sinais já pendentes no banco (para o callee que acabou de aceitar)
+async function vcFetchPendingSignals(){
+  if(!me || !VC.partner) return;
+  try{
+    const since = new Date(Date.now() - 30000).toISOString(); // últimos 30s
+    const{data} = await sb.from('call_signals')
+      .select('*')
+      .eq('to_nick', me.nick)
+      .eq('from_nick', VC.partner)
+      .gt('created_at', since)
+      .order('created_at', {ascending: true});
+    for(const row of (data||[])){
+      await vcHandleSignal(row);
+    }
+  }catch(e){ console.warn('[VC] fetchPending error', e); }
+}
+
 async function endCall(){
   await vcInsertSignal('hangup','');
   vcCleanup();
 }
 
-// ─── Limpeza ───
+// ── Limpeza ──
 function vcCleanup(){
-  vcRingStop(); vcTimerStop();
+  vcRingStop();
+  vcTimerStop();
+  vcStopPoll();
   if(VC.peer){try{VC.peer.close();}catch(e){} VC.peer=null;}
   if(VC.stream){VC.stream.getTracks().forEach(t=>t.stop()); VC.stream=null;}
   if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){} VC.sigChannel=null;}
-  clearInterval(VC.pollInt); VC.pollInt=null;
-  document.getElementById('vcRemoteAudio').srcObject=null;
+  const audio = $('vcRemoteAudio');
+  if(audio){ audio.srcObject=null; audio.src=''; }
   VC.role=null; VC.partner=null; VC.muted=false;
-  VC.secs=0; VC.iceBuf=[]; VC.lastSigId=null;
-  document.getElementById('callOverlay').classList.add('hidden');
-
-  // Limpar sinais antigos
-  if(me)sb.from('call_signals').delete().eq('to_nick',me.nick).then(()=>{});
+  VC.secs=0; VC.iceBuf=[]; VC.processedIds=new Set();
+  $('callOverlay').classList.add('hidden');
+  // Só apaga sinais endereçados a MIM (não prejudica o parceiro)
+  if(me) sb.from('call_signals').delete().eq('to_nick',me.nick)
+    .lt('created_at', new Date(Date.now()-5000).toISOString()).then(()=>{});
 }
 
-// ─── Construir RTCPeerConnection ───
+// ── Construir RTCPeerConnection ──
 function vcBuildPeer(){
   const peer = new RTCPeerConnection(VC_ICE);
 
-  peer.onicecandidate = async e=>{
+  // Enviar ICE candidate assim que gerado
+  peer.onicecandidate = async e => {
     if(e.candidate){
       await vcInsertSignal('ice', e.candidate.toJSON());
     }
   };
 
-  peer.ontrack = e=>{
-    const audio = document.getElementById('vcRemoteAudio');
-    audio.srcObject = e.streams[0];
-    audio.play().catch(()=>{});
+  // Receber áudio remoto
+  peer.ontrack = e => {
+    console.log('[VC] ontrack recebido', e.streams);
+    const audio = $('vcRemoteAudio');
+    if(!audio) return;
+    if(e.streams && e.streams[0]){
+      audio.srcObject = e.streams[0];
+    } else {
+      // Fallback: criar stream do track
+      const stream = new MediaStream([e.track]);
+      audio.srcObject = stream;
+    }
+    // Garantir play (pode precisar de interação do usuário)
+    const playPromise = audio.play();
+    if(playPromise){
+      playPromise.catch(err=>{
+        console.warn('[VC] autoplay bloqueado:', err.message);
+        // Mostrar botão para o usuário clicar e desbloquear
+        vcShowUnmuteButton();
+      });
+    }
   };
 
-  peer.onconnectionstatechange = ()=>{
-    if(peer.connectionState==='failed'){
-      toast('Conexão perdida');endCall();
+  peer.oniceconnectionstatechange = () => {
+    console.log('[VC] ICE state:', peer.iceConnectionState);
+    if(peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed'){
+      vcOnConnected();
     }
-    if(peer.connectionState==='disconnected'){
-      toast('Conexão interrompida');endCall();
+    if(peer.iceConnectionState === 'failed'){
+      toast('Conexão falhou. Tente novamente.');
+      endCall();
     }
+    if(peer.iceConnectionState === 'disconnected'){
+      toast('Conexão interrompida 📵');
+      endCall();
+    }
+  };
+
+  peer.onconnectionstatechange = () => {
+    console.log('[VC] connection state:', peer.connectionState);
   };
 
   return peer;
 }
 
-// ─── Quando conectado ───
+// ── Desbloquear áudio se autoplay for bloqueado ──
+function vcShowUnmuteButton(){
+  const actions = $('callActions');
+  if(!actions) return;
+  const existing = document.getElementById('vcUnmuteBtn');
+  if(existing) return;
+  const btn = document.createElement('button');
+  btn.id = 'vcUnmuteBtn';
+  btn.className = 'call-btn mute';
+  btn.textContent = '🔊';
+  btn.title = 'Clique para ouvir';
+  btn.onclick = () => {
+    $('vcRemoteAudio').play().catch(()=>{});
+    btn.remove();
+  };
+  actions.prepend(btn);
+}
+
+// ── Quando ICE conectar ──
+let _vcConnectedOnce = false;
 function vcOnConnected(){
-  document.getElementById('callStatus').textContent='Em chamada 🔵';
+  if(_vcConnectedOnce) return; // evitar chamar 2x
+  _vcConnectedOnce = true;
+  $('callStatus').textContent = 'Em chamada 🔵';
   vcTimerStart();
 }
 
-// ─── Mudo ───
+// ── Mudo ──
 function toggleMuteCall(){
-  if(!VC.stream)return;
-  VC.muted=!VC.muted;
-  VC.stream.getAudioTracks().forEach(t=>t.enabled=!VC.muted);
-  const btn=document.getElementById('muteBtn');
-  if(btn){btn.textContent=VC.muted?'🔇':'🎙️'; btn.className='call-btn '+(VC.muted?'muted':'mute');}
+  if(!VC.stream) return;
+  VC.muted = !VC.muted;
+  VC.stream.getAudioTracks().forEach(t => t.enabled = !VC.muted);
+  const btn = $('muteBtn');
+  if(btn){ btn.textContent = VC.muted ? '🔇' : '🎙️'; btn.className = 'call-btn '+(VC.muted?'muted':'mute'); }
 }
 
-// ─── UI ───
+// ── UI da chamada ──
 function vcShowUI(mode){
-  const ov=document.getElementById('callOverlay');
-  ov.classList.remove('hidden');
-  document.getElementById('callPartnerName').textContent=VC.partner||'';
-  document.getElementById('callAvatar').innerHTML=avatarOf(VC.partner||'?');
-  document.getElementById('callTimer').style.display='none';
-
-  if(mode==='calling'){
-    document.getElementById('callStatus').textContent='Chamando... 📞';
-    document.getElementById('callActions').innerHTML=
-      `<button class="call-btn hangup" onclick="endCall()">📵</button>`;
-  }
-  else if(mode==='incoming'){
-    document.getElementById('callStatus').textContent='Ligação entrante';
-    document.getElementById('callActions').innerHTML=
+  _vcConnectedOnce = false;
+  $('callOverlay').classList.remove('hidden');
+  $('callPartnerName').textContent = VC.partner || '';
+  $('callAvatar').innerHTML = avatarOf(VC.partner || '?');
+  $('callTimer').style.display = 'none';
+  if(mode === 'calling'){
+    $('callStatus').textContent = 'Chamando... 📞';
+    $('callActions').innerHTML = `<button class="call-btn hangup" onclick="endCall()">📵</button>`;
+  } else if(mode === 'incoming'){
+    $('callStatus').textContent = 'Ligação entrante 📲';
+    $('callActions').innerHTML =
       `<button class="call-btn accept call-ring" onclick="acceptCall()">📞</button>
        <button class="call-btn hangup" onclick="rejectCall()">📵</button>`;
-  }
-  else if(mode==='connecting'){
-    document.getElementById('callStatus').textContent='Conectando...';
-    document.getElementById('callActions').innerHTML=vcInCallHTML();
+  } else if(mode === 'connecting'){
+    $('callStatus').textContent = 'Conectando...';
+    $('callActions').innerHTML = vcInCallHTML();
   }
 }
 
 function vcInCallHTML(){
-  return`<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
-         <button class="call-btn hangup" onclick="endCall()">📵</button>`;
+  return `<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
+          <button class="call-btn hangup" onclick="endCall()">📵</button>`;
 }
 
-// ─── Timer ───
+// ── Timer ──
 function vcTimerStart(){
-  VC.secs=0;
-  document.getElementById('callTimer').style.display='block';
-  document.getElementById('callActions').innerHTML=vcInCallHTML();
-  VC.timerInt=setInterval(()=>{
+  VC.secs = 0;
+  $('callTimer').style.display = 'block';
+  $('callActions').innerHTML = vcInCallHTML();
+  VC.timerInt = setInterval(()=>{
     VC.secs++;
-    const m=Math.floor(VC.secs/60), s=VC.secs%60;
-    document.getElementById('callTimer').textContent=m+':'+(s<10?'0':'')+s;
-  },1000);
+    const m = Math.floor(VC.secs/60), s = VC.secs%60;
+    $('callTimer').textContent = m+':'+(s<10?'0':'')+s;
+  }, 1000);
 }
 function vcTimerStop(){
   clearInterval(VC.timerInt); VC.timerInt=null;
-  document.getElementById('callTimer').style.display='none';
+  $('callTimer').style.display = 'none';
 }
 
-// ─── Ringtone ───
+// ── Toque de chamada ──
 function vcRingStart(){
   try{
-    if(window._vcRingCtx){try{window._vcRingCtx.close();}catch(e){}}
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    window._vcRingCtx=ctx; let on=true;
-    window._vcRingStop=()=>{on=false;try{ctx.close();}catch(e){}};
-    const beep=(f,d,dl)=>{
-      if(!on)return;
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.connect(g);g.connect(ctx.destination);
-      o.frequency.value=f; g.gain.setValueAtTime(0.1,ctx.currentTime+dl);
-      o.start(ctx.currentTime+dl); o.stop(ctx.currentTime+dl+d);
+    if(window._vcRingCtx){ try{window._vcRingCtx.close();}catch(e){} }
+    const ctx = new(window.AudioContext||window.webkitAudioContext)();
+    window._vcRingCtx = ctx;
+    let on = true;
+    window._vcRingStop = ()=>{ on=false; try{ctx.close();}catch(e){} };
+    const beep = (freq, dur, delay) => {
+      if(!on) return;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.12, ctx.currentTime+delay);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+dur);
+      o.start(ctx.currentTime+delay);
+      o.stop(ctx.currentTime+delay+dur);
     };
-    const loop=()=>{if(!on)return; beep(880,.2,0); beep(660,.2,.25); setTimeout(loop,1200);};
+    const loop = () => {
+      if(!on) return;
+      beep(880, 0.2, 0);
+      beep(660, 0.2, 0.25);
+      setTimeout(loop, 1400);
+    };
     loop();
-  }catch(e){}
+  }catch(e){ console.warn('[VC] ring error', e); }
 }
 function vcRingStop(){
-  try{if(window._vcRingStop){window._vcRingStop();window._vcRingStop=null;}}catch(e){}
+  try{ if(window._vcRingStop){ window._vcRingStop(); window._vcRingStop=null; } }catch(e){}
 }
 
-// ─── Escuta global (chamadas recebidas enquanto não está em DM) ───
-// Inicia quando o usuário faz login
+// ── Listener global (chamadas recebidas em qualquer aba) ──
 function vcStartGlobalListener(){
-  if(!me)return;
+  if(!me) return;
   sb.channel('vc-global-'+me.nick)
     .on('postgres_changes',{
-      event:'INSERT',schema:'public',table:'call_signals',
+      event:'INSERT', schema:'public', table:'call_signals',
       filter:`to_nick=eq.${me.nick}`
-    }, row=>{
-      if(row.new&&row.new.type==='ring'&&!VC.role){
-        VC.partner=row.new.from_nick;
-        VC.role='callee';
+    }, row => {
+      if(!row.new) return;
+      if(row.new.type === 'ring' && !VC.role){
+        VC.partner = row.new.from_nick;
+        VC.role    = 'callee';
+        VC.processedIds = new Set();
         vcShowUI('incoming');
         vcRingStart();
       }
