@@ -243,8 +243,39 @@
     .farm-buy-btn:disabled{background:#aaa;cursor:not-allowed;}
     @keyframes farmPulse{0%,100%{box-shadow:0 0 6px rgba(255,224,0,.4)}50%{box-shadow:0 0 14px rgba(255,224,0,.8)}}
     @keyframes cloudFloat{0%{transform:translateX(0)}50%{transform:translateX(12px)}100%{transform:translateX(0)}}
+    .title-badge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:bold;margin-left:4px;vertical-align:middle;}
+    .title-admin{background:linear-gradient(90deg,#ff0080,#ff8c00,#ffe000,#00ff80,#00bfff,#ff0080);background-size:200%;animation:rgbShift 2s linear infinite;color:#fff;text-shadow:0 0 6px rgba(255,255,255,.8);}
+    .title-lenda{background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;}
+    .title-mestre{background:linear-gradient(135deg,#8e44ad,#6c3483);color:#fff;}
+    .title-fazendeiro{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;}
+    .title-novato{background:#95a5a6;color:#fff;}
+    .font-cursive{font-family:Georgia,serif;font-style:italic;}
+    .font-bold{font-weight:900;letter-spacing:1px;}
+    .font-pixel{font-family:monospace;letter-spacing:2px;}
+    @keyframes rgbShift{0%{background-position:0%}100%{background-position:200%}}
     @keyframes popIn{0%{transform:scale(0.5);opacity:0}80%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
     .farm-pop{animation:popIn .3s ease;}
+
+    /* CAFÉ MANIA */
+    .cafe-stove{width:110px;background:#fff;border-radius:12px;border:3px solid #c0392b;display:flex;flex-direction:column;align-items:center;padding:8px 6px 6px;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;user-select:none;box-shadow:0 3px 8px rgba(0,0,0,.15);}
+    .cafe-stove:hover{transform:translateY(-3px);box-shadow:0 6px 16px rgba(0,0,0,.2);}
+    .cafe-stove.empty{border-color:#ccc;background:#fafafa;}
+    .cafe-stove.cooking{border-color:#e67e22;background:#fff8f0;}
+    .cafe-stove.ready{border-color:#27ae60;background:#f0fff5;animation:cafeReadyPulse 1s ease-in-out infinite;}
+    .cafe-stove.burnt{border-color:#555;background:#f5f5f5;}
+    .cafe-stove .stove-icon{font-size:36px;line-height:1;margin-bottom:4px;}
+    .cafe-stove .stove-name{font-size:10px;font-weight:bold;color:#555;text-align:center;min-height:28px;display:flex;align-items:center;justify-content:center;}
+    .cafe-stove .stove-timer{font-size:13px;font-weight:bold;color:#c0392b;margin-top:2px;}
+    .cafe-stove .stove-bar{width:90%;height:5px;background:#eee;border-radius:3px;margin-top:4px;overflow:hidden;}
+    .cafe-stove .stove-fill{height:100%;border-radius:3px;transition:width .5s linear;}
+    .cafe-stove .stove-badge{position:absolute;top:-8px;right:-8px;background:#27ae60;color:#fff;border-radius:50%;width:22px;height:22px;font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:2px solid #fff;}
+    .cafe-stove.burnt .stove-badge{background:#555;}
+    .cafe-recipe-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid #f0d0c0;border-radius:10px;background:#fff9f5;cursor:pointer;transition:all .15s;}
+    .cafe-recipe-item:hover{background:#fde8d8;border-color:#c0392b;transform:translateX(3px);}
+    .cafe-recipe-item.locked{opacity:.45;cursor:not-allowed;}
+    .cafe-recipe-item.locked:hover{transform:none;background:#fff9f5;border-color:#f0d0c0;}
+    @keyframes cafeReadyPulse{0%,100%{box-shadow:0 0 0 0 rgba(39,174,96,.4)}50%{box-shadow:0 0 0 8px rgba(39,174,96,0)}}
+    @keyframes cafeBurn{0%{filter:none}50%{filter:grayscale(1) brightness(.7)}100%{filter:none}}
 
 
     /* EDITAR PERFIL */
@@ -768,6 +799,9 @@
             <span style="background:rgba(0,0,0,.25);color:#aef;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:bold;">⭐ Nível <span id="fLevel">1</span></span>
             <span style="background:rgba(0,0,0,.25);color:#cfc;padding:2px 10px;border-radius:10px;font-size:12px;">XP <span id="fXp">0</span>/<span id="fXpNext">100</span></span>
             <span id="fSeason" style="background:rgba(255,255,255,.15);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;margin-left:auto;"></span>
+            <span id="fLuckBadge" style="font-size:14px;"></span>
+            <span id="fTitleBadgeHud"></span>
+            <span id="fAdminBadge" style="display:none;background:linear-gradient(135deg,#f39c12,#e74c3c);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold;animation:farmPulse 2s infinite;letter-spacing:1px;">⭐ ADM ⭐</span>
           </div>
           <!-- TOOLBAR -->
           <div id="farmToolbar" style="background:#e8f5d8;border-bottom:2px solid #b5d98a;padding:6px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
@@ -781,6 +815,10 @@
             <span style="font-size:11px;color:#666;margin-left:4px;" id="farmSeedInfo"></span>
             <div style="flex:1"></div>
             <button onclick="farmOpenShop()" style="background:#e9007e;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;">🛒 Loja</button>
+            <button id="farmExpandBtn" onclick="farmExpandField()" style="background:#7d3c98;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;">🌿 Expandir (💰2500)</button>
+            <button onclick="farmOpenLuckShop()" style="background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;">🍀 Sorte</button>
+            <button onclick="farmOpenRoleta()" style="background:linear-gradient(135deg,#8e44ad,#6c3483);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;">🎰 Roleta</button>
+            <button onclick="farmOpenTitleShop()" style="background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;">🏆 Títulos</button>
           </div>
           <!-- GAME AREA -->
           <div id="farmGameArea" style="position:relative;overflow:hidden;background:#4a9e35;">
@@ -798,6 +836,16 @@
               </div>
             </div>
           </div>
+          <!-- OFFERS PANEL -->
+          <div style="padding:6px 10px 0;">
+            <div style="font-size:11px;font-weight:bold;color:#2d5a2d;margin-bottom:4px;">📢 Ofertas de Fazendeiros</div>
+            <div id="farmOffersPanel" style="min-height:36px;"></div>
+          </div>
+          <!-- ESTOQUE -->
+          <div style="padding:6px 10px 0;">
+            <div style="font-size:11px;font-weight:bold;color:#2d5a2d;margin-bottom:3px;">📦 Seu Estoque</div>
+            <div id="farmStockPanel" style="min-height:30px;"></div>
+          </div>
           <!-- STATUS BAR -->
           <div id="farmStatus" style="background:#f1f8e9;border-top:1px solid #b5d98a;padding:5px 12px;font-size:11px;color:#555;min-height:24px;text-align:center;">
             Selecione uma ferramenta e clique nos canteiros para plantar!
@@ -805,6 +853,169 @@
         </div>
 
         <!-- SHOP MODAL -->
+        <!-- CAFÉ MANIA -->
+        <div id="cafeGame" style="margin-top:12px;">
+          <div style="background:linear-gradient(135deg,#8B2500,#c0392b);padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-radius:8px 8px 0 0;">
+            <span style="font-size:16px;font-weight:bold;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)">&#x2615; Café Mania</span>
+            <span style="background:rgba(0,0,0,.25);color:#ffe066;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:bold;">&#x1F4B0; <span id="cafeCoins">200</span></span>
+            <span style="background:rgba(0,0,0,.25);color:#aef;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:bold;">&#x2B50; Nível <span id="cafeLevel">1</span></span>
+            <span style="background:rgba(0,0,0,.25);color:#cfc;padding:2px 10px;border-radius:10px;font-size:12px;">XP <span id="cafeXp">0</span>/<span id="cafeXpNext">100</span></span>
+            <button onclick="cafeBuyStove()" style="margin-left:auto;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:bold;cursor:pointer;">+ Fogão (&#x1F4B0;<span id="cafeStovePrice">150</span>)</button>
+          </div>
+          <div style="background:linear-gradient(180deg,#f5e6c8 0%,#ead5a0 100%);border:2px solid #c0392b;border-top:none;padding:12px;border-radius:0 0 8px 8px;">
+            <div id="cafeStoves" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:10px;"></div>
+            <div id="cafeStatus" style="text-align:center;font-size:11px;color:#8B2500;min-height:18px;font-style:italic;"></div>
+          </div>
+        </div>
+
+        <!-- Modal escolha de receita -->
+        <div id="cafeRecipeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:14px;width:340px;max-width:95vw;max-height:88vh;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4);">
+            <div style="background:linear-gradient(135deg,#8B2500,#c0392b);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <span style="color:#fff;font-weight:bold;font-size:15px;">&#x1F373; Escolha uma Receita</span>
+              <button onclick="cafeCloseRecipe()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+            <div id="cafeRecipeList" style="padding:10px;overflow-y:auto;max-height:420px;display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+        </div>
+
+        <!-- MODAL VENDA DIRETA -->
+        <div id="farmSellModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:310;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:14px;width:300px;max-width:95vw;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4);">
+            <div style="background:linear-gradient(135deg,#2980b9,#3498db);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <span id="fSellTitle" style="color:#fff;font-weight:bold;font-size:14px;">Vender</span>
+              <button onclick="farmCloseSell()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;">×</button>
+            </div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:10px;">
+              <div style="font-size:12px;color:#555;">Preço base: 💰<span id="fSellBase">0</span> por unidade</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:12px;font-weight:bold;">Quantidade:</label>
+                <input id="fSellQty" type="number" min="1" value="1" style="width:70px;padding:4px;border:2px solid #3498db;border-radius:6px;font-size:13px;">
+              </div>
+              <div style="font-size:13px;font-weight:bold;color:#27ae60;">Total: 💰<span id="fSellTotal">0</span></div>
+              <button onclick="farmConfirmSell()" style="background:#27ae60;color:#fff;border:none;border-radius:8px;padding:8px;font-size:13px;font-weight:bold;cursor:pointer;">✅ Confirmar Venda</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL LEILÃO -->
+        <div id="farmAuctionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:310;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:14px;width:360px;max-width:95vw;max-height:90vh;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;flex-direction:column;">
+            <div style="background:linear-gradient(135deg,#e67e22,#f39c12);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+              <div>
+                <div style="color:#fff;font-weight:bold;font-size:14px;">🔨 Leilão</div>
+                <div id="fAucName" style="color:rgba(255,255,255,.85);font-size:12px;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span id="fAucTimer" style="color:#fff;font-weight:bold;font-size:16px;"></span>
+                <button onclick="farmCloseAuction()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">×</button>
+              </div>
+            </div>
+            <div style="padding:10px;flex-shrink:0;background:#fff8f0;border-bottom:1px solid #fde8c0;">
+              <div id="fAucStatus" style="font-size:12px;color:#e67e22;font-weight:bold;text-align:center;"></div>
+            </div>
+            <div id="fAucOffers" style="flex:1;overflow-y:auto;padding:10px;min-height:180px;max-height:300px;"></div>
+            <div style="padding:10px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:center;flex-shrink:0;">
+              <button id="fAucStartBtn" onclick="farmStartAuction()" style="background:linear-gradient(135deg,#e67e22,#f39c12);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:bold;cursor:pointer;">🔨 Iniciar Leilão (30s)</button>
+              <button id="fAucAcceptBtn" style="display:none;background:#27ae60;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:bold;cursor:pointer;">✅ Aceitar Melhor</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL ROLETA -->
+        <div id="farmRoletaModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:310;align-items:center;justify-content:center;">
+          <div style="background:#1a0a2e;border-radius:16px;width:320px;max-width:95vw;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.6);border:2px solid #8e44ad;">
+            <div style="background:linear-gradient(135deg,#6c3483,#8e44ad);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="color:#fff;font-weight:bold;font-size:15px;">🎰 Roleta da Invasão</div>
+                <div style="color:rgba(255,255,255,.75);font-size:10px;">Tire 3 🃏 coringas para invadir uma fazenda!</div>
+              </div>
+              <button onclick="farmCloseRoleta()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">×</button>
+            </div>
+            <div style="padding:14px;">
+              <!-- Reels -->
+              <div style="background:#2d1a4e;border-radius:12px;padding:14px;margin-bottom:10px;border:2px solid #8e44ad;text-align:center;">
+                <div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px;">
+                  <div style="background:#fff;border-radius:10px;width:68px;height:68px;display:flex;align-items:center;justify-content:center;font-size:38px;border:3px solid #f39c12;box-shadow:0 2px 8px rgba(0,0,0,.3);" id="fRol1">🌽</div>
+                  <div style="background:#fff;border-radius:10px;width:68px;height:68px;display:flex;align-items:center;justify-content:center;font-size:38px;border:3px solid #f39c12;box-shadow:0 2px 8px rgba(0,0,0,.3);" id="fRol2">🌾</div>
+                  <div style="background:#fff;border-radius:10px;width:68px;height:68px;display:flex;align-items:center;justify-content:center;font-size:38px;border:3px solid #f39c12;box-shadow:0 2px 8px rgba(0,0,0,.3);" id="fRol3">🍎</div>
+                </div>
+                <div id="fRolResult" style="font-size:12px;color:#ccc;min-height:20px;"></div>
+              </div>
+              <!-- Combos -->
+              <div style="background:#1a0a2e;border-radius:8px;padding:8px 10px;margin-bottom:8px;border:1px solid #4a2080;">
+                <div style="font-size:10px;color:#8e44ad;font-weight:bold;margin-bottom:4px;">🏆 COMBINAÇÕES</div>
+                <div id="fRolCombos"></div>
+                <div style="font-size:9px;color:#555;margin-top:4px;">🃏🃏🃏 = Invasão de fazenda (1 em 1000)</div>
+              </div>
+              <div style="color:#ffe066;font-size:11px;margin-bottom:8px;text-align:center;">Giros grátis hoje: <strong id="fRolSpins">10</strong>/10</div>
+              <div style="display:flex;gap:8px;justify-content:center;">
+                <button onclick="farmSpin(false)" style="background:linear-gradient(135deg,#8e44ad,#6c3483);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:bold;cursor:pointer;flex:1;">🎰 Girar Grátis</button>
+                <button onclick="farmBuySpins()" style="background:linear-gradient(135deg,#e67e22,#f39c12);color:#fff;border:none;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:bold;cursor:pointer;">+10 Giros<br><span style="font-size:9px;opacity:.8;">R$ 2,99</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL TÍTULOS & FONTES -->
+        <div id="farmTitleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:310;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:14px;width:340px;max-width:95vw;max-height:90vh;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;flex-direction:column;">
+            <div style="background:linear-gradient(135deg,#c0392b,#e74c3c);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+              <span style="color:#fff;font-weight:bold;font-size:15px;">🏆 Títulos & Estilos</span>
+              <button onclick="farmCloseTitleShop()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">×</button>
+            </div>
+            <div style="overflow-y:auto;padding:12px;flex:1;">
+              <div style="font-size:11px;font-weight:bold;color:#c0392b;margin-bottom:6px;">🏷️ TÍTULOS</div>
+              <div id="fTitleList"></div>
+              <div style="font-size:11px;font-weight:bold;color:#8e44ad;margin:10px 0 6px;">✒️ ESTILO DE LETRA</div>
+              <div id="fFontList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LUCK SHOP MODAL -->
+        <div id="farmLuckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:14px;width:320px;max-width:95vw;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4);">
+            <div style="background:linear-gradient(135deg,#1e8449,#27ae60);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="color:#fff;font-weight:bold;font-size:15px;">🍀 Loja da Sorte</div>
+                <div style="color:rgba(255,255,255,.8);font-size:11px;">Aumente suas chances de ofertas melhores!</div>
+              </div>
+              <button onclick="farmCloseLuckShop()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">×</button>
+            </div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:10px;">
+              <div style="background:#f0fff4;border:2px solid #27ae60;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:28px;">🍀</span>
+                <div style="flex:1">
+                  <div style="font-weight:bold;font-size:13px;color:#1e8449">Sorte Nível 1</div>
+                  <div style="font-size:11px;color:#555">+25% preço nas ofertas · +3 qtd mínima</div>
+                  <div style="font-size:10px;color:#27ae60;font-weight:bold;">R$ 1,99</div>
+                </div>
+                <button onclick="farmBuyLuck(1,'R$1,99')" style="background:#27ae60;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
+              </div>
+              <div style="background:#f0fff4;border:2px solid #2ecc71;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:28px;">🍀🍀</span>
+                <div style="flex:1">
+                  <div style="font-weight:bold;font-size:13px;color:#1e8449">Sorte Nível 2</div>
+                  <div style="font-size:11px;color:#555">+50% preço nas ofertas · +6 qtd mínima</div>
+                  <div style="font-size:10px;color:#27ae60;font-weight:bold;">R$ 2,99</div>
+                </div>
+                <button onclick="farmBuyLuck(2,'R$2,99')" style="background:#27ae60;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
+              </div>
+              <div style="background:linear-gradient(135deg,#f0fff4,#e8f8e8);border:2px solid #f39c12;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:28px;">🍀🍀🍀</span>
+                <div style="flex:1">
+                  <div style="font-weight:bold;font-size:13px;color:#b7950b">Sorte Máxima ✨</div>
+                  <div style="font-size:11px;color:#555">+75% preço · +9 qtd · Ofertas mais frequentes</div>
+                  <div style="font-size:10px;color:#e67e22;font-weight:bold;">R$ 4,50</div>
+                </div>
+                <button onclick="farmBuyLuck(3,'R$4,50')" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
+              </div>
+              <div style="font-size:9px;color:#aaa;text-align:center;">Simulação — sem cobrança real neste protótipo</div>
+            </div>
+          </div>
+        </div>
+
         <div id="farmShopModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;">
           <div style="background:#fff;border-radius:12px;width:340px;max-width:95vw;max-height:90vh;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3);">
             <div style="background:linear-gradient(135deg,#e9007e,#b80063);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
@@ -3126,8 +3337,9 @@ const FARM_CROPS = [
   { id:'pump',   emoji:'🎃', name:'Abóbora',    cost:80, reward:220,time:600, xp:100,desc:'Cresce em 10min',lvlReq:7 },
   { id:'apple',  emoji:'🍎', name:'Maçã',       cost:120,reward:350,time:900, xp:150,desc:'Cresce em 15min',lvlReq:10},
 ];
-const FARM_ROWS = 4, FARM_COLS = 6;
+let FARM_ROWS = 4, FARM_COLS = 6;
 const XP_PER_LEVEL = (lvl) => Math.floor(100 * Math.pow(1.4, lvl - 1));
+function farmIsAdmin(){ try{ return me && (me.nick==='kaua12345'||me.role==='admin'); }catch(e){ return false; } }
 
 let farm = {
   coins: 50, level: 1, xp: 0,
@@ -3135,9 +3347,15 @@ let farm = {
   selectedSeed: 'wheat',
   cells: [],
   owned: ['wheat','corn'],
-  season: 0, // 0=spring,1=summer,2=autumn,3=winter
+  season: 0,
   seasonTimer: null,
   tickTimer: null,
+  luckBoost: 0,
+  offers: [],
+  offerTimer: null,
+  expansions: 0,
+  title: null,
+  fontStyle: 'normal',
 };
 
 const SEASONS = [
@@ -3148,13 +3366,16 @@ const SEASONS = [
 ];
 
 function farmInit(){
-  // init cells
+  // Admin init
+  if(farmIsAdmin()){
+    farm.coins = 999999999;
+    farm.xp = 999999999;
+    farm.level = 99;
+    farm.luckBoost = 3;
+    FARM_CROPS.forEach(c=>{ if(!farm.owned.includes(c.id)) farm.owned.push(c.id); });
+  }
   farm.cells = Array.from({length: FARM_ROWS * FARM_COLS}, () => ({
-    state: 'empty', // empty | plowed | seeded | growing | ready
-    crop: null,
-    plantedAt: 0,
-    waterCount: 0,
-    readyAt: 0,
+    state:'empty', crop:null, plantedAt:0, waterCount:0, readyAt:0,
   }));
   farmRenderGrid();
   farmUpdateHud();
@@ -3165,6 +3386,10 @@ function farmInit(){
   farm.tickTimer = setInterval(farmTick, 5000);
   clearInterval(farm.seasonTimer);
   farm.seasonTimer = setInterval(()=>farmSetSeason((farm.season+1)%4), 120000);
+  // Ofertas de fazendeiros aparecem periodicamente
+  clearInterval(farm.offerTimer);
+  farmGenerateOffer();
+  farm.offerTimer = setInterval(farmGenerateOffer, 45000);
 }
 
 function farmSetSeason(s){
@@ -3210,6 +3435,7 @@ function farmTick(){
     }
   });
   if(changed){ farmRenderGrid(); farmSetStatus('🌾 Colheita pronta! Clique para colher.'); }
+  farmRenderOffers();
 }
 
 function farmRenderGrid(){
@@ -3331,23 +3557,20 @@ function farmCellClick(i){
   if(tool === 'harvest'){
     if(cell.state === 'ready'){
       const crop = FARM_CROPS.find(c=>c.id===cell.crop);
-      const bonus = SEASONS[farm.season].bonus;
-      const reward = Math.floor((crop ? crop.reward : 10) * bonus);
       const xpGain = crop ? crop.xp : 5;
-      farm.coins += reward;
       farm.xp += xpGain;
-      cell.state = 'empty';
-      cell.crop = null;
-      cell.waterCount = 0;
-      farmLevelCheck();
-      farmUpdateHud();
-      farmRenderGrid();
-      farmSetStatus(`🎉 Colhido! +💰${reward} moedas, +⭐${xpGain} XP`);
-      // pop animation
-      const grid = document.getElementById('farmGrid');
-      if(grid && grid.children[farm.cells.indexOf(cell)+1]){
-        // find the correct child
-      }
+      if(!farm.stock) farm.stock={};
+      // Chance de fruta dourada (3% normal, +5% por nível de sorte)
+      const goldenChance = 0.03 + farm.luckBoost * 0.05;
+      const isGolden = Math.random() < goldenChance;
+      const stockKey = isGolden ? cell.crop + '_gold' : cell.crop;
+      farm.stock[stockKey] = (farm.stock[stockKey]||0)+1;
+      farm.harvestTimes = farm.harvestTimes||{};
+      farm.harvestTimes[stockKey] = Date.now();
+      cell.state='empty'; cell.crop=null; cell.waterCount=0;
+      farmLevelCheck(); farmUpdateHud(); farmRenderGrid(); farmRenderStock();
+      if(isGolden) toast('✨ FRUTA DOURADA! Vale muito mais no leilão!');
+      farmSetStatus(isGolden ? '✨ Fruta Dourada no estoque!' : '📦 Colhido! Use Vender ou Leilão.');
     } else {
       farmSetStatus('Não há nada pronto para colher aqui.');
     }
@@ -3385,10 +3608,17 @@ function farmSetStatus(msg){
 
 function farmUpdateHud(){
   const setEl = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
-  setEl('fCoins', farm.coins);
-  setEl('fLevel', farm.level);
-  setEl('fXp', farm.xp);
+  setEl('fCoins', farmIsAdmin() ? '∞' : farm.coins);
+  setEl('fLevel', farmIsAdmin() ? '∞' : farm.level);
+  setEl('fXp', farmIsAdmin() ? '∞' : farm.xp);
   setEl('fXpNext', XP_PER_LEVEL(farm.level));
+  const badge = document.getElementById('fAdminBadge');
+  if(badge) badge.style.display = farmIsAdmin() ? 'inline-flex' : 'none';
+  const luck = document.getElementById('fLuckBadge');
+  if(luck) luck.textContent = farm.luckBoost > 0 ? '🍀'.repeat(farm.luckBoost) : '';
+  // Title badge in HUD
+  const tb = document.getElementById('fTitleBadgeHud');
+  if(tb) tb.innerHTML = farmGetTitleBadge(me&&me.nick);
 }
 
 function farmUpdateSeedSelect(){
@@ -3477,10 +3707,765 @@ document.addEventListener('DOMContentLoaded', ()=>{
   window.showTab = function(tab){
     origShowTab2 && origShowTab2(tab);
     if(tab==='games' && !farm._inited){ farm._inited=true; farmInit(); }
+    if(tab==='games' && !cafe._inited){ cafe._inited=true; cafeInit(); }
   };
 });
 
 
+
+
+// ══════════════════════════════════════════════════════════════════
+// ── CAFÉ MANIA ──
+// ══════════════════════════════════════════════════════════════════
+const CAFE_RECIPES = [
+  { id:'sandwich', emoji:'🥪', name:'Sanduíche',      cost:10, time:20,  sell:25,  xp:8,   lvl:1 },
+  { id:'coffee',   emoji:'☕', name:'Café Expresso',  cost:8,  time:15,  sell:20,  xp:6,   lvl:1 },
+  { id:'cake',     emoji:'🎂', name:'Bolo de Chocolate', cost:30, time:60, sell:75, xp:20, lvl:1 },
+  { id:'pizza',    emoji:'🍕', name:'Pizza',          cost:40, time:90,  sell:110, xp:28,  lvl:2 },
+  { id:'burger',   emoji:'🍔', name:'Hambúrguer',     cost:25, time:45,  sell:65,  xp:18,  lvl:2 },
+  { id:'sushi',    emoji:'🍱', name:'Sushi',          cost:60, time:120, sell:160, xp:40,  lvl:3 },
+  { id:'steak',    emoji:'🥩', name:'Filé Mignon',   cost:80, time:150, sell:220, xp:55,  lvl:4 },
+  { id:'lobster',  emoji:'🦞', name:'Lagosta',        cost:150,time:300, sell:420, xp:100, lvl:5 },
+];
+
+const CAFE_XP_LEVEL = lvl => Math.floor(100 * Math.pow(1.5, lvl - 1));
+const CAFE_STOVE_PRICES = [150, 300, 500, 800, 1200];
+
+let cafe = {
+  coins: 200, level: 1, xp: 0,
+  stoves: [{ state:'empty', recipe:null, startedAt:0, timerId:null }],
+  selectedStoveIdx: null,
+  _inited: false,
+};
+
+function cafeInit() {
+  cafeRenderStoves();
+  cafeUpdateHud();
+  // tick every second
+  setInterval(cafeTick, 1000);
+}
+
+function cafeTick() {
+  let changed = false;
+  const now = Date.now();
+  cafe.stoves.forEach((stove, i) => {
+    if (stove.state === 'cooking') {
+      const rec = CAFE_RECIPES.find(r => r.id === stove.recipe);
+      if (!rec) return;
+      const elapsed = (now - stove.startedAt) / 1000;
+      if (elapsed >= rec.time * 2) {
+        stove.state = 'burnt';
+        changed = true;
+        cafeSetStatus(`💀 Fogão ${i+1}: ${rec.name} queimou! Clique para limpar.`);
+      } else if (elapsed >= rec.time) {
+        stove.state = 'ready';
+        changed = true;
+        cafeSetStatus(`✅ Fogão ${i+1}: ${rec.name} pronto! Clique para servir!`);
+        toast(`✅ ${rec.name} pronto para servir!`);
+      }
+    }
+  });
+  if (changed) cafeRenderStoves();
+  else cafeUpdateTimers();
+}
+
+function cafeUpdateTimers() {
+  const now = Date.now();
+  cafe.stoves.forEach((stove, i) => {
+    if (stove.state !== 'cooking') return;
+    const rec = CAFE_RECIPES.find(r => r.id === stove.recipe);
+    if (!rec) return;
+    const elapsed = (now - stove.startedAt) / 1000;
+    const remaining = Math.max(0, rec.time - elapsed);
+    const pct = Math.min(100, (elapsed / rec.time) * 100);
+    const timerEl = document.getElementById(`cafe-timer-${i}`);
+    const fillEl  = document.getElementById(`cafe-fill-${i}`);
+    if (timerEl) timerEl.textContent = remaining > 0 ? cafeFmt(remaining) : 'Pronto!';
+    if (fillEl)  fillEl.style.width = pct + '%';
+  });
+}
+
+function cafeFmt(secs) {
+  const m = Math.floor(secs / 60), s = Math.floor(secs % 60);
+  return m > 0 ? `${m}m${s < 10 ? '0' : ''}${s}s` : `${Math.floor(secs)}s`;
+}
+
+function cafeRenderStoves() {
+  const container = document.getElementById('cafeStoves');
+  if (!container) return;
+  container.innerHTML = '';
+  cafe.stoves.forEach((stove, i) => {
+    const rec = stove.recipe ? CAFE_RECIPES.find(r => r.id === stove.recipe) : null;
+    const div = document.createElement('div');
+    div.className = 'cafe-stove ' + stove.state;
+    div.onclick = () => cafeStoveClick(i);
+
+    let icon = '🍳', name = 'Vazio — clique para cozinhar', timer = '', bar = '', badge = '';
+    const now = Date.now();
+
+    if (stove.state === 'empty') {
+      icon = '🍳'; name = 'Vazio<br><span style="color:#aaa;font-size:9px">clique para cozinhar</span>';
+    } else if (stove.state === 'cooking' && rec) {
+      const elapsed = (now - stove.startedAt) / 1000;
+      const remaining = Math.max(0, rec.time - elapsed);
+      const pct = Math.min(100, (elapsed / rec.time) * 100);
+      icon = rec.emoji;
+      name = rec.name;
+      timer = `<div class="stove-timer" id="cafe-timer-${i}">${cafeFmt(remaining)}</div>`;
+      bar = `<div class="stove-bar"><div class="stove-fill" id="cafe-fill-${i}" style="width:${pct}%;background:#e67e22;"></div></div>`;
+    } else if (stove.state === 'ready' && rec) {
+      icon = rec.emoji;
+      name = `<span style="color:#27ae60">${rec.name}</span>`;
+      badge = `<div class="stove-badge">✓</div>`;
+      timer = `<div class="stove-timer" style="color:#27ae60;font-size:11px">+💰${rec.sell}</div>`;
+      bar = `<div class="stove-bar"><div class="stove-fill" style="width:100%;background:#27ae60;"></div></div>`;
+    } else if (stove.state === 'burnt' && rec) {
+      icon = '💀';
+      name = `<span style="color:#888">${rec.name} queimou</span>`;
+      badge = `<div class="stove-badge" style="background:#555">✗</div>`;
+    }
+
+    div.innerHTML = `
+      ${badge}
+      <div class="stove-icon">${icon}</div>
+      <div class="stove-name">${name}</div>
+      ${timer}${bar}`;
+    container.appendChild(div);
+  });
+
+  // Add stove buy button hint
+  if (cafe.stoves.length < 6) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'width:110px;height:100px;border:3px dashed #ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#ccc;cursor:pointer;';
+    hint.title = 'Comprar fogão';
+    hint.textContent = '+';
+    hint.onclick = cafeBuyStove;
+    container.appendChild(hint);
+  }
+}
+
+function cafeStoveClick(i) {
+  const stove = cafe.stoves[i];
+  if (stove.state === 'ready') {
+    // Serve
+    const rec = CAFE_RECIPES.find(r => r.id === stove.recipe);
+    if (rec) {
+      cafe.coins += rec.sell;
+      cafe.xp += rec.xp;
+      cafeSetStatus(`🎉 Servido! +💰${rec.sell} moedas, +${rec.xp} XP`);
+      cafeLevelCheck();
+    }
+    stove.state = 'empty'; stove.recipe = null;
+    cafeUpdateHud(); cafeRenderStoves();
+    return;
+  }
+  if (stove.state === 'burnt') {
+    stove.state = 'empty'; stove.recipe = null;
+    cafeSetStatus('🧹 Fogão limpo.');
+    cafeRenderStoves();
+    return;
+  }
+  if (stove.state === 'cooking') {
+    cafeSetStatus('⏳ Aguarde o preparo terminar!');
+    return;
+  }
+  // empty — open recipe modal
+  cafe.selectedStoveIdx = i;
+  cafeOpenRecipe();
+}
+
+function cafeOpenRecipe() {
+  const modal = document.getElementById('cafeRecipeModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  const list = document.getElementById('cafeRecipeList');
+  list.innerHTML = '';
+  CAFE_RECIPES.forEach(rec => {
+    const locked = rec.lvl > cafe.level;
+    const noCoins = cafe.coins < rec.cost;
+    const div = document.createElement('div');
+    div.className = 'cafe-recipe-item' + (locked ? ' locked' : '');
+    div.innerHTML = `
+      <span style="font-size:32px">${rec.emoji}</span>
+      <div style="flex:1">
+        <div style="font-weight:bold;font-size:13px;color:#8B2500">${rec.name}</div>
+        <div style="font-size:11px;color:#888">⏱ ${cafeFmt(rec.time)} · Custo: 💰${rec.cost} · Venda: 💰${rec.sell} · +${rec.xp}XP</div>
+        ${locked ? `<div style="font-size:10px;color:#e9007e">🔒 Nível ${rec.lvl} necessário</div>` : ''}
+        ${!locked && noCoins ? `<div style="font-size:10px;color:#e74c3c">Sem moedas suficientes</div>` : ''}
+      </div>
+      <button style="background:${locked||noCoins?'#ccc':'#c0392b'};color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:${locked||noCoins?'not-allowed':'pointer'};"
+        ${locked||noCoins?'disabled':''} onclick="cafeCook('${rec.id}')">
+        ${locked?'🔒':'Cozinhar'}
+      </button>`;
+    list.appendChild(div);
+  });
+}
+
+function cafeCook(recipeId) {
+  const i = cafe.selectedStoveIdx;
+  if (i === null) return;
+  const rec = CAFE_RECIPES.find(r => r.id === recipeId);
+  if (!rec || cafe.coins < rec.cost) return;
+  cafe.coins -= rec.cost;
+  cafe.stoves[i].state = 'cooking';
+  cafe.stoves[i].recipe = recipeId;
+  cafe.stoves[i].startedAt = Date.now();
+  cafeCloseRecipe();
+  cafeUpdateHud();
+  cafeRenderStoves();
+  cafeSetStatus(`🍳 ${rec.name} no fogo! Pronto em ${cafeFmt(rec.time)}.`);
+}
+
+function cafeCloseRecipe() {
+  const modal = document.getElementById('cafeRecipeModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function cafeBuyStove() {
+  const priceEl = document.getElementById('cafeStovePrice');
+  const idx = cafe.stoves.length - 1;
+  const price = CAFE_STOVE_PRICES[Math.min(idx, CAFE_STOVE_PRICES.length - 1)];
+  if (cafe.stoves.length >= 6) { cafeSetStatus('Máximo de fogões atingido!'); return; }
+  if (cafe.coins < price) { cafeSetStatus(`Sem moedas! Precisa de 💰${price}.`); return; }
+  cafe.coins -= price;
+  cafe.stoves.push({ state:'empty', recipe:null, startedAt:0 });
+  const nextPrice = CAFE_STOVE_PRICES[Math.min(cafe.stoves.length - 1, CAFE_STOVE_PRICES.length - 1)];
+  if (priceEl) priceEl.textContent = nextPrice;
+  cafeUpdateHud(); cafeRenderStoves();
+  toast('🍳 Novo fogão comprado!');
+}
+
+function cafeLevelCheck() {
+  const needed = CAFE_XP_LEVEL(cafe.level);
+  while (cafe.xp >= needed) {
+    cafe.xp -= needed;
+    cafe.level++;
+    toast(`🎊 Café Mania: Nível ${cafe.level}!`);
+  }
+  cafeUpdateHud();
+}
+
+function cafeUpdateHud() {
+  const s = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+  s('cafeCoins', cafe.coins);
+  s('cafeLevel', cafe.level);
+  s('cafeXp', cafe.xp);
+  s('cafeXpNext', CAFE_XP_LEVEL(cafe.level));
+  const idx = Math.min(cafe.stoves.length - 1, CAFE_STOVE_PRICES.length - 1);
+  s('cafeStovePrice', CAFE_STOVE_PRICES[idx]);
+}
+
+function cafeSetStatus(msg) {
+  const el = document.getElementById('cafeStatus');
+  if (el) el.textContent = msg;
+}
+
+
+
+
+// ── TÍTULOS & ESTILOS DE PERFIL ──
+const FARM_TITLES = [
+  { id:'admin',      label:'⭐ ADM ⭐',       css:'title-admin',      desc:'Exclusivo de administradores',    adminOnly:true },
+  { id:'lenda',      label:'🏆 Lenda',        css:'title-lenda',      desc:'Top vendedor do leilão',          shop:true, price:5000 },
+  { id:'mestre',     label:'💎 Mestre',       css:'title-mestre',     desc:'Nível 20+ na fazenda',            lvlReq:20 },
+  { id:'fazendeiro', label:'🌾 Fazendeiro',   css:'title-fazendeiro', desc:'Primeiro título desbloqueado',    default:true },
+  { id:'novato',     label:'🌱 Novato',       css:'title-novato',     desc:'Começando a jornada',             default:true },
+];
+const FARM_FONTS = [
+  { id:'normal',   label:'Normal',       css:'',             desc:'Padrão' },
+  { id:'cursive',  label:'Cursivo ✒️',   css:'font-cursive', desc:'Estilo elegante', shop:true, price:1000 },
+  { id:'bold',     label:'Negrito 🔥',   css:'font-bold',    desc:'Destaque máximo',  shop:true, price:1000 },
+  { id:'pixel',    label:'Pixel 👾',     css:'font-pixel',   desc:'Estilo retrô',     shop:true, price:1000 },
+];
+
+function farmGetTitleBadge(nick){
+  if(farmIsAdmin()) return '<span class="title-badge title-admin">⭐ ADM ⭐</span>';
+  if(!farm.title) return '';
+  const t=FARM_TITLES.find(x=>x.id===farm.title);
+  if(!t) return '';
+  return `<span class="title-badge ${t.css}">${t.label}</span>`;
+}
+
+function farmOpenTitleShop(){
+  const modal=document.getElementById('farmTitleModal');
+  if(!modal) return;
+  const list=document.getElementById('fTitleList');
+  list.innerHTML='';
+  FARM_TITLES.filter(t=>!t.adminOnly).forEach(t=>{
+    const owned=farm.title===t.id||t.default;
+    const locked=t.lvlReq&&farm.level<t.lvlReq;
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:8px;padding:8px;border:2px solid #eee;border-radius:8px;margin-bottom:6px;background:#fafafa;';
+    d.innerHTML=`
+      <span class="title-badge ${t.css}" style="font-size:12px;">${t.label}</span>
+      <div style="flex:1"><div style="font-size:11px;color:#555">${t.desc}</div>${locked?`<div style="font-size:10px;color:#e9007e">🔒 Nível ${t.lvlReq}</div>`:''}</div>
+      ${farm.title===t.id?'<span style="color:#27ae60;font-size:12px;font-weight:bold;">✓ Ativo</span>':
+        t.default?`<button onclick="farmEquipTitle('${t.id}')" style="background:#27ae60;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">Usar</button>`:
+        locked?`<button disabled style="background:#ccc;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;">🔒</button>`:
+        t.shop?`<button onclick="farmBuyTitle('${t.id}')" style="background:#e9007e;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">💰${t.price}</button>`:''}`;
+    list.appendChild(d);
+  });
+  // Fonts
+  const flist=document.getElementById('fFontList');
+  flist.innerHTML='';
+  FARM_FONTS.forEach(f=>{
+    const active=farm.fontStyle===f.id;
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;border:2px solid #eee;border-radius:8px;margin-bottom:4px;';
+    d.innerHTML=`
+      <span class="${f.css}" style="font-size:13px;font-weight:bold;color:#333;min-width:80px;">${f.label}</span>
+      <span style="flex:1;font-size:10px;color:#888">${f.desc}</span>
+      ${active?'<span style="color:#27ae60;font-size:12px;font-weight:bold;">✓</span>':
+        f.shop?`<button onclick="farmBuyFont('${f.id}')" style="background:#8e44ad;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">💰${f.price}</button>`:
+        `<button onclick="farmEquipFont('${f.id}')" style="background:#3498db;color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">Usar</button>`}`;
+    flist.appendChild(d);
+  });
+  modal.style.display='flex';
+}
+function farmCloseTitleShop(){ document.getElementById('farmTitleModal').style.display='none'; }
+function farmEquipTitle(id){ farm.title=id; farmOpenTitleShop(); toast('✅ Título equipado!'); }
+function farmBuyTitle(id){
+  const t=FARM_TITLES.find(x=>x.id===id);
+  if(!t||!t.price) return;
+  if(!farmIsAdmin()&&farm.coins<t.price){ toast('Sem moedas!'); return; }
+  if(!farmIsAdmin()) farm.coins-=t.price;
+  farm.title=id; farmUpdateHud(); farmOpenTitleShop();
+  toast(`🏆 Título "${t.label}" desbloqueado!`);
+}
+function farmEquipFont(id){ farm.fontStyle=id; farmOpenTitleShop(); toast('✅ Estilo equipado!'); }
+function farmBuyFont(id){
+  const f=FARM_FONTS.find(x=>x.id===id);
+  if(!f||!f.price) return;
+  if(!farmIsAdmin()&&farm.coins<f.price){ toast('Sem moedas!'); return; }
+  if(!farmIsAdmin()) farm.coins-=f.price;
+  farm.fontStyle=id; farmUpdateHud(); farmOpenTitleShop();
+  toast(`✅ Estilo "${f.label}" desbloqueado!`);
+}
+
+// ── ESTOQUE & VENDA & LEILÃO ──
+if(!farm.stock) farm.stock={};
+if(!farm.spinsLeft) farm.spinsLeft=10;
+if(!farm.lastSpinDate) farm.lastSpinDate='';
+
+function farmRenderStock(){
+  const el=document.getElementById('farmStockPanel');
+  if(!el) return;
+  const entries=Object.entries(farm.stock||{}).filter(([,q])=>q>0);
+  if(!entries.length){ el.innerHTML='<div style="color:#aaa;font-size:11px;padding:6px;text-align:center">Estoque vazio — colha suas plantações!</div>'; return; }
+  el.innerHTML='';
+  entries.forEach(([stockId,qty])=>{
+    const isGold=stockId.endsWith('_gold');
+    const cropId=isGold?stockId.replace('_gold',''):stockId;
+    const crop=FARM_CROPS.find(c=>c.id===cropId); if(!crop) return;
+    const rot=farmStockRot(stockId);
+    const goldMult=isGold?10:1;
+    const d=document.createElement('div');
+    d.style.cssText=`display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;border:2px solid ${rot?'#e74c3c':isGold?'#f39c12':'#d5e8c4'};margin-bottom:4px;background:${isGold?'linear-gradient(135deg,#fffde7,#fff9c4)':'#fff'};`;
+    d.innerHTML=`
+      <span style="font-size:22px;${isGold?'filter:drop-shadow(0 0 4px #f39c12)':''}">${crop.emoji}${isGold?'✨':''}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:bold;color:${isGold?'#b7770d':'#2d5a2d'}">${isGold?'✨ ':''} ${crop.name}${isGold?' Dourad@':''} ×${qty}</div>
+        ${rot?'<div style="font-size:10px;color:#e74c3c">⚠️ Apodrecendo!</div>':`<div style="font-size:10px;color:#888">Base: 💰${crop.reward*goldMult} cada${isGold?' (10×!)':''}</div>`}
+      </div>
+      <button onclick="farmOpenSell('${stockId}')" style="background:#3498db;color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">💰 Vender</button>
+      <button onclick="farmOpenAuction('${stockId}')" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">🔨 Leilão</button>`;
+    el.appendChild(d);
+  });
+}
+
+// Apodrecimento: itens ficam 10min no estoque antes de apodrecer
+if(!farm.harvestTimes) farm.harvestTimes={};
+function farmStockRot(id){
+  const t=farm.harvestTimes[id]||0;
+  return t && (Date.now()-t)>600000;
+}
+
+// ── VENDA DIRETA ──
+let _sellCropId=null;
+function farmOpenSell(id){
+  _sellCropId=id;
+  const isGold=id.endsWith('_gold');
+  const cropId=isGold?id.replace('_gold',''):id;
+  const crop=FARM_CROPS.find(c=>c.id===cropId);
+  const goldMult=isGold?10:1;
+  const qty=farm.stock[id]||0;
+  const modal=document.getElementById('farmSellModal');
+  if(!modal) return;
+  document.getElementById('fSellTitle').textContent=`Vender ${crop.emoji} ${crop.name} (×${qty})`;
+  document.getElementById('fSellBase').textContent=crop.reward*goldMult;
+  document.getElementById('fSellQty').max=qty; document.getElementById('fSellQty').value=qty;
+  document.getElementById('fSellTotal').textContent=crop.reward*goldMult*qty;
+  document.getElementById('fSellQty').oninput=()=>{
+    const q=parseInt(document.getElementById('fSellQty').value)||0;
+    document.getElementById('fSellTotal').textContent=crop.reward*goldMult*q;
+  };
+  modal.style.display='flex';
+}
+function farmCloseSell(){ document.getElementById('farmSellModal').style.display='none'; }
+function farmConfirmSell(){
+  const isGold=_sellCropId.endsWith('_gold');
+  const cropId=isGold?_sellCropId.replace('_gold',''):_sellCropId;
+  const crop=FARM_CROPS.find(c=>c.id===cropId); if(!crop) return;
+  const goldMult=isGold?10:1;
+  const qty=parseInt(document.getElementById('fSellQty').value)||0;
+  if(qty<=0||qty>(farm.stock[_sellCropId]||0)){ farmSetStatus('Quantidade inválida.'); return; }
+  const earned=crop.reward*goldMult*qty;
+  farm.stock[_sellCropId]-=qty;
+  if(!farmIsAdmin()) farm.coins+=earned;
+  farmUpdateHud(); farmRenderStock(); farmCloseSell();
+  toast(`💰 Vendido! +${earned} moedas`);
+  farmSetStatus(`💰 Vendeu ${qty}x ${crop.name} por 💰${earned}`);
+}
+
+// ── LEILÃO ──
+let _auctionCropId=null, _auctionActive=false, _auctionOffers=[], _auctionTimer=null, _auctionSecsLeft=0;
+function farmOpenAuction(id){
+  _auctionCropId=id; _auctionActive=false; _auctionOffers=[];
+  const isGold=id.endsWith('_gold');
+  const cropId=isGold?id.replace('_gold',''):id;
+  const crop=FARM_CROPS.find(c=>c.id===cropId);
+  const goldMult=isGold?10:1;
+  const qty=farm.stock[id]||0;
+  const modal=document.getElementById('farmAuctionModal');
+  if(!modal) return;
+  document.getElementById('fAucName').textContent=`${crop.emoji} ${crop.name} ×${qty}`;
+  document.getElementById('fAucOffers').innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:10px;">Clique em Iniciar para começar o leilão!</div>';
+  document.getElementById('fAucStatus').textContent='';
+  document.getElementById('fAucTimer').textContent='';
+  document.getElementById('fAucStartBtn').style.display='';
+  document.getElementById('fAucAcceptBtn').style.display='none';
+  document.getElementById('fAucRejectBtn').style.display='none';
+  modal.style.display='flex';
+}
+function farmCloseAuction(){
+  clearInterval(_auctionTimer);
+  document.getElementById('farmAuctionModal').style.display='none';
+}
+function farmStartAuction(){
+  const crop=FARM_CROPS.find(c=>c.id===_auctionCropId);
+  const qty=farm.stock[_auctionCropId]||0;
+  if(!qty){ farmSetStatus('Sem estoque!'); return; }
+  _auctionActive=true; _auctionOffers=[]; _auctionSecsLeft=30;
+  document.getElementById('fAucStartBtn').style.display='none';
+  document.getElementById('fAucStatus').textContent='🔨 Leilão em andamento...';
+  const offerEl=document.getElementById('fAucOffers');
+  offerEl.innerHTML='';
+  clearInterval(_auctionTimer);
+
+  const BUYER_NAMES2=['João','Maria','Pedro','Ana','Carlos','Luísa','Bruno','Clara','Thiago','Fernanda','Ricardo','Beatriz'];
+  // Gera ofertas aleatórias ao longo do tempo
+  const totalOffers=3+Math.floor(Math.random()*6)+farm.luckBoost*2;
+  let offersMade=0;
+  const luckMult=1+farm.luckBoost*0.3;
+
+  _auctionTimer=setInterval(()=>{
+    _auctionSecsLeft--;
+    document.getElementById('fAucTimer').textContent=`⏱ ${_auctionSecsLeft}s`;
+    // Gera oferta aleatória
+    if(offersMade<totalOffers && Math.random()<0.35){
+      const buyer=BUYER_NAMES2[Math.floor(Math.random()*BUYER_NAMES2.length)];
+      // Ofertas variam MUITO: de 1 até 200.000 por unidade
+      // Produtos baratos (trigo) tendem a receber menos, caros recebem mais
+      const basePrice=crop.reward*(isGold?10:1);
+      let roll=Math.random();
+      let priceEach;
+      if(roll<0.55) priceEach=Math.floor(basePrice*(0.1+Math.random()*1.5)*luckMult); // oferta ruim
+      else if(roll<0.85) priceEach=Math.floor(basePrice*(1.5+Math.random()*5)*luckMult); // boa
+      else if(roll<0.97) priceEach=Math.floor(basePrice*(5+Math.random()*20)*luckMult); // ótima
+      else priceEach=Math.floor(1000+Math.random()*199000*luckMult); // jackpot raro!
+      priceEach=Math.max(1,priceEach);
+      const total=priceEach*qty;
+      const offer={buyer,priceEach,total,qty,id:Date.now()+offersMade};
+      _auctionOffers.push(offer);
+      offersMade++;
+      const div=document.createElement('div');
+      div.id='aucOffer'+offer.id;
+      const isJackpot=priceEach>5000;
+      div.style.cssText=`display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:${isJackpot?'linear-gradient(135deg,#fff9c4,#ffe082)':'#f8f8f8'};border:2px solid ${isJackpot?'#f39c12':'#eee'};margin-bottom:4px;animation:popIn .3s ease;`;
+      div.innerHTML=`<span style="font-size:16px">${isJackpot?'🤑':'👤'}</span>
+        <div style="flex:1"><div style="font-size:12px;font-weight:bold;color:#333">${buyer}</div>
+        <div style="font-size:11px;color:#555">💰 ${priceEach.toLocaleString()} cada · Total: 💰${total.toLocaleString()}</div>
+        ${isJackpot?'<div style="font-size:10px;color:#e67e22;font-weight:bold;">🔥 OFERTA JACKPOT!</div>':''}</div>
+        <button onclick="farmAcceptAuctionOffer(${offer.id})" style="background:#27ae60;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:bold;cursor:pointer;">✓ Aceitar</button>`;
+      offerEl.appendChild(div);
+      offerEl.scrollTop=offerEl.scrollHeight;
+    }
+
+    if(_auctionSecsLeft<=0){
+      clearInterval(_auctionTimer);
+      _auctionActive=false;
+      if(_auctionOffers.length===0){
+        document.getElementById('fAucStatus').textContent='😞 Nenhuma oferta. Estoque permanece.';
+        document.getElementById('fAucTimer').textContent='';
+        document.getElementById('fAucStartBtn').style.display='';
+        document.getElementById('fAucStartBtn').textContent='🔄 Tentar novamente';
+      } else {
+        document.getElementById('fAucStatus').textContent='⏰ Tempo esgotado! Aceite uma oferta ou feche.';
+        document.getElementById('fAucTimer').textContent='';
+      }
+    }
+  },1000);
+}
+function farmAcceptAuctionOffer(offerId){
+  const offer=_auctionOffers.find(o=>o.id===offerId); if(!offer) return;
+  clearInterval(_auctionTimer);
+  const qty=Math.min(offer.qty, farm.stock[_auctionCropId]||0);
+  if(qty<=0){ farmSetStatus('Sem estoque!'); return; }
+  const earned=offer.priceEach*qty;
+  farm.stock[_auctionCropId]-=qty;
+  if(!farmIsAdmin()) farm.coins+=earned;
+  farmUpdateHud(); farmRenderStock(); farmCloseAuction();
+  toast(`🔨 Leilão! +💰${earned.toLocaleString()} de ${offer.buyer}!`);
+  farmSetStatus(`🔨 ${offer.buyer} comprou ${qty}x por 💰${earned.toLocaleString()}!`);
+}
+
+// ── ROLETA ──
+const ROLETA_SYMBOLS=['🌽','🌾','🍅','🥕','🍎','🍇','🍓','🎃','⭐','💎','🃏'];
+// Combinações e prêmios
+const ROLETA_COMBOS=[
+  { s:['🃏','🃏','🃏'], prize:'invasion',  label:'🎰 JACKPOT! 3 CORINGAS — Invada uma fazenda!',  chance:0.001 },
+  { s:['💎','💎','💎'], prize:'coins',     val:50000, label:'💎 TRIPLE DIAMANTE! +💰50.000!',       chance:0.002 },
+  { s:['⭐','⭐','⭐'], prize:'xp',        val:5000,  label:'⭐ TRIPLE ESTRELA! +5000 XP!',          chance:0.005 },
+  { s:['🍎','🍎','🍎'], prize:'stock',    crop:'apple', qty:5, label:'🍎 3 Maçãs! +5 no estoque!',  chance:0.01  },
+  { s:['🍇','🍇','🍇'], prize:'stock',    crop:'grape', qty:8, label:'🍇 3 Uvas! +8 no estoque!',   chance:0.015 },
+  { s:['🍓','🍓','🍓'], prize:'stock',    crop:'straw', qty:8, label:'🍓 3 Morangos! +8 estoque!',  chance:0.015 },
+  { s:['🎃','🎃','🎃'], prize:'stock',    crop:'pump',  qty:5, label:'🎃 3 Abóboras! +5 estoque!',  chance:0.02  },
+  { s:['🍅','🍅','🍅'], prize:'stock',    crop:'tomato',qty:10,label:'🍅 3 Tomates! +10 estoque!',  chance:0.03  },
+  { s:['🥕','🥕','🥕'], prize:'stock',    crop:'carrot',qty:10,label:'🥕 3 Cenouras! +10 estoque!', chance:0.03  },
+  { s:['🌽','🌽','🌽'], prize:'coins',    val:500,   label:'🌽 3 Milhos! +💰500!',                  chance:0.05  },
+  { s:['🌾','🌾','🌾'], prize:'coins',    val:200,   label:'🌾 3 Trigos! +💰200!',                  chance:0.07  },
+  // Pares dourados
+  { s:['💎','💎',null], prize:'coins',    val:5000,  label:'💎💎 Par de Diamantes! +💰5.000!',       chance:0.01  },
+  { s:['⭐','⭐',null], prize:'xp',       val:1000,  label:'⭐⭐ Par de Estrelas! +1000 XP!',         chance:0.02  },
+];
+
+function farmCheckSpinReset(){
+  const today=new Date().toDateString();
+  if(farm.lastSpinDate!==today){ farm.spinsLeft=10; farm.lastSpinDate=today; }
+}
+function farmOpenRoleta(){
+  farmCheckSpinReset();
+  const modal=document.getElementById('farmRoletaModal');
+  if(!modal) return;
+  document.getElementById('fRolSpins').textContent=farm.spinsLeft;
+  document.getElementById('fRolResult').innerHTML='';
+  farmResetReels();
+  farmRenderComboTable();
+  modal.style.display='flex';
+}
+function farmCloseRoleta(){ document.getElementById('farmRoletaModal').style.display='none'; }
+function farmResetReels(){
+  ['fRol1','fRol2','fRol3'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=ROLETA_SYMBOLS[Math.floor(Math.random()*ROLETA_SYMBOLS.length)];
+  });
+}
+function farmRenderComboTable(){
+  const el=document.getElementById('fRolCombos');
+  if(!el) return;
+  el.innerHTML=ROLETA_COMBOS.slice(0,8).map(c=>
+    `<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#ccc;padding:2px 0;">
+      <span>${c.s[0]}${c.s[1]}${c.s[2]||'?'}</span>
+      <span style="color:#ffe066;flex:1;text-align:right">${c.label.split('!')[0].replace(/.*—\s*/,'').replace(/.*\+/,'+')}</span>
+    </div>`
+  ).join('');
+}
+function farmSpin(paid=false){
+  farmCheckSpinReset();
+  if(!paid && farm.spinsLeft<=0){ toast('Sem giros! Compre mais ou volte amanhã.'); return; }
+  if(!paid) farm.spinsLeft--;
+  document.getElementById('fRolSpins').textContent=farm.spinsLeft;
+  document.getElementById('fRolResult').innerHTML='<span style="color:#ffe066">🎰 Girando...</span>';
+  const ids=['fRol1','fRol2','fRol3'];
+  let ticks=0;
+  const anim=setInterval(()=>{
+    ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=ROLETA_SYMBOLS[Math.floor(Math.random()*ROLETA_SYMBOLS.length)]; });
+    ticks++;
+    if(ticks>25){
+      clearInterval(anim);
+      // Determina resultado
+      let result=null;
+      const roll=Math.random();
+      let acc=0;
+      for(const combo of ROLETA_COMBOS){
+        acc+=combo.chance;
+        if(roll<acc){ result=combo; break; }
+      }
+      let s1,s2,s3;
+      if(result){
+        s1=result.s[0]; s2=result.s[1]; s3=result.s[2]||ROLETA_SYMBOLS[Math.floor(Math.random()*9)];
+        // Garante que s3 não fecha triple se combo é par
+        if(result.s[2]===null){ while(s3===s1) s3=ROLETA_SYMBOLS[Math.floor(Math.random()*9)]; }
+      } else {
+        // Sem prêmio — símbolos aleatórios sem combinar
+        s1=ROLETA_SYMBOLS[Math.floor(Math.random()*9)];
+        do{ s2=ROLETA_SYMBOLS[Math.floor(Math.random()*9)]; }while(s2===s1);
+        do{ s3=ROLETA_SYMBOLS[Math.floor(Math.random()*9)]; }while(s3===s1||s3===s2);
+      }
+      document.getElementById('fRol1').textContent=s1;
+      document.getElementById('fRol2').textContent=s2;
+      document.getElementById('fRol3').textContent=s3;
+      if(result){
+        document.getElementById('fRolResult').innerHTML=`<span style="color:#ffe066;font-weight:bold;font-size:12px;animation:popIn .3s ease">${result.label}</span>`;
+        farmApplyRoletaPrize(result);
+      } else {
+        const msgs=['😅 Quase!','😤 Tente de novo!','🍀 A sorte virá!','😂 Essa não...','💨 Passou!'];
+        document.getElementById('fRolResult').textContent=msgs[Math.floor(Math.random()*msgs.length)];
+      }
+    }
+  },55);
+}
+function farmApplyRoletaPrize(combo){
+  if(combo.prize==='coins'){ if(!farmIsAdmin()) farm.coins+=combo.val; farmUpdateHud(); toast(`💰 +${combo.val} moedas!`); }
+  else if(combo.prize==='xp'){ farm.xp+=combo.val; farmLevelCheck(); farmUpdateHud(); toast(`⭐ +${combo.val} XP!`); }
+  else if(combo.prize==='stock'){
+    farm.stock=farm.stock||{};
+    farm.stock[combo.crop]=(farm.stock[combo.crop]||0)+combo.qty;
+    farmRenderStock();
+    toast(`${combo.s[0]} +${combo.qty} ${combo.crop} no estoque!`);
+  }
+  else if(combo.prize==='invasion'){
+    setTimeout(()=>{ farmActivateInvasion(); },800);
+  }
+}
+function farmBuySpins(){
+  farm.spinsLeft+=10;
+  document.getElementById('fRolSpins').textContent=farm.spinsLeft;
+  toast('🎰 +10 giros! (pagamento simulado)');
+}
+function farmActivateInvasion(){
+  toast('🎉 3 CORINGAS! Você pode invadir a fazenda de um vizinho!');
+  farmSetStatus('🃏 Invasão disponível! (lista de vizinhos em breve)');
+}
+// ── SISTEMA DE OFERTAS DE FAZENDEIROS ──
+const BUYER_NAMES = ['João','Maria','Pedro','Ana','Carlos','Luísa','Marcos','Clara','Bruno','Fernanda'];
+const OFFER_CROPS = ['wheat','corn','tomato','carrot','grape','straw','pump','apple'];
+
+function farmGenerateOffer(){
+  const crop = FARM_CROPS.find(c=>c.id===OFFER_CROPS[Math.floor(Math.random()*OFFER_CROPS.length)]);
+  if(!crop) return;
+  // luck boosts quantity and price multiplier
+  const luckMult = 1 + farm.luckBoost * 0.25;
+  const qty = Math.floor((3 + Math.random()*12 + farm.luckBoost*3) * luckMult);
+  const priceMult = (1.3 + Math.random()*0.8 + farm.luckBoost*0.15) * luckMult;
+  const priceEach = Math.floor(crop.reward * priceMult);
+  const buyer = BUYER_NAMES[Math.floor(Math.random()*BUYER_NAMES.length)];
+  const offer = { id: Date.now(), buyer, crop: crop.id, qty, priceEach, expires: Date.now()+90000 };
+  farm.offers.push(offer);
+  if(farm.offers.length > 3) farm.offers.shift();
+  farmRenderOffers();
+  toast(`📢 ${buyer} quer comprar ${qty}x ${crop.emoji}${crop.name} por 💰${priceEach} cada!`);
+}
+
+function farmRenderOffers(){
+  const el = document.getElementById('farmOffersPanel');
+  if(!el) return;
+  if(farm.offers.length === 0){ el.innerHTML='<div style="color:#aaa;font-size:11px;text-align:center;padding:8px;">Aguardando ofertas...</div>'; return; }
+  el.innerHTML = '';
+  const now = Date.now();
+  farm.offers.forEach(offer=>{
+    const crop = FARM_CROPS.find(c=>c.id===offer.crop);
+    if(!crop) return;
+    const secsLeft = Math.max(0, Math.floor((offer.expires - now)/1000));
+    const total = offer.qty * offer.priceEach;
+    // Count how many ready cells have this crop
+    const readyQty = farm.cells.filter(c=>c.state==='ready'&&c.crop===offer.crop).length;
+    const canSell = readyQty > 0;
+    const div = document.createElement('div');
+    div.style.cssText = 'background:#fff;border:2px solid '+(canSell?'#27ae60':'#ddd')+';border-radius:8px;padding:6px 8px;margin-bottom:6px;';
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:20px">${crop.emoji}</span>
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:bold;color:#2d5a2d">👤 ${offer.buyer} quer ${offer.qty}x ${crop.name}</div>
+          <div style="font-size:10px;color:#555">💰 ${offer.priceEach} cada · Total: 💰${total}</div>
+          <div style="font-size:10px;color:#e67e22">⏱ ${secsLeft}s · Prontos: ${readyQty}</div>
+        </div>
+        <button onclick="farmAcceptOffer(${offer.id})"
+          style="background:${canSell?'#27ae60':'#ccc'};color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:${canSell?'pointer':'not-allowed'};"
+          ${canSell?'':'disabled'}>
+          ${canSell?'Vender':'Sem estoque'}
+        </button>
+      </div>`;
+    el.appendChild(div);
+  });
+  // Remove expired
+  farm.offers = farm.offers.filter(o=>o.expires > now);
+}
+
+function farmAcceptOffer(offerId){
+  const offer = farm.offers.find(o=>o.id===offerId);
+  if(!offer) return;
+  const crop = FARM_CROPS.find(c=>c.id===offer.crop);
+  if(!crop) return;
+  // Collect ready cells of this crop
+  let sold = 0;
+  farm.cells.forEach(cell=>{
+    if(sold >= offer.qty) return;
+    if(cell.state==='ready' && cell.crop===offer.crop){
+      cell.state='empty'; cell.crop=null; cell.waterCount=0;
+      sold++;
+    }
+  });
+  if(sold === 0){ farmSetStatus('Sem colheita pronta para vender!'); return; }
+  const earned = sold * offer.priceEach;
+  const xpGain = sold * crop.xp;
+  if(!farmIsAdmin()) farm.coins += earned;
+  farm.xp += farmIsAdmin() ? 0 : xpGain;
+  farm.offers = farm.offers.filter(o=>o.id!==offerId);
+  farmLevelCheck();
+  farmUpdateHud();
+  farmRenderGrid();
+  farmRenderOffers();
+  farmSetStatus(`🤝 Vendeu ${sold}x ${crop.name} para ${offer.buyer}! +💰${earned}`);
+  toast(`💰 +${earned} moedas!`);
+}
+
+// ── EXPANSÃO DE PLANTAÇÃO ──
+function farmExpandField(){
+  const cost = 2500 + farm.expansions * 2500;
+  if(!farmIsAdmin() && farm.coins < cost){ toast(`❌ Precisa de 💰${cost}`); return; }
+  if(farm.expansions >= 4){ toast('Expansão máxima atingida!'); return; }
+  if(!farmIsAdmin()) farm.coins -= cost;
+  farm.expansions++;
+  // Add a row
+  FARM_ROWS++;
+  const newCells = Array.from({length:FARM_COLS}, ()=>({state:'empty',crop:null,plantedAt:0,waterCount:0,readyAt:0}));
+  farm.cells.push(...newCells);
+  // Update grid CSS
+  const grid = document.getElementById('farmGrid');
+  if(grid) grid.style.gridTemplateRows = `repeat(${FARM_ROWS},52px)`;
+  farmUpdateHud();
+  farmRenderGrid();
+  toast(`🌱 Plantação expandida! Agora ${FARM_ROWS}x${FARM_COLS} canteiros.`);
+  farmSetStatus(`✅ Expansão ${farm.expansions}/4 concluída!`);
+  // Update button
+  const btn = document.getElementById('farmExpandBtn');
+  if(btn){
+    const nextCost = 2500 + farm.expansions*2500;
+    btn.textContent = farm.expansions>=4 ? '🌿 Máximo' : `🌿 Expandir (💰${nextCost})`;
+    if(farm.expansions>=4) btn.disabled=true;
+  }
+}
+
+// ── LOJA DE SORTE (pagamento simbólico) ──
+function farmOpenLuckShop(){
+  const modal = document.getElementById('farmLuckModal');
+  if(modal) modal.style.display='flex';
+}
+function farmCloseLuckShop(){
+  const modal = document.getElementById('farmLuckModal');
+  if(modal) modal.style.display='none';
+}
+function farmBuyLuck(level, priceLabel){
+  if(farm.luckBoost >= level){ toast('Você já tem esse nível de sorte!'); return; }
+  // Simula pagamento (sem gateway real)
+  farm.luckBoost = level;
+  farmUpdateHud();
+  farmCloseLuckShop();
+  toast(`🍀 Sorte nível ${level} ativada! Ofertas melhores chegando...`);
+  farmSetStatus(`🍀 Sorte ${level}/3 ativa — ofertas com preços ${25*level}% maiores!`);
+}
 
 // ── INIT ──
 (async()=>{
