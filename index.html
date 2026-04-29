@@ -455,22 +455,35 @@
     body.dark .notif-item{border-color:#2d3a50;}
     body.dark .notif-item:hover{background:#1a2236;}
 
-    /* ── MODAL PERFIL DE OUTRO USUÁRIO ── */
-    .profile-modal{background:var(--white);border-radius:12px;padding:0;width:340px;max-width:96vw;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.18);}
-    .profile-modal-cover{height:70px;background:linear-gradient(135deg,var(--blue-dark),var(--blue));position:relative;}
-    .profile-modal-av{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);width:64px;height:64px;border-radius:50%;border:3px solid var(--white);background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;}
+    /* ── MODAL PERFIL DE OUTRO USUÁRIO (Instagram style) ── */
+    .profile-modal{background:var(--white);border-radius:16px;padding:0;width:480px;max-width:96vw;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.25);max-height:90vh;display:flex;flex-direction:column;}
+    .profile-modal-cover{height:90px;background:linear-gradient(135deg,var(--blue-dark),var(--blue),var(--pink));position:relative;flex-shrink:0;}
+    .profile-modal-av{position:absolute;bottom:-36px;left:20px;width:72px;height:72px;border-radius:50%;border:3px solid var(--white);background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2);}
     .profile-modal-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-    .profile-modal-body{padding:40px 20px 18px;text-align:center;}
-    .profile-modal-name{font-weight:bold;font-size:15px;color:var(--blue-dark);margin-bottom:2px;}
-    .profile-modal-nick{font-size:11px;color:var(--muted);margin-bottom:6px;}
-    .profile-modal-bio{font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5;}
-    .profile-modal-stats{display:flex;justify-content:space-around;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 0;margin-bottom:12px;}
-    .profile-modal-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .profile-modal-body{padding:44px 20px 10px;flex:1;overflow-y:auto;}
+    .profile-modal-name{font-weight:bold;font-size:16px;color:var(--blue-dark);margin-bottom:1px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .profile-modal-nick{font-size:12px;color:var(--muted);margin-bottom:6px;}
+    .profile-modal-bio{font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5;word-break:break-word;}
+    .profile-modal-stats{display:flex;justify-content:flex-start;gap:24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 0;margin-bottom:12px;}
+    .profile-modal-stats .stat{text-align:center;}
+    .profile-modal-stats .stat-n{font-weight:bold;color:var(--blue-dark);font-size:16px;}
+    .profile-modal-stats .stat-l{font-size:10px;color:var(--muted);}
+    .profile-modal-actions{display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap;margin-bottom:12px;}
     .profile-modal-actions .btn-s{margin:0;padding:6px 16px;font-size:12px;}
     .profile-modal-actions .btn-blue{background:var(--blue);color:#fff;border:none;padding:6px 16px;border-radius:var(--radius);font-size:12px;font-weight:bold;cursor:pointer;}
     .profile-modal-actions .btn-blue:hover{background:var(--blue-dark);}
+    .pm-posts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:8px;}
+    .pm-post-thumb{aspect-ratio:1;overflow:hidden;background:var(--blue-bg);cursor:pointer;position:relative;border-radius:4px;}
+    .pm-post-thumb img{width:100%;height:100%;object-fit:cover;transition:opacity .15s;}
+    .pm-post-thumb:hover img{opacity:.85;}
+    .pm-post-thumb .pm-thumb-overlay{position:absolute;inset:0;background:rgba(0,0,0,.0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;opacity:0;transition:opacity .15s;}
+    .pm-post-thumb:hover .pm-thumb-overlay{opacity:1;background:rgba(0,0,0,.35);}
+    .pm-post-text{aspect-ratio:1;overflow:hidden;background:var(--scrap-bg);border:1px solid var(--scrap-bdr);cursor:pointer;position:relative;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;}
+    .pm-post-text p{font-size:10px;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;text-align:center;}
+    .pm-section-title{font-size:11px;font-weight:bold;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px;}
     body.dark .profile-modal{background:#1e2130;}
     body.dark .profile-modal-av{border-color:#1e2130;}
+    body.dark .pm-post-text{background:#1a2236;border-color:#2d3a50;}
 
     /* ── ADM REAL ── */
     .adm-panel-tab{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
@@ -984,6 +997,7 @@
               <button onclick="farmCloseLuckShop()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">×</button>
             </div>
             <div style="padding:14px;display:flex;flex-direction:column;gap:10px;">
+              <div id="luckShopContent">
               <div style="background:#f0fff4;border:2px solid #27ae60;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
                 <span style="font-size:28px;">🍀</span>
                 <div style="flex:1">
@@ -991,7 +1005,7 @@
                   <div style="font-size:11px;color:#555">+25% preço nas ofertas · +3 qtd mínima</div>
                   <div style="font-size:10px;color:#27ae60;font-weight:bold;">R$ 1,99</div>
                 </div>
-                <button onclick="farmBuyLuck(1,'R$1,99')" style="background:#27ae60;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
+                <button id="luckBtn1" onclick="farmBuyLuck(1,'R$1,99')" style="background:#27ae60;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
               </div>
               <div style="background:#f0fff4;border:2px solid #2ecc71;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
                 <span style="font-size:28px;">🍀🍀</span>
@@ -1000,7 +1014,7 @@
                   <div style="font-size:11px;color:#555">+50% preço nas ofertas · +6 qtd mínima</div>
                   <div style="font-size:10px;color:#27ae60;font-weight:bold;">R$ 2,99</div>
                 </div>
-                <button onclick="farmBuyLuck(2,'R$2,99')" style="background:#27ae60;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
+                <button id="luckBtn2" onclick="farmBuyLuck(2,'R$2,99')" style="background:#27ae60;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
               </div>
               <div style="background:linear-gradient(135deg,#f0fff4,#e8f8e8);border:2px solid #f39c12;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
                 <span style="font-size:28px;">🍀🍀🍀</span>
@@ -1009,9 +1023,10 @@
                   <div style="font-size:11px;color:#555">+75% preço · +9 qtd · Ofertas mais frequentes</div>
                   <div style="font-size:10px;color:#e67e22;font-weight:bold;">R$ 4,50</div>
                 </div>
-                <button onclick="farmBuyLuck(3,'R$4,50')" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
+                <button id="luckBtn3" onclick="farmBuyLuck(3,'R$4,50')" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;">Ativar</button>
               </div>
-              <div style="font-size:9px;color:#aaa;text-align:center;">Simulação — sem cobrança real neste protótipo</div>
+              <div id="luckShopNote" style="font-size:9px;color:#aaa;text-align:center;"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1116,21 +1131,22 @@
 <!-- MODAL PERFIL DE OUTRO USUÁRIO -->
 <div id="userProfileModal" class="modal-bg hidden">
   <div class="profile-modal">
-    <div class="profile-modal-cover">
+    <div class="profile-modal-cover" id="pmCover">
+      <button onclick="closeUserProfile()" style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,.3);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
       <div class="profile-modal-av" id="pmAv"></div>
     </div>
     <div class="profile-modal-body">
       <div class="profile-modal-name" id="pmName"></div>
       <div class="profile-modal-nick" id="pmNick"></div>
       <div class="profile-modal-bio" id="pmBio"></div>
+      <div id="pmSite" style="font-size:11px;margin-bottom:8px;display:none"><a id="pmSiteLink" href="#" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">🔗 <span id="pmSiteTxt"></span></a></div>
       <div class="profile-modal-stats">
         <div class="stat"><div class="stat-n" id="pmPosts">0</div><div class="stat-l">posts</div></div>
         <div class="stat"><div class="stat-n" id="pmFriends">0</div><div class="stat-l">amigos</div></div>
       </div>
       <div class="profile-modal-actions" id="pmActions"></div>
-    </div>
-    <div style="text-align:center;padding:0 20px 16px">
-      <button class="btn-s" style="background:var(--blue);margin:0;width:100%" onclick="closeUserProfile()">Fechar</button>
+      <div class="pm-section-title" id="pmPostsLabel" style="display:none">📷 Publicações</div>
+      <div class="pm-posts-grid" id="pmPostsGrid"></div>
     </div>
   </div>
 </div>
@@ -1291,6 +1307,7 @@ async function doLogin(data){
   subscribeRealtime();
   vcStartGlobalListener();
   loadNotifications();
+  loadAdminCache();
   // Bot ADM — verifica se é admin real do banco
   const isAdmin = me.is_admin === true || me.nick === 'kaua12345';
   if(isAdmin){
@@ -1475,11 +1492,18 @@ function renderFeed(posts,hasMore=false){
     const likes=Array.isArray(p.likes)?p.likes:[];
     const liked=likes.includes(me.nick);
     const likesStr=JSON.stringify(likes).replace(/"/g,'&quot;');
+    // Admin badge & font
+    const admInfo = adminUsersCache[nick];
+    const isPostAdm = admInfo && admInfo.is_admin;
+    const admBadge = isPostAdm ? '<span class="title-badge title-admin">⭐ ADM ⭐</span>' : '';
+    const fontCss = isPostAdm && admInfo.font_style && admInfo.font_style!=='normal'
+      ? (admInfo.font_style==='cursive'?'font-family:Georgia,serif;font-style:italic;':admInfo.font_style==='bold'?'font-weight:900;letter-spacing:1px;':admInfo.font_style==='pixel'?'font-family:monospace;letter-spacing:2px;':'')
+      : '';
     return`<div class="post-item" id="post-${p.id}">
       <div class="post-hdr">
         <div onclick="showUserProfile('${esc(nick)}')" style="cursor:pointer">${avHtml(nick,photo,32)}</div>
         <div>
-          <div class="clickable-nick" onclick="showUserProfile('${esc(nick)}')">${esc(name)}</div>
+          <div class="clickable-nick" onclick="showUserProfile('${esc(nick)}')" style="${fontCss}">${esc(name)}${admBadge}</div>
           <div style="font-size:10px;color:var(--muted)">@${esc(nick)}</div>
         </div>
         <span class="post-time">${timeAgo(p.created_at)}</span>
@@ -1563,14 +1587,20 @@ async function loadComments(postId){
   const el=$('comments-list-'+postId);
   if(!el)return;
   if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);font-size:11px;padding:4px 0">Nenhum comentário ainda</div>';return;}
-  el.innerHTML=data.map(c=>`<div class="comment-item">
-    <div class="comment-av">${c.author_photo?`<img src="${c.author_photo}">`:`${avatarOf(c.nick||'?')}`}</div>
+  el.innerHTML=data.map(c=>{
+    const cNick=c.nick||'?';
+    const cAdm=adminUsersCache[cNick];
+    const cBadge=cAdm&&cAdm.is_admin?'<span class="title-badge title-admin" style="font-size:9px;padding:0 4px;vertical-align:middle;">ADM</span>':'';
+    const cFontStyle=cAdm&&cAdm.is_admin&&cAdm.font_style&&cAdm.font_style!=='normal'?(cAdm.font_style==='cursive'?'font-family:Georgia,serif;font-style:italic;':cAdm.font_style==='bold'?'font-weight:900;':cAdm.font_style==='pixel'?'font-family:monospace;':''):'';
+    return`<div class="comment-item">
+    <div class="comment-av">${c.author_photo?`<img src="${c.author_photo}">`:`${avatarOf(cNick)}`}</div>
     <div>
-      <span class="comment-nick">${esc(c.display_name||c.nick)}</span>
+      <span class="comment-nick" style="${cFontStyle}">${esc(c.display_name||cNick)}${cBadge}</span>
       <span class="comment-txt"> ${esc(c.text||'')}</span>
       ${c.image?`<img class="comment-img" src="${c.image}" onclick="this.style.maxWidth=this.style.maxWidth?'':'100%'">`:''}
     </div>
-  </div>`).join('');
+  </div>`;
+  }).join('');
 }
 
 async function sendComment(postId){
@@ -3170,24 +3200,43 @@ async function showUserProfile(nick){
   $('pmPosts').textContent = '—';
   $('pmFriends').textContent = '—';
   $('pmActions').innerHTML = '<div class="loading" style="padding:6px">Carregando...</div>';
-  // Buscar dados do usuário
-  const [uRes, postsRes, friendsRes] = await Promise.all([
-    sb.from('users').select('nick,display_name,bio,photo,site').eq('nick',nick).maybeSingle(),
-    sb.from('posts').select('*',{count:'exact',head:true}).eq('author_nick',nick),
-    sb.from('friends').select('*',{count:'exact',head:true}).eq('nick',nick)
+  $('pmPostsGrid').innerHTML = '';
+  $('pmPostsLabel').style.display = 'none';
+  // Varied cover color per nick
+  const hues=['135deg,#3a62aa,#628ad2,#e9007e','135deg,#1a6a4a,#27ae60,#2ecc71','135deg,#6c3483,#8e44ad,#e91e63','135deg,#b7410e,#e67e22,#f39c12'];
+  let hi=0;for(const ch of nick)hi=(hi*31+ch.charCodeAt(0))%hues.length;
+  $('pmCover').style.background='linear-gradient('+hues[hi]+')';
+  // Fetch user data + posts
+  const [uRes, friendsRes, postsRes] = await Promise.all([
+    sb.from('users').select('nick,display_name,bio,photo,site,is_admin,font_style,farm_title').eq('nick',nick).maybeSingle(),
+    sb.from('friends').select('*',{count:'exact',head:true}).eq('nick',nick),
+    sb.from('posts').select('id,content,image,created_at,likes').eq('author_nick',nick).order('created_at',{ascending:false}).limit(12),
   ]);
   const uData = uRes.data;
-  if(!uData){ $('pmName').textContent='Usuário não encontrado'; $('pmActions').innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px">Este usuário não existe ou foi removido.</div>'; return; }
-  $('pmAv').innerHTML = avHtml(nick, uData.photo, 64);
-  $('pmName').textContent = uData.display_name || nick;
+  if(!uData){ $('pmName').textContent='Usuário não encontrado'; $('pmActions').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px">Este usuário não existe ou foi removido.</div>'; return; }
+  // Avatar
+  $('pmAv').innerHTML = avHtml(nick, uData.photo, 72);
+  // Name + admin badge
+  const isPostAdm = uData.is_admin;
+  const admBadge = isPostAdm ? '<span class="title-badge title-admin" style="font-size:11px;">⭐ ADM ⭐</span>' : '';
+  const fCss = isPostAdm && uData.font_style && uData.font_style!=='normal'
+    ? (uData.font_style==='cursive'?'font-family:Georgia,serif;font-style:italic;':uData.font_style==='bold'?'font-weight:900;letter-spacing:1px;':uData.font_style==='pixel'?'font-family:monospace;letter-spacing:2px;':'')
+    : '';
+  $('pmName').innerHTML = `<span style="${fCss}">${esc(uData.display_name||nick)}</span>${admBadge}`;
   $('pmNick').textContent = '@'+nick;
   $('pmBio').textContent = uData.bio || 'Sem bio ainda.';
-  $('pmPosts').textContent = postsRes.count || 0;
+  // Site
+  if(uData.site){
+    $('pmSite').style.display='block';
+    $('pmSiteTxt').textContent=uData.site.replace(/^https?:\/\//,'');
+    $('pmSiteLink').href=uData.site.startsWith('http')?uData.site:'https://'+uData.site;
+  } else { $('pmSite').style.display='none'; }
+  $('pmPosts').textContent = (postsRes.data||[]).length;
   $('pmFriends').textContent = friendsRes.count || 0;
   const isFriend = myFriends.includes(nick);
   const hasPendingReq = friendRequests.some(r=>r.from_nick===nick);
   const iSentReq = sentFriendRequests.has(nick);
-  const isAdmin = me._isAdmin || me.nick==='kaua12345';
+  const isAdm = me._isAdmin || me.nick==='kaua12345';
   $('pmActions').innerHTML = `
     <button class="btn-blue" onclick="closeUserProfile();showTab('dm');setTimeout(()=>openDmConv('${esc(nick)}'),100)">💬 Mensagem</button>
     ${isFriend
@@ -3198,9 +3247,26 @@ async function showUserProfile(nick){
           ? `<button class="btn-s" style="background:#888;margin:0" disabled>Pedido enviado ✓</button>`
           : `<button class="btn-s" style="margin:0" onclick="closeUserProfile();sendFriendRequest('${esc(nick)}')">+ Adicionar amigo</button>`
     }
-    ${isAdmin ? `<button class="btn-s" style="background:#e07000;margin:0" onclick="adminRenameUser('${esc(nick)}')">✏️ Renomear</button>` : ''}
-    ${isAdmin ? `<button class="btn-s" style="background:#c00;margin:0" onclick="adminBanUser('${esc(nick)}')">🚫 Banir</button>` : ''}
+    ${isAdm ? `<button class="btn-s" style="background:#e07000;margin:0" onclick="adminRenameUser('${esc(nick)}')">✏️ Renomear</button>` : ''}
+    ${isAdm ? `<button class="btn-s" style="background:#c00;margin:0" onclick="adminBanUser('${esc(nick)}')">🚫 Banir</button>` : ''}
   `;
+  // Posts grid
+  const posts = postsRes.data||[];
+  if(posts.length){
+    $('pmPostsLabel').style.display='block';
+    $('pmPostsGrid').innerHTML = posts.map(p=>{
+      if(p.image){
+        return`<div class="pm-post-thumb" onclick="closeUserProfile();showTab('feed')">
+          <img src="${p.image}" loading="lazy">
+          <div class="pm-thumb-overlay">♥ ${Array.isArray(p.likes)?p.likes.length:0}</div>
+        </div>`;
+      } else {
+        return`<div class="pm-post-text" onclick="closeUserProfile();showTab('feed')">
+          <p>${esc((p.content||'').substring(0,100))}</p>
+        </div>`;
+      }
+    }).join('');
+  }
 }
 
 function closeUserProfile(){
@@ -3247,6 +3313,7 @@ async function admToggleAdmin(nick, isAdmin){
   toast((isAdmin?'Admin removido de ':'Admin dado para ')+'@'+nick+' ✓');
   admSearchUsers($('admUserSearch').value);
   botLog((isAdmin?'❌ ADM removido':'✅ ADM dado')+' para @'+nick+' por @'+me.nick);
+  loadAdminCache();
 }
 
 async function admViewUser(nick){
@@ -3365,7 +3432,61 @@ const SEASONS = [
   {name:'❄️ Inverno',   bonus:0.8},
 ];
 
-function farmInit(){
+async function farmSave(){
+  if(!me) return;
+  const state = {
+    coins: farm.coins, level: farm.level, xp: farm.xp,
+    owned: farm.owned, selectedSeed: farm.selectedSeed,
+    luckBoost: farm.luckBoost, expansions: farm.expansions,
+    title: farm.title, fontStyle: farm.fontStyle,
+    stock: farm.stock||{}, harvestTimes: farm.harvestTimes||{},
+    spinsLeft: farm.spinsLeft, lastSpinDate: farm.lastSpinDate,
+    cells: farm.cells.map(c=>({
+      state: c.state==='growing'||c.state==='seeded'?c.state:'empty',
+      crop: c.crop, plantedAt: c.plantedAt, waterCount: c.waterCount, readyAt: c.readyAt,
+    })),
+  };
+  // Also save font_style to users table for post rendering
+  await Promise.all([
+    sb.from('users').update({ farm_state: state, font_style: farm.fontStyle||'normal', farm_title: farm.title||null }).eq('nick', me.nick),
+  ]);
+}
+
+async function farmLoad(){
+  if(!me) return false;
+  const {data} = await sb.from('users').select('farm_state').eq('nick', me.nick).maybeSingle();
+  if(!data || !data.farm_state) return false;
+  const s = data.farm_state;
+  farm.coins = s.coins ?? farm.coins;
+  farm.level = s.level ?? farm.level;
+  farm.xp    = s.xp ?? farm.xp;
+  farm.owned = s.owned ?? farm.owned;
+  farm.selectedSeed = s.selectedSeed ?? farm.selectedSeed;
+  farm.luckBoost = s.luckBoost ?? 0;
+  farm.expansions = s.expansions ?? 0;
+  farm.title = s.title ?? null;
+  farm.fontStyle = s.fontStyle ?? 'normal';
+  farm.stock = s.stock ?? {};
+  farm.harvestTimes = s.harvestTimes ?? {};
+  farm.spinsLeft = s.spinsLeft ?? 10;
+  farm.lastSpinDate = s.lastSpinDate ?? '';
+  if(Array.isArray(s.cells) && s.cells.length > 0){
+    farm.cells = s.cells.map(c=>({
+      state: c.state||'empty', crop: c.crop||null,
+      plantedAt: c.plantedAt||0, waterCount: c.waterCount||0, readyAt: c.readyAt||0,
+    }));
+  }
+  // Re-add any expansion rows
+  if(farm.expansions > 0){
+    const expectedCells = (FARM_ROWS + farm.expansions) * FARM_COLS;
+    while(farm.cells.length < expectedCells){
+      farm.cells.push({state:'empty',crop:null,plantedAt:0,waterCount:0,readyAt:0});
+    }
+  }
+  return true;
+}
+
+async function farmInit(){
   // Admin init
   if(farmIsAdmin()){
     farm.coins = 999999999;
@@ -3373,15 +3494,27 @@ function farmInit(){
     farm.level = 99;
     farm.luckBoost = 3;
     FARM_CROPS.forEach(c=>{ if(!farm.owned.includes(c.id)) farm.owned.push(c.id); });
+  } else {
+    // Load saved state for normal users
+    const loaded = await farmLoad();
+    if(!loaded){
+      // First time — default cells
+      farm.cells = Array.from({length: FARM_ROWS * FARM_COLS}, () => ({
+        state:'empty', crop:null, plantedAt:0, waterCount:0, readyAt:0,
+      }));
+    }
   }
-  farm.cells = Array.from({length: FARM_ROWS * FARM_COLS}, () => ({
-    state:'empty', crop:null, plantedAt:0, waterCount:0, readyAt:0,
-  }));
+  if(!farm.cells.length){
+    farm.cells = Array.from({length: FARM_ROWS * FARM_COLS}, () => ({
+      state:'empty', crop:null, plantedAt:0, waterCount:0, readyAt:0,
+    }));
+  }
   farmRenderGrid();
   farmUpdateHud();
   farmUpdateSeedSelect();
   farmSetSeason(Math.floor(Math.random()*4));
   farmInitDecorations();
+  farmRenderStock();
   clearInterval(farm.tickTimer);
   farm.tickTimer = setInterval(farmTick, 5000);
   clearInterval(farm.seasonTimer);
@@ -3571,6 +3704,7 @@ function farmCellClick(i){
       farmLevelCheck(); farmUpdateHud(); farmRenderGrid(); farmRenderStock();
       if(isGolden) toast('✨ FRUTA DOURADA! Vale muito mais no leilão!');
       farmSetStatus(isGolden ? '✨ Fruta Dourada no estoque!' : '📦 Colhido! Use Vender ou Leilão.');
+      farmSave();
     } else {
       farmSetStatus('Não há nada pronto para colher aqui.');
     }
@@ -3674,7 +3808,9 @@ function farmOpenShop(){
           ? `<span style="background:#e8f5e9;color:#2d6a1f;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:bold;">✓ Possui</span>`
           : locked
           ? `<button class="farm-buy-btn" disabled>🔒 Bloqueado</button>`
-          : `<button class="farm-buy-btn" onclick="farmBuySeed('${crop.id}',${crop.cost*5})">Comprar 💰${crop.cost*5}</button>`}
+          : farmIsAdmin()
+          ? `<button class="farm-buy-btn" onclick="farmBuySeed('${crop.id}',${crop.cost*5})">Comprar 💰${crop.cost*5}</button>`
+          : `<button class="farm-buy-btn" disabled style="background:#bbb;cursor:not-allowed;" title="Disponível apenas para ADMs">🔒 Indisponível</button>`}
       </div>`;
     list.appendChild(div);
   });
@@ -3692,6 +3828,7 @@ function farmBuySeed(id, price){
   if(disp) disp.textContent = farm.coins;
   farmOpenShop(); // refresh shop
   toast(`✅ Semente desbloqueada!`);
+  farmSave();
 }
 
 function farmCloseShop(){
@@ -4022,8 +4159,11 @@ function farmOpenTitleShop(){
   });
   modal.style.display='flex';
 }
-function farmCloseTitleShop(){ document.getElementById('farmTitleModal').style.display='none'; }
-function farmEquipTitle(id){ farm.title=id; farmOpenTitleShop(); toast('✅ Título equipado!'); }
+// ── INIT ──
+(async()=>{
+  await tryAutoLogin();
+})();
+function farmEquipTitle(id){ farm.title=id; farmOpenTitleShop(); toast('✅ Título equipado!'); farmSave(); }
 function farmBuyTitle(id){
   const t=FARM_TITLES.find(x=>x.id===id);
   if(!t||!t.price) return;
@@ -4031,8 +4171,9 @@ function farmBuyTitle(id){
   if(!farmIsAdmin()) farm.coins-=t.price;
   farm.title=id; farmUpdateHud(); farmOpenTitleShop();
   toast(`🏆 Título "${t.label}" desbloqueado!`);
+  farmSave();
 }
-function farmEquipFont(id){ farm.fontStyle=id; farmOpenTitleShop(); toast('✅ Estilo equipado!'); }
+function farmEquipFont(id){ farm.fontStyle=id; farmOpenTitleShop(); toast('✅ Estilo equipado!'); farmSave(); }
 function farmBuyFont(id){
   const f=FARM_FONTS.find(x=>x.id===id);
   if(!f||!f.price) return;
@@ -4040,6 +4181,7 @@ function farmBuyFont(id){
   if(!farmIsAdmin()) farm.coins-=f.price;
   farm.fontStyle=id; farmUpdateHud(); farmOpenTitleShop();
   toast(`✅ Estilo "${f.label}" desbloqueado!`);
+  farmSave();
 }
 
 // ── ESTOQUE & VENDA & LEILÃO ──
@@ -4115,6 +4257,7 @@ function farmConfirmSell(){
   farmUpdateHud(); farmRenderStock(); farmCloseSell();
   toast(`💰 Vendido! +${earned} moedas`);
   farmSetStatus(`💰 Vendeu ${qty}x ${crop.name} por 💰${earned}`);
+  farmSave();
 }
 
 // ── LEILÃO ──
@@ -4217,6 +4360,7 @@ function farmAcceptAuctionOffer(offerId){
   farmUpdateHud(); farmRenderStock(); farmCloseAuction();
   toast(`🔨 Leilão! +💰${earned.toLocaleString()} de ${offer.buyer}!`);
   farmSetStatus(`🔨 ${offer.buyer} comprou ${qty}x por 💰${earned.toLocaleString()}!`);
+  farmSave();
 }
 
 // ── ROLETA ──
@@ -4329,9 +4473,10 @@ function farmApplyRoletaPrize(combo){
   }
 }
 function farmBuySpins(){
+  if(!farmIsAdmin()){ toast('❌ Compras disponíveis apenas para ADMs'); return; }
   farm.spinsLeft+=10;
   document.getElementById('fRolSpins').textContent=farm.spinsLeft;
-  toast('🎰 +10 giros! (pagamento simulado)');
+  toast('🎰 +10 giros!');
 }
 function farmActivateInvasion(){
   toast('🎉 3 CORINGAS! Você pode invadir a fazenda de um vizinho!');
@@ -4452,25 +4597,47 @@ function farmExpandField(){
 function farmOpenLuckShop(){
   const modal = document.getElementById('farmLuckModal');
   if(modal) modal.style.display='flex';
+  // Disable purchase buttons for non-admins
+  const isAdm = farmIsAdmin();
+  [1,2,3].forEach(n=>{
+    const btn = document.getElementById('luckBtn'+n);
+    if(btn){
+      btn.disabled = !isAdm;
+      btn.textContent = isAdm ? 'Ativar' : '🔒 Indisponível';
+      btn.style.background = isAdm ? (n===3?'linear-gradient(135deg,#f39c12,#e67e22)':'#27ae60') : '#bbb';
+      btn.style.cursor = isAdm ? 'pointer' : 'not-allowed';
+    }
+  });
+  const note = document.getElementById('luckShopNote');
+  if(note) note.textContent = isAdm ? '✅ Acesso ADM — ativar gratuitamente' : '🔒 Disponível apenas para ADMs';
 }
 function farmCloseLuckShop(){
   const modal = document.getElementById('farmLuckModal');
   if(modal) modal.style.display='none';
 }
 function farmBuyLuck(level, priceLabel){
+  if(!farmIsAdmin()){ toast('❌ Compras disponíveis apenas para ADMs'); return; }
   if(farm.luckBoost >= level){ toast('Você já tem esse nível de sorte!'); return; }
-  // Simula pagamento (sem gateway real)
   farm.luckBoost = level;
   farmUpdateHud();
   farmCloseLuckShop();
-  toast(`🍀 Sorte nível ${level} ativada! Ofertas melhores chegando...`);
+  toast(`🍀 Sorte nível ${level} ativada!`);
   farmSetStatus(`🍀 Sorte ${level}/3 ativa — ofertas com preços ${25*level}% maiores!`);
+  farmSave();
 }
 
-// ── INIT ──
-(async()=>{
-  await tryAutoLogin();
-})();
+// Cache de admins para exibição de badges nos posts
+let adminUsersCache = {}; // nick -> {is_admin, font_style, farm_title}
+async function loadAdminCache(){
+  const {data} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('is_admin', true);
+  adminUsersCache = {};
+  (data||[]).forEach(u => { adminUsersCache[u.nick] = u; });
+  // Also add hardcoded admin
+  if(!adminUsersCache['kaua12345']){
+    const {data:kd} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('nick','kaua12345').maybeSingle();
+    if(kd) adminUsersCache['kaua12345'] = kd;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // ── CHAMADA DE VOZ — WebRTC com sinalização via Supabase       ──
