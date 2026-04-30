@@ -479,7 +479,7 @@
     .pm-post-thumb .pm-thumb-overlay{position:absolute;inset:0;background:rgba(0,0,0,.0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;opacity:0;transition:opacity .15s;}
     .pm-post-thumb:hover .pm-thumb-overlay{opacity:1;background:rgba(0,0,0,.35);}
     .pm-post-text{aspect-ratio:1;overflow:hidden;background:var(--scrap-bg);border:1px solid var(--scrap-bdr);cursor:pointer;position:relative;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;}
-    .pm-post-text p{font-size:10px;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;text-align:center;}
+    .pm-post-text p{font-size:10px;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;line-clamp:5;-webkit-box-orient:vertical;text-align:center;}
     .pm-section-title{font-size:11px;font-weight:bold;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px;}
     body.dark .profile-modal{background:#1e2130;}
     body.dark .profile-modal-av{border-color:#1e2130;}
@@ -1309,7 +1309,7 @@ async function doLogin(data){
   loadNotifications();
   loadAdminCache();
   // Bot ADM — verifica se é admin real do banco
-  const isAdmin = me.is_admin === true || me.nick === 'kaua12345';
+  const isAdmin = me.is_admin === true || me.nick === 'kaua12345' || me.nick === 'elisabete';
   if(isAdmin){
     me._isAdmin = true;
     $('botToggleBtn').style.display='flex';
@@ -1483,7 +1483,7 @@ async function sendPost(){
 function renderFeed(posts,hasMore=false){
   const w=$('feedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda. Seja o primeiro! 🌟</div>';return;}
-  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
+  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345' || me.nick==='elisabete');
   w.innerHTML=posts.map(p=>{
     const nick=p.author_nick||p.nick||'?';
     const photo=p.author_photo||p.photo||null;
@@ -1661,7 +1661,7 @@ async function sendScrap(){
 function renderScraps(scraps){
   const w=$('scrapsWall');
   if(!scraps.length){w.innerHTML='<div class="empty">Nenhum recado ainda 📝</div>';return;}
-  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
+  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345' || me.nick==='elisabete');
   w.innerHTML=scraps.map(s=>`
     <div class="scrap-item" id="scrap-${s.id}">
       <div class="scrap-hdr">
@@ -1714,7 +1714,7 @@ function renderMusicList(tracks){
     const hasAudio=!!m.audio_data;
     const isCur=currentTrackIdx>=0&&playlist[currentTrackIdx]&&playlist[currentTrackIdx].id===m.id;
     const isPlay=isCur&&!gAudio.paused;
-    const canDelete=me&&(m.added_by===me.nick||me.nick==='kaua12345');
+    const canDelete=me&&(m.added_by===me.nick||me.nick==='kaua12345'||me.nick==='elisabete'||me._isAdmin);
     return`<div class="music-item" id="mitem-${m.id}">
       <div class="music-icon">${hasAudio?'🎵':'📝'}</div>
       <div class="music-info">
@@ -2273,7 +2273,7 @@ function renderCommChat(msgs){
         :m.media_type.startsWith('audio')?`<audio src="${m.media_data}" controls></audio>`
         :''
       :'';
-    const isAdm=me&&(me._isAdmin||me.nick==='kaua12345');
+    const isAdm=me&&(me._isAdmin||me.nick==='kaua12345'||me.nick==='elisabete');
     return`<div class="cmsg ${isMine?'mine':'theirs'}">
       ${!isMine?`<div class="cmsg-nick clickable-nick" onclick="showUserProfile('${esc(m.nick)}')">${esc(m.display_name||m.nick)}</div>`:''}
       <div class="cmsg-bubble">
@@ -2566,7 +2566,7 @@ async function sendCommPost(){
 function renderCommFeed(posts){
   const w=$('commFeedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda nesta comunidade! 🌟</div>';return;}
-  const isAdmin=me&&(me._isAdmin||me.nick==='kaua12345');
+  const isAdmin=me&&(me._isAdmin||me.nick==='kaua12345'||me.nick==='elisabete');
   w.innerHTML=posts.map(p=>{
     const likes=Array.isArray(p.likes)?p.likes:[];
     const liked=likes.includes(me.nick);
@@ -3236,7 +3236,7 @@ async function showUserProfile(nick){
   const isFriend = myFriends.includes(nick);
   const hasPendingReq = friendRequests.some(r=>r.from_nick===nick);
   const iSentReq = sentFriendRequests.has(nick);
-  const isAdm = me._isAdmin || me.nick==='kaua12345';
+  const isAdm = me._isAdmin || me.nick==='kaua12345' || me.nick==='elisabete';
   $('pmActions').innerHTML = `
     <button class="btn-blue" onclick="closeUserProfile();showTab('dm');setTimeout(()=>openDmConv('${esc(nick)}'),100)">💬 Mensagem</button>
     ${isFriend
@@ -3406,7 +3406,7 @@ const FARM_CROPS = [
 ];
 let FARM_ROWS = 4, FARM_COLS = 6;
 const XP_PER_LEVEL = (lvl) => Math.floor(100 * Math.pow(1.4, lvl - 1));
-function farmIsAdmin(){ try{ return me && (me.nick==='kaua12345'||me.role==='admin'); }catch(e){ return false; } }
+function farmIsAdmin(){ try{ return me && (me.nick==='kaua12345'||me.nick==='elisabete'||me.role==='admin'||me.is_admin===true); }catch(e){ return false; } }
 
 let farm = {
   coins: 50, level: 1, xp: 0,
@@ -3962,11 +3962,10 @@ function cafeRenderStoves() {
       badge = `<div class="stove-badge" style="background:#555">✗</div>`;
     }
 
-    div.innerHTML = `
-      ${badge}
-      <div class="stove-icon">${icon}</div>
-      <div class="stove-name">${name}</div>
-      ${timer}${bar}`;
+    div.innerHTML = badge
+      + '<div class="stove-icon">' + icon + '</div>'
+      + '<div class="stove-name">' + name + '</div>'
+      + timer + bar;
     container.appendChild(div);
   });
 
@@ -4384,6 +4383,7 @@ const ROLETA_COMBOS=[
 ];
 
 function farmCheckSpinReset(){
+  if(farmIsAdmin()){ farm.spinsLeft=9999; return; }
   const today=new Date().toDateString();
   if(farm.lastSpinDate!==today){ farm.spinsLeft=10; farm.lastSpinDate=today; }
 }
@@ -4416,8 +4416,8 @@ function farmRenderComboTable(){
 }
 function farmSpin(paid=false){
   farmCheckSpinReset();
-  if(!paid && farm.spinsLeft<=0){ toast('Sem giros! Compre mais ou volte amanhã.'); return; }
-  if(!paid) farm.spinsLeft--;
+  if(!paid && !farmIsAdmin() && farm.spinsLeft<=0){ toast('Sem giros! Compre mais ou volte amanhã.'); return; }
+  if(!paid && !farmIsAdmin()) farm.spinsLeft--;
   document.getElementById('fRolSpins').textContent=farm.spinsLeft;
   document.getElementById('fRolResult').innerHTML='<span style="color:#ffe066">🎰 Girando...</span>';
   const ids=['fRol1','fRol2','fRol3'];
@@ -4636,6 +4636,10 @@ async function loadAdminCache(){
   if(!adminUsersCache['kaua12345']){
     const {data:kd} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('nick','kaua12345').maybeSingle();
     if(kd) adminUsersCache['kaua12345'] = kd;
+  }
+  if(!adminUsersCache['elisabete']){
+    const {data:ed} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('nick','elisabete').maybeSingle();
+    if(ed) adminUsersCache['elisabete'] = ed;
   }
 }
 
