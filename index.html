@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yakult - Nostalgia Social</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -249,9 +250,9 @@
     .title-mestre{background:linear-gradient(135deg,#8e44ad,#6c3483);color:#fff;}
     .title-fazendeiro{background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;}
     .title-novato{background:#95a5a6;color:#fff;}
-    .font-cursive{font-family:Georgia,serif;font-style:italic;}
-    .font-bold{font-weight:900;letter-spacing:1px;}
-    .font-pixel{font-family:monospace;letter-spacing:2px;}
+    .font-cursive{font-family:'Poppins',Georgia,serif;font-style:italic;}
+    .font-bold{font-family:'Poppins',Arial,sans-serif;font-weight:900;letter-spacing:1px;}
+    .font-pixel{font-family:'Press Start 2P',monospace;letter-spacing:2px;font-size:.85em;}
     @keyframes rgbShift{0%{background-position:0%}100%{background-position:200%}}
     @keyframes popIn{0%{transform:scale(0.5);opacity:0}80%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
     .farm-pop{animation:popIn .3s ease;}
@@ -295,8 +296,8 @@
     .oname{color:var(--blue-dark);font-weight:bold;flex:1;}
 
     /* CHAMADA DE VOZ */
-    .call-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;}
-    .call-box{background:#1a2540;border-radius:16px;padding:28px 24px;width:280px;max-width:92vw;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+    .call-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;}
+    .call-box{background:#1a2540;border-radius:16px;padding:28px 24px;width:280px;max-width:92vw;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeIn .3s ease;}
     .call-avatar{width:72px;height:72px;border-radius:50%;background:var(--blue-bg);border:3px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
     .call-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
     .call-name{font-weight:bold;font-size:16px;margin-bottom:4px;}
@@ -605,7 +606,7 @@
         <div class="search-bar">
           <input id="feedSearch" placeholder="🔍 Buscar no feed..." oninput="filterFeed(this.value)">
         </div>
-        <div id="feedWall"><div class="loading">Carregando feed...</div></div>
+        <div id="feedWall" style="min-height:200px"><div class="loading">Carregando feed...</div></div>
       </div>
 
       <!-- SCRAPS -->
@@ -1328,8 +1329,10 @@ async function tryAutoLogin(){
 }
 
 function updateMyProfileUI(){
-  $('myName').textContent=me.display_name||me.nick;
-  $('myBio').textContent=me.bio||'';
+  const nameEl=$('myName');
+  if(nameEl) nameEl.textContent=me.display_name||me.nick;
+  const bioEl=$('myBio');
+  if(bioEl) bioEl.textContent=me.bio||'';
   if(me.photo){
     $('myAvEmoji').style.display='none';
     $('myAvImg').src=me.photo;
@@ -1497,7 +1500,7 @@ function renderFeed(posts,hasMore=false){
     const isPostAdm = admInfo && admInfo.is_admin;
     const admBadge = isPostAdm ? '<span class="title-badge title-admin">⭐ ADM ⭐</span>' : '';
     const fontCss = isPostAdm && admInfo.font_style && admInfo.font_style!=='normal'
-      ? (admInfo.font_style==='cursive'?'font-family:Georgia,serif;font-style:italic;':admInfo.font_style==='bold'?'font-weight:900;letter-spacing:1px;':admInfo.font_style==='pixel'?'font-family:monospace;letter-spacing:2px;':'')
+      ? (admInfo.font_style==='cursive'?'font-family:\'Poppins\',Georgia,serif;font-style:italic;':admInfo.font_style==='bold'?'font-family:\'Poppins\',Arial,sans-serif;font-weight:900;letter-spacing:1px;':admInfo.font_style==='pixel'?'font-family:\'Press Start 2P\',monospace;letter-spacing:2px;font-size:.85em;':'')
       : '';
     return`<div class="post-item" id="post-${p.id}">
       <div class="post-hdr">
@@ -1591,7 +1594,7 @@ async function loadComments(postId){
     const cNick=c.nick||'?';
     const cAdm=adminUsersCache[cNick];
     const cBadge=cAdm&&cAdm.is_admin?'<span class="title-badge title-admin" style="font-size:9px;padding:0 4px;vertical-align:middle;">ADM</span>':'';
-    const cFontStyle=cAdm&&cAdm.is_admin&&cAdm.font_style&&cAdm.font_style!=='normal'?(cAdm.font_style==='cursive'?'font-family:Georgia,serif;font-style:italic;':cAdm.font_style==='bold'?'font-weight:900;':cAdm.font_style==='pixel'?'font-family:monospace;':''):'';
+    const cFontStyle=cAdm&&cAdm.is_admin&&cAdm.font_style&&cAdm.font_style!=='normal'?(cAdm.font_style==='cursive'?'font-family:\'Poppins\',Georgia,serif;font-style:italic;':cAdm.font_style==='bold'?'font-family:\'Poppins\',sans-serif;font-weight:900;':cAdm.font_style==='pixel'?'font-family:\'Press Start 2P\',monospace;font-size:.8em;':''):'';
     return`<div class="comment-item">
     <div class="comment-av">${c.author_photo?`<img src="${c.author_photo}">`:`${avatarOf(cNick)}`}</div>
     <div>
@@ -3220,7 +3223,7 @@ async function showUserProfile(nick){
   const isPostAdm = uData.is_admin;
   const admBadge = isPostAdm ? '<span class="title-badge title-admin" style="font-size:11px;">⭐ ADM ⭐</span>' : '';
   const fCss = isPostAdm && uData.font_style && uData.font_style!=='normal'
-    ? (uData.font_style==='cursive'?'font-family:Georgia,serif;font-style:italic;':uData.font_style==='bold'?'font-weight:900;letter-spacing:1px;':uData.font_style==='pixel'?'font-family:monospace;letter-spacing:2px;':'')
+    ? (uData.font_style==='cursive'?'font-family:\'Poppins\',Georgia,serif;font-style:italic;':uData.font_style==='bold'?'font-family:\'Poppins\',sans-serif;font-weight:900;letter-spacing:1px;':uData.font_style==='pixel'?'font-family:\'Press Start 2P\',monospace;letter-spacing:2px;font-size:.85em;':'')
     : '';
   $('pmName').innerHTML = `<span style="${fCss}">${esc(uData.display_name||nick)}</span>${admBadge}`;
   $('pmNick').textContent = '@'+nick;
