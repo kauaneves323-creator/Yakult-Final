@@ -4973,6 +4973,8 @@ async function vcHandleSignal(row){
   // ── OFFER: callee recebe offer do caller → cria answer ──
   if(type === 'offer'){
     if(VC.role !== 'callee') return;
+    // Atualizar isVideo se o offer confirmar vídeo
+    if(payload && payload.video === true) VC.isVideo = true;
     if(!VC.peer){ VC.pendingOffer=payload; return; }
     try{
       await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
@@ -5115,7 +5117,7 @@ async function startVideoCall(){
   try{
     const offer = await VC.peer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
     await VC.peer.setLocalDescription(offer);
-    await vcInsertSignal('ring', '');
+    await vcInsertSignal('ring', {video: true});
     await new Promise(r => setTimeout(r, 300));
     await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp, video: true});
   }catch(err){
@@ -5158,6 +5160,23 @@ async function acceptCall(){
 
   // Começar a escutar sinais futuros
   vcStartListening();
+
+  // Se o offer já chegou antes do peer ser criado, processar agora
+  if(VC.pendingOffer){
+    const pending = VC.pendingOffer;
+    VC.pendingOffer = null;
+    if(pending.video === true) VC.isVideo = true;
+    try{
+      await VC.peer.setRemoteDescription(new RTCSessionDescription(pending));
+      for(const c of VC.iceBuf){ try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){} }
+      VC.iceBuf = [];
+      const answer = await VC.peer.createAnswer();
+      await VC.peer.setLocalDescription(answer);
+      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      vcOnConnected();
+    }catch(e){ console.error('[VC] pendingOffer error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
+    return;
+  }
 
   // Buscar sinais já existentes no banco (offer pode ter chegado antes do listener)
   await vcFetchPendingSignals();
@@ -5538,7 +5557,7 @@ function vcStartGlobalListener(){
           } return;
         }
         VC.partner=row.new.from_nick; VC.role='callee';
-        VC.isVideo=row.new.payload?(()=>{try{return JSON.parse(row.new.payload).video===true;}catch(e){return false;}})():false;
+        VC.isVideo=(()=>{try{const p=row.new.payload;if(!p||p==='')return false;const obj=typeof p==='object'?p:JSON.parse(p);return obj.video===true;}catch(e){return false;}})();
         VC.processedIds=new Set(); vcShowUI('incoming'); vcRingStart();
       }
     })
