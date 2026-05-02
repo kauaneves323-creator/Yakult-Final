@@ -295,22 +295,35 @@
     .odot{width:8px;height:8px;border-radius:50%;background:#2a9d2a;flex-shrink:0;}
     .oname{color:var(--blue-dark);font-weight:bold;flex:1;}
 
-    /* CHAMADA DE VOZ */
-    .call-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;}
-    .call-box{background:#1a2540;border-radius:16px;padding:28px 24px;width:280px;max-width:92vw;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeIn .3s ease;}
+    /* CHAMADA DE VOZ / VÍDEO */
+    .call-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;}
+    /* modo voz: box centralizado */
+    .call-box{background:#1a2540;border-radius:16px;padding:28px 24px;width:300px;max-width:95vw;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fadeIn .3s ease;position:relative;}
+    /* modo vídeo: ocupa quase tudo */
+    .call-box.video-mode{width:100%;max-width:100%;height:100%;max-height:100%;border-radius:0;padding:0;background:#000;display:flex;flex-direction:column;position:relative;}
+    /* vídeo remoto (tela cheia) */
+    #vcRemoteVideo{width:100%;height:100%;object-fit:cover;display:block;background:#111;}
+    /* vídeo local (pip canto) */
+    #vcLocalVideo{position:absolute;bottom:90px;right:12px;width:110px;height:80px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,.4);background:#222;z-index:10;cursor:pointer;}
+    /* painel inferior no modo vídeo */
+    .vc-video-bar{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:14px 0 16px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:10;}
+    .vc-video-info{color:#fff;font-size:13px;display:flex;gap:12px;align-items:center;}
+    /* modo voz: box interno */
     .call-avatar{width:72px;height:72px;border-radius:50%;background:var(--blue-bg);border:3px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
     .call-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
     .call-name{font-weight:bold;font-size:16px;margin-bottom:4px;}
-    .call-status{font-size:12px;opacity:.7;margin-bottom:20px;}
-    .call-timer{font-size:13px;font-weight:bold;color:#7ef0a0;margin-bottom:18px;display:none;}
+    .call-status{font-size:12px;opacity:.7;margin-bottom:16px;}
+    .call-timer{font-size:13px;font-weight:bold;color:#7ef0a0;margin-bottom:14px;display:none;}
     .call-actions{display:flex;justify-content:center;gap:16px;flex-direction:column;align-items:center;}
     .call-btn{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
     .call-btn:hover{transform:scale(1.08);}
     .call-btn.hangup{background:#e03030;}
     .call-btn.accept{background:#20a050;}
     .call-btn.snooze{background:#e07b00;}
-    .call-btn.mute{background:rgba(255,255,255,.15);}
+    .call-btn.mute{background:rgba(255,255,255,.18);}
     .call-btn.muted{background:#e03030;}
+    .call-btn.camoff{background:rgba(255,255,255,.18);}
+    .call-btn.camoff.active{background:#e03030;}
     .call-ring{animation:callpulse 1s infinite;}
     @keyframes callpulse{0%,100%{box-shadow:0 0 0 0 rgba(32,160,80,.6)}50%{box-shadow:0 0 0 12px rgba(32,160,80,0)}}
     .call-actions-labeled{display:flex;justify-content:center;gap:20px;}
@@ -318,6 +331,8 @@
     .call-action-label{font-size:10px;opacity:.75;color:#fff;}
     .call-voice-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;cursor:pointer;white-space:nowrap;}
     .call-voice-btn:hover{background:var(--blue-light);}
+    /* badge de tipo na chamada entrante */
+    .call-type-badge{font-size:11px;opacity:.65;margin-bottom:4px;}
     .loading{text-align:center;color:var(--muted);padding:16px;font-size:12px;}
     .empty{text-align:center;color:var(--muted);padding:14px;font-size:12px;font-style:italic;}
     .toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--blue-dark);color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;z-index:999;transition:transform .3s ease;pointer-events:none;}
@@ -649,6 +664,7 @@
                 <div class="dm-header-av" id="dmChatAv"></div>
                 <div class="dm-header-name" id="dmChatName"></div>
                 <button class="call-voice-btn" onclick="startVoiceCall()" title="Chamada de voz">📞</button>
+                <button class="call-voice-btn" onclick="startVideoCall()" title="Chamada de vídeo">📹</button>
               </div>
               <div class="dm-messages" id="dmMessages"></div>
               <div class="typing-indicator" id="dmTypingIndicator"></div>
@@ -1195,14 +1211,28 @@
   </div>
 </div>
 
-<!-- CHAMADA DE VOZ OVERLAY -->
+<!-- CHAMADA DE VOZ / VÍDEO OVERLAY -->
 <div id="callOverlay" class="call-overlay hidden">
-  <div class="call-box">
+  <!-- Vídeo remoto (visível em modo vídeo) -->
+  <video id="vcRemoteVideo" autoplay playsinline style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;background:#111;"></video>
+  <!-- PIP local (visível em modo vídeo) -->
+  <video id="vcLocalVideo" autoplay playsinline muted style="display:none;position:absolute;bottom:90px;right:12px;width:110px;height:80px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,.4);background:#222;z-index:10;"></video>
+  <!-- Box modo voz (e tela de chamando/recebendo) -->
+  <div class="call-box" id="callBox">
     <div class="call-avatar" id="callAvatar"></div>
     <div class="call-name" id="callPartnerName"></div>
+    <div class="call-type-badge" id="callTypeBadge"></div>
     <div class="call-status" id="callStatus"></div>
     <div class="call-timer" id="callTimer" style="display:none"></div>
     <div class="call-actions" id="callActions"></div>
+  </div>
+  <!-- Barra inferior modo vídeo -->
+  <div class="vc-video-bar hidden" id="vcVideoBar">
+    <div class="vc-video-info">
+      <span id="vcVideoName"></span>
+      <span id="vcVideoTimer" style="font-weight:bold;color:#7ef0a0;"></span>
+    </div>
+    <div class="call-actions-labeled" id="vcVideoActions"></div>
   </div>
 </div>
 <audio id="vcRemoteAudio" autoplay playsinline style="display:none"></audio>
@@ -4651,23 +4681,14 @@ async function loadAdminCache(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── CHAMADA DE VOZ — WebRTC com sinalização via Supabase       ──
-// ── Fluxo correto:                                             ──
-//   1. Caller → ring                                           ──
-//   2. Caller → getUserMedia + createOffer + setLocal + offer  ──
-//   3. Callee → getUserMedia + setRemote + createAnswer +       ──
-//               setLocal + answer                              ──
-//   4. Caller → setRemote(answer)                              ──
-//   5. ICE candidates trocados bidirecionalmente               ──
+// ── CHAMADA DE VOZ / VÍDEO — WebRTC + Supabase                ──
 // ═══════════════════════════════════════════════════════════════
 
 let VC = {
   peer:null, stream:null, role:null, partner:null,
-  muted:false, timerInt:null, secs:0,
-  iceBuf:[],           // candidates recebidos antes de remoteDescription estar pronto
-  sigChannel:null,     // canal Realtime Supabase
-  processedIds:new Set(), // evitar reprocessar o mesmo sinal
-  pendingOffer:null,   // offer recebido antes de acceptCall criar o peer
+  muted:false, camOff:false, timerInt:null, secs:0,
+  iceBuf:[], sigChannel:null, processedIds:new Set(),
+  pendingOffer:null, isVideo:false,
 };
 
 const VC_ICE = {
@@ -4681,295 +4702,253 @@ const VC_ICE = {
   iceCandidatePoolSize:10,
 };
 
-// Sem sampleRate fixo — deixa o browser escolher para evitar rejeição
 const VC_AUDIO_CONSTRAINTS = {
   audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true},
   video:false
 };
+const VC_VIDEO_CONSTRAINTS = {
+  audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true},
+  video:{width:{ideal:1280}, height:{ideal:720}, facingMode:'user'}
+};
 
-// ── Inserir sinal no banco ──
+// ── Inserir sinal ──
 async function vcInsertSignal(type, payload=''){
   if(!me||!VC.partner) return;
   const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
   try{
     await sb.from('call_signals').insert({
-      from_nick: me.nick,
-      to_nick:   VC.partner,
-      type,
-      payload:   body,
-      created_at: new Date().toISOString()
+      from_nick:me.nick, to_nick:VC.partner, type, payload:body,
+      created_at:new Date().toISOString()
     });
   }catch(e){console.warn('vcInsertSignal error',e);}
 }
 
-// ── Escutar sinais vindos do parceiro via Realtime ──
+// ── Escutar sinais do parceiro ──
 function vcStartListening(){
   if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){}}
-  // Canal dedicado ao nick do usuário atual
   VC.sigChannel = sb.channel('vc-listen-'+me.nick+'-'+Date.now())
-    .on('postgres_changes',{
-      event:'INSERT', schema:'public', table:'call_signals',
-      filter:`to_nick=eq.${me.nick}`
-    }, row => {
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'call_signals',filter:`to_nick=eq.${me.nick}`}, row => {
       if(row.new) vcHandleSignal(row.new);
     })
-    .subscribe(status=>{
-      // Se o Realtime não conectar, ativa o poll de fallback
-      if(status === 'SUBSCRIBED') vcStopPoll();
+    .subscribe(status => {
+      if(status==='SUBSCRIBED') vcStopPoll();
       else vcStartPoll();
     });
 }
 
-// ── Poll de fallback caso Realtime falhe ──
-let _vcPollInt = null;
-let _vcPollAfter = null; // só busca sinais DEPOIS desta data
-
+// ── Poll fallback ──
+let _vcPollInt=null, _vcPollAfter=null;
 function vcStartPoll(){
   if(_vcPollInt) return;
   _vcPollAfter = new Date().toISOString();
   _vcPollInt = setInterval(async()=>{
     if(!me||!VC.partner) return;
-    const{data} = await sb.from('call_signals')
-      .select('*')
-      .eq('to_nick', me.nick)
-      .eq('from_nick', VC.partner)
-      .gt('created_at', _vcPollAfter)
-      .order('created_at',{ascending:true});
+    const{data} = await sb.from('call_signals').select('*')
+      .eq('to_nick',me.nick).eq('from_nick',VC.partner)
+      .gt('created_at',_vcPollAfter).order('created_at',{ascending:true});
     if(data&&data.length){
       _vcPollAfter = data[data.length-1].created_at;
       for(const row of data) vcHandleSignal(row);
     }
-  }, 1200);
+  },1200);
 }
+function vcStopPoll(){ clearInterval(_vcPollInt); _vcPollInt=null; }
 
-function vcStopPoll(){
-  clearInterval(_vcPollInt);
-  _vcPollInt = null;
-}
-
-// ── Processar sinal recebido ──
+// ── Processar sinal ──
 async function vcHandleSignal(row){
   if(!row) return;
-  if(row.from_nick === me.nick) return; // ignorar próprios sinais
-  if(VC.processedIds.has(row.id)) return; // já processado
+  if(row.from_nick===me.nick) return;
+  if(VC.processedIds.has(row.id)) return;
   VC.processedIds.add(row.id);
-
-  // Ignorar sinais de quem não é o parceiro atual (exceto ring)
-  if(row.type !== 'ring' && VC.partner && row.from_nick !== VC.partner) return;
+  if(row.type!=='ring' && VC.partner && row.from_nick!==VC.partner) return;
 
   const type = row.type;
   let payload;
   try{ payload = row.payload ? JSON.parse(row.payload) : null; }
   catch(e){ payload = row.payload; }
 
-  console.log('[VC] sinal recebido:', type, 'de', row.from_nick);
+  console.log('[VC] sinal:',type,'de',row.from_nick);
 
-  // ── RING: receber chamada ──
-  if(type === 'ring'){
-    // Já estou em chamada com OUTRA pessoa → busy
-    if(VC.role && VC.partner && VC.partner !== row.from_nick){
-      await vcInsertSignal('busy',''); return;
-    }
-    // Já aceitei esta mesma chamada → ignorar ring duplicado
-    if(VC.role === 'callee' && VC.partner === row.from_nick) return;
-    // Já sou o caller de outra chamada → busy
-    if(VC.role === 'caller'){ await vcInsertSignal('busy',''); return; }
+  // RING
+  if(type==='ring'){
+    if(VC.role && VC.partner && VC.partner!==row.from_nick){ await vcInsertSignal('busy',''); return; }
+    if(VC.role==='callee' && VC.partner===row.from_nick) return;
+    if(VC.role==='caller'){ await vcInsertSignal('busy',''); return; }
     VC.partner = row.from_nick;
     VC.role    = 'callee';
+    VC.isVideo = payload && payload.video===true;
     vcShowUI('incoming');
     vcRingStart();
     return;
   }
 
-  // ── OFFER: callee recebe offer do caller → cria answer ──
-  if(type === 'offer'){
-    if(VC.role !== 'callee') return;
-    // Se peer ainda não está pronto, guardar offer para processar após acceptCall
-    if(!VC.peer){ VC.pendingOffer = payload; return; }
+  // OFFER
+  if(type==='offer'){
+    if(VC.role!=='callee') return;
+    if(!VC.peer){ VC.pendingOffer=payload; return; }
     try{
       await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
-      // Aplicar ICE buffered antes do remoteDescription
-      for(const c of VC.iceBuf){
-        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
-      }
-      VC.iceBuf = [];
+      for(const c of VC.iceBuf){ try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){} }
+      VC.iceBuf=[];
       const answer = await VC.peer.createAnswer();
       await VC.peer.setLocalDescription(answer);
-      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      await vcInsertSignal('answer',{type:answer.type, sdp:answer.sdp});
       vcOnConnected();
-    }catch(e){ console.error('[VC] offer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
+    }catch(e){ console.error('[VC] offer error',e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
   }
 
-  // ── ANSWER: caller recebe answer do callee → conecta ──
-  if(type === 'answer'){
-    if(VC.role !== 'caller' || !VC.peer) return;
+  // ANSWER
+  if(type==='answer'){
+    if(VC.role!=='caller'||!VC.peer) return;
     try{
       await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
-      for(const c of VC.iceBuf){
-        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
-      }
-      VC.iceBuf = [];
+      for(const c of VC.iceBuf){ try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){} }
+      VC.iceBuf=[];
       vcOnConnected();
-    }catch(e){ console.error('[VC] answer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
+    }catch(e){ console.error('[VC] answer error',e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
   }
 
-  // ── ICE candidate ──
-  if(type === 'ice'){
+  // ICE
+  if(type==='ice'){
     if(!payload) return;
-    if(VC.peer && VC.peer.remoteDescription && VC.peer.remoteDescription.type){
-      try{ await VC.peer.addIceCandidate(new RTCIceCandidate(payload)); }catch(e){}
-    } else {
-      VC.iceBuf.push(payload);
-    }
+    if(VC.peer&&VC.peer.remoteDescription&&VC.peer.remoteDescription.type){
+      try{await VC.peer.addIceCandidate(new RTCIceCandidate(payload));}catch(e){}
+    } else { VC.iceBuf.push(payload); }
     return;
   }
 
-  // ── HANGUP / REJECT ──
-  if(type === 'hangup' || type === 'reject'){
-    const savedPartner = VC.partner || row.from_nick;
-    vcCleanup();
-    toast(type === 'reject'
-      ? (savedPartner + ' recusou a chamada 📵')
-      : (savedPartner + ' encerrou a chamada'));
+  // HANGUP / REJECT
+  if(type==='hangup'||type==='reject'){
+    const p=VC.partner||row.from_nick; vcCleanup();
+    toast(type==='reject'?(p+' recusou a chamada 📵'):(p+' encerrou a chamada'));
     return;
   }
 
-  // ── BUSY ──
-  if(type === 'busy'){
-    const savedPartner = VC.partner || row.from_nick;
-    vcCleanup();
-    toast(savedPartner + ' está em outra chamada 📵');
+  // BUSY
+  if(type==='busy'){
+    const p=VC.partner||row.from_nick; vcCleanup();
+    toast(p+' está em outra chamada 📵');
     return;
   }
 }
 
-// ── CALLER: iniciar chamada ──
+// ── CALLER: chamada de voz ──
 async function startVoiceCall(){
-  if(!currentDmPartner || !me) return;
-  if(VC.peer || VC.role) return toast('Já existe uma chamada ativa');
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    return toast('Seu navegador não suporta chamadas de voz');
-  }
-
-  VC.partner = currentDmPartner;
-  VC.role    = 'caller';
-  VC.iceBuf  = [];
-  VC.processedIds = new Set();
-
+  if(!currentDmPartner||!me) return;
+  if(VC.peer||VC.role) return toast('Já existe uma chamada ativa');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)
+    return toast('Seu navegador não suporta chamadas');
+  VC.partner=currentDmPartner; VC.role='caller'; VC.isVideo=false;
+  VC.iceBuf=[]; VC.processedIds=new Set();
   vcShowUI('calling');
   vcStartListening();
-
-  // 1. Pegar microfone
+  try{ VC.stream=await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS); }
+  catch(err){ toast('Microfone: '+err.message); vcCleanup(); return; }
+  VC.peer=vcBuildPeer();
+  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
   try{
-    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
-  }catch(err){
-    toast('Microfone: '+err.message);
-    vcCleanup(); return;
-  }
-
-  // 2. Criar peer e adicionar tracks
-  VC.peer = vcBuildPeer();
-  VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
-
-  // 3. Criar offer
-  try{
-    const offer = await VC.peer.createOffer({offerToReceiveAudio:true});
+    const offer=await VC.peer.createOffer({offerToReceiveAudio:true});
     await VC.peer.setLocalDescription(offer);
-    // 4. Avisar callee (ring) e já enviar offer junto
-    await vcInsertSignal('ring', '');
-    // Pequena pausa para garantir que o ring chegue antes do offer
-    await new Promise(r => setTimeout(r, 300));
-    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp});
-  }catch(err){
-    toast('Erro ao iniciar chamada: '+err.message);
-    vcCleanup(); return;
-  }
+    await vcInsertSignal('ring',{video:false});
+    await new Promise(r=>setTimeout(r,300));
+    await vcInsertSignal('offer',{type:offer.type,sdp:offer.sdp});
+  }catch(err){ toast('Erro ao iniciar chamada: '+err.message); vcCleanup(); }
 }
 
-// ── CALLEE: aceitar chamada ──
+// ── CALLER: chamada de vídeo ──
+async function startVideoCall(){
+  if(!currentDmPartner||!me) return;
+  if(VC.peer||VC.role) return toast('Já existe uma chamada ativa');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)
+    return toast('Seu navegador não suporta chamadas');
+  VC.partner=currentDmPartner; VC.role='caller'; VC.isVideo=true;
+  VC.iceBuf=[]; VC.processedIds=new Set();
+  vcShowUI('calling');
+  vcStartListening();
+  try{ VC.stream=await navigator.mediaDevices.getUserMedia(VC_VIDEO_CONSTRAINTS); }
+  catch(err){
+    // fallback: tenta só áudio
+    try{ VC.stream=await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS); VC.isVideo=false; }
+    catch(e){ toast('Câmera/microfone: '+err.message); vcCleanup(); return; }
+  }
+  // mostrar preview local
+  vcShowLocalVideo();
+  VC.peer=vcBuildPeer();
+  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
+  try{
+    const offer=await VC.peer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+    await VC.peer.setLocalDescription(offer);
+    await vcInsertSignal('ring',{video:VC.isVideo});
+    await new Promise(r=>setTimeout(r,300));
+    await vcInsertSignal('offer',{type:offer.type,sdp:offer.sdp});
+  }catch(err){ toast('Erro ao iniciar chamada: '+err.message); vcCleanup(); }
+}
+
+// ── CALLEE: aceitar ──
 async function acceptCall(){
   vcRingStop();
   vcShowUI('connecting');
-  VC.iceBuf = [];
-  VC.processedIds = new Set();
-
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    return toast('Seu navegador não suporta chamadas de voz');
+  VC.iceBuf=[]; VC.processedIds=new Set();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)
+    return toast('Seu navegador não suporta chamadas');
+  const constraints = VC.isVideo ? VC_VIDEO_CONSTRAINTS : VC_AUDIO_CONSTRAINTS;
+  try{ VC.stream=await navigator.mediaDevices.getUserMedia(constraints); }
+  catch(err){
+    if(VC.isVideo){
+      try{ VC.stream=await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS); VC.isVideo=false; }
+      catch(e){ toast('Microfone: '+e.message); vcCleanup(); return; }
+    } else { toast('Microfone: '+err.message); vcCleanup(); return; }
   }
-
-  // Pegar microfone
-  try{
-    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
-  }catch(err){
-    toast('Microfone: '+err.message);
-    vcCleanup(); return;
-  }
-
-  // Criar peer e adicionar tracks
-  VC.peer = vcBuildPeer();
-  VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
-
-  // Começar a escutar sinais futuros
+  if(VC.isVideo) vcShowLocalVideo();
+  VC.peer=vcBuildPeer();
+  VC.stream.getTracks().forEach(t=>VC.peer.addTrack(t,VC.stream));
   vcStartListening();
 
-  // Se o offer já tinha chegado antes do peer existir, processar agora
+  // Se offer já estava buffered, processar agora
   if(VC.pendingOffer){
-    const offer = VC.pendingOffer;
-    VC.pendingOffer = null;
+    const offer=VC.pendingOffer; VC.pendingOffer=null;
     try{
       await VC.peer.setRemoteDescription(new RTCSessionDescription(offer));
-      for(const c of VC.iceBuf){
-        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
-      }
-      VC.iceBuf = [];
-      const answer = await VC.peer.createAnswer();
+      for(const c of VC.iceBuf){ try{await VC.peer.addIceCandidate(new RTCIceCandidate(c));}catch(e){} }
+      VC.iceBuf=[];
+      const answer=await VC.peer.createAnswer();
       await VC.peer.setLocalDescription(answer);
-      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      await vcInsertSignal('answer',{type:answer.type,sdp:answer.sdp});
       vcOnConnected();
-    }catch(e){ console.error('[VC] pendingOffer error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
+    }catch(e){ console.error('[VC] pendingOffer err',e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
   }
-
-  // Buscar sinais já existentes no banco (offer pode ter chegado antes do listener)
   await vcFetchPendingSignals();
 }
 
 async function rejectCall(){
-  const partner = VC.partner;
-  VC.partner = VC.partner || partner;
+  const partner=VC.partner;
+  VC.partner=VC.partner||partner;
   await vcInsertSignal('reject','');
   vcCleanup();
 }
 
-// ── Deixar tocando: fecha o overlay mas mantém o ring para decidir depois ──
 function snoozeCall(){
   $('callOverlay').classList.add('hidden');
-  // Mostra um toast com opção de retomar
-  const t = $('toast');
-  t.innerHTML = `📞 Ligação de <b>${VC.partner}</b> &nbsp;
+  const t=$('toast');
+  const tipo=VC.isVideo?'📹 Videochamada':'📞 Ligação';
+  t.innerHTML=`${tipo} de <b>${VC.partner}</b> &nbsp;
     <button onclick="vcShowUI('incoming')" style="background:var(--blue);color:#fff;border:none;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:6px;">Ver</button>
     <button onclick="rejectCall()" style="background:#e03030;color:#fff;border:none;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:4px;">Rejeitar</button>`;
   t.classList.add('show');
-  // Não para o ring — fica tocando em background
 }
 
-// Busca sinais já pendentes no banco (para o callee que acabou de aceitar)
 async function vcFetchPendingSignals(){
-  if(!me || !VC.partner) return;
+  if(!me||!VC.partner) return;
   try{
-    const since = new Date(Date.now() - 30000).toISOString(); // últimos 30s
-    const{data} = await sb.from('call_signals')
-      .select('*')
-      .eq('to_nick', me.nick)
-      .eq('from_nick', VC.partner)
-      .gt('created_at', since)
-      .order('created_at', {ascending: true});
-    for(const row of (data||[])){
-      await vcHandleSignal(row);
-    }
-  }catch(e){ console.warn('[VC] fetchPending error', e); }
+    const since=new Date(Date.now()-30000).toISOString();
+    const{data}=await sb.from('call_signals').select('*')
+      .eq('to_nick',me.nick).eq('from_nick',VC.partner)
+      .gt('created_at',since).order('created_at',{ascending:true});
+    for(const row of (data||[])) await vcHandleSignal(row);
+  }catch(e){console.warn('[VC] fetchPending error',e);}
 }
 
 async function endCall(){
@@ -4979,131 +4958,171 @@ async function endCall(){
 
 // ── Limpeza ──
 function vcCleanup(){
-  vcRingStop();
-  vcTimerStop();
-  vcStopPoll();
+  vcRingStop(); vcTimerStop(); vcStopPoll();
   if(VC.peer){try{VC.peer.close();}catch(e){} VC.peer=null;}
   if(VC.stream){VC.stream.getTracks().forEach(t=>t.stop()); VC.stream=null;}
   if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){} VC.sigChannel=null;}
-  const audio = $('vcRemoteAudio');
-  if(audio){ audio.srcObject=null; audio.src=''; }
-  VC.role=null; VC.partner=null; VC.muted=false;
-  VC.secs=0; VC.iceBuf=[]; VC.processedIds=new Set(); VC.pendingOffer=null;
+  const audio=$('vcRemoteAudio');
+  if(audio){audio.srcObject=null;audio.src='';}
+  const rv=$('vcRemoteVideo');
+  if(rv){rv.srcObject=null;rv.style.display='none';}
+  const lv=$('vcLocalVideo');
+  if(lv){lv.srcObject=null;lv.style.display='none';}
+  const box=$('callBox');
+  if(box){box.style.display='';box.classList.remove('video-mode');}
+  const bar=$('vcVideoBar');
+  if(bar)bar.classList.add('hidden');
+  VC.role=null;VC.partner=null;VC.muted=false;VC.camOff=false;
+  VC.secs=0;VC.iceBuf=[];VC.processedIds=new Set();
+  VC.pendingOffer=null;VC.isVideo=false;
   $('callOverlay').classList.add('hidden');
-  // Só apaga sinais endereçados a MIM (não prejudica o parceiro)
   if(me) sb.from('call_signals').delete().eq('to_nick',me.nick)
-    .lt('created_at', new Date(Date.now()-5000).toISOString()).then(()=>{});
+    .lt('created_at',new Date(Date.now()-5000).toISOString()).then(()=>{});
 }
 
-// ── Construir RTCPeerConnection ──
+// ── Build RTCPeerConnection ──
 function vcBuildPeer(){
-  const peer = new RTCPeerConnection(VC_ICE);
-
-  // Enviar ICE candidate assim que gerado
-  peer.onicecandidate = async e => {
-    if(e.candidate){
-      await vcInsertSignal('ice', e.candidate.toJSON());
+  const peer=new RTCPeerConnection(VC_ICE);
+  peer.onicecandidate=async e=>{
+    if(e.candidate) await vcInsertSignal('ice',e.candidate.toJSON());
+  };
+  peer.ontrack=e=>{
+    console.log('[VC] ontrack',e.streams, e.track.kind);
+    if(VC.isVideo && e.track.kind==='video'){
+      const rv=$('vcRemoteVideo');
+      if(rv){
+        rv.srcObject=e.streams&&e.streams[0]?e.streams[0]:new MediaStream([e.track]);
+        rv.play().catch(()=>{});
+      }
+    }
+    // sempre conectar áudio também
+    const audio=$('vcRemoteAudio');
+    if(audio && e.track.kind==='audio'){
+      if(!audio.srcObject) audio.srcObject=e.streams&&e.streams[0]?e.streams[0]:new MediaStream([e.track]);
+      audio.play().catch(err=>{ console.warn('[VC] autoplay bloqueado:',err.message); vcShowUnmuteButton(); });
     }
   };
-
-  // Receber áudio remoto
-  peer.ontrack = e => {
-    console.log('[VC] ontrack recebido', e.streams);
-    const audio = $('vcRemoteAudio');
-    if(!audio) return;
-    if(e.streams && e.streams[0]){
-      audio.srcObject = e.streams[0];
-    } else {
-      // Fallback: criar stream do track
-      const stream = new MediaStream([e.track]);
-      audio.srcObject = stream;
-    }
-    // Garantir play (pode precisar de interação do usuário)
-    const playPromise = audio.play();
-    if(playPromise){
-      playPromise.catch(err=>{
-        console.warn('[VC] autoplay bloqueado:', err.message);
-        // Mostrar botão para o usuário clicar e desbloquear
-        vcShowUnmuteButton();
-      });
-    }
+  peer.oniceconnectionstatechange=()=>{
+    console.log('[VC] ICE:',peer.iceConnectionState);
+    if(peer.iceConnectionState==='connected'||peer.iceConnectionState==='completed') vcOnConnected();
+    if(peer.iceConnectionState==='failed'){ toast('Conexão falhou. Tente novamente.'); endCall(); }
+    if(peer.iceConnectionState==='disconnected'){ toast('Conexão interrompida 📵'); endCall(); }
   };
-
-  peer.oniceconnectionstatechange = () => {
-    console.log('[VC] ICE state:', peer.iceConnectionState);
-    if(peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed'){
-      vcOnConnected();
-    }
-    if(peer.iceConnectionState === 'failed'){
-      toast('Conexão falhou. Tente novamente.');
-      endCall();
-    }
-    if(peer.iceConnectionState === 'disconnected'){
-      toast('Conexão interrompida 📵');
-      endCall();
-    }
-  };
-
-  peer.onconnectionstatechange = () => {
-    console.log('[VC] connection state:', peer.connectionState);
-  };
-
+  peer.onconnectionstatechange=()=>{ console.log('[VC] conn:',peer.connectionState); };
   return peer;
 }
 
-// ── Desbloquear áudio se autoplay for bloqueado ──
-function vcShowUnmuteButton(){
-  const actions = $('callActions');
-  if(!actions) return;
-  const existing = document.getElementById('vcUnmuteBtn');
-  if(existing) return;
-  const btn = document.createElement('button');
-  btn.id = 'vcUnmuteBtn';
-  btn.className = 'call-btn mute';
-  btn.textContent = '🔊';
-  btn.title = 'Clique para ouvir';
-  btn.onclick = () => {
-    $('vcRemoteAudio').play().catch(()=>{});
-    btn.remove();
-  };
-  actions.prepend(btn);
+// ── Mostrar vídeo local (PIP) ──
+function vcShowLocalVideo(){
+  const lv=$('vcLocalVideo');
+  if(!lv||!VC.stream) return;
+  const vTrack=VC.stream.getVideoTracks()[0];
+  if(!vTrack) return;
+  lv.srcObject=new MediaStream([vTrack]);
+  lv.style.display='block';
+  lv.play().catch(()=>{});
 }
 
-// ── Quando ICE conectar ──
-let _vcConnectedOnce = false;
-function vcOnConnected(){
-  if(_vcConnectedOnce) return; // evitar chamar 2x
-  _vcConnectedOnce = true;
-  $('callStatus').textContent = 'Em chamada 🔵';
-  vcTimerStart();
+// ── Trocar câmera frente/traseira (mobile) ──
+async function vcFlipCamera(){
+  if(!VC.stream) return;
+  const vTrack=VC.stream.getVideoTracks()[0];
+  if(!vTrack) return;
+  const facing=vTrack.getSettings().facingMode||'user';
+  const newFacing=facing==='user'?'environment':'user';
+  try{
+    const ns=await navigator.mediaDevices.getUserMedia({video:{facingMode:newFacing},audio:false});
+    const newVTrack=ns.getVideoTracks()[0];
+    const sender=VC.peer&&VC.peer.getSenders().find(s=>s.track&&s.track.kind==='video');
+    if(sender) await sender.replaceTrack(newVTrack);
+    vTrack.stop();
+    VC.stream.removeTrack(vTrack);
+    VC.stream.addTrack(newVTrack);
+    vcShowLocalVideo();
+  }catch(e){toast('Erro ao trocar câmera');}
+}
+
+// ── Toggle câmera on/off ──
+function toggleCamCall(){
+  if(!VC.stream) return;
+  VC.camOff=!VC.camOff;
+  VC.stream.getVideoTracks().forEach(t=>t.enabled=!VC.camOff);
+  const btn=$('camBtn');
+  if(btn){btn.textContent=VC.camOff?'🚫':'📹'; btn.className='call-btn camoff'+(VC.camOff?' active':'');}
 }
 
 // ── Mudo ──
 function toggleMuteCall(){
   if(!VC.stream) return;
-  VC.muted = !VC.muted;
-  VC.stream.getAudioTracks().forEach(t => t.enabled = !VC.muted);
-  const btn = $('muteBtn');
-  if(btn){ btn.textContent = VC.muted ? '🔇' : '🎙️'; btn.className = 'call-btn '+(VC.muted?'muted':'mute'); }
+  VC.muted=!VC.muted;
+  VC.stream.getAudioTracks().forEach(t=>t.enabled=!VC.muted);
+  const btn=$('muteBtn');
+  if(btn){btn.textContent=VC.muted?'🔇':'🎙️'; btn.className='call-btn '+(VC.muted?'muted':'mute');}
+}
+
+// ── Desbloquear áudio ──
+function vcShowUnmuteButton(){
+  const actions=VC.isVideo?$('vcVideoActions'):$('callActions');
+  if(!actions||document.getElementById('vcUnmuteBtn')) return;
+  const btn=document.createElement('button');
+  btn.id='vcUnmuteBtn'; btn.className='call-btn mute';
+  btn.textContent='🔊'; btn.title='Clique para ouvir';
+  btn.onclick=()=>{$('vcRemoteAudio').play().catch(()=>{}); btn.remove();};
+  actions.prepend(btn);
+}
+
+// ── Quando ICE conectar ──
+let _vcConnectedOnce=false;
+function vcOnConnected(){
+  if(_vcConnectedOnce) return;
+  _vcConnectedOnce=true;
+  if(VC.isVideo){
+    // Modo vídeo: ocultar call-box, mostrar barra de vídeo
+    const box=$('callBox');
+    if(box) box.style.display='none';
+    const rv=$('vcRemoteVideo');
+    if(rv) rv.style.display='block';
+    const lv=$('vcLocalVideo');
+    if(lv && VC.stream && VC.stream.getVideoTracks().length) lv.style.display='block';
+    const bar=$('vcVideoBar');
+    if(bar){
+      bar.classList.remove('hidden');
+      $('vcVideoName').textContent=VC.partner||'';
+      $('vcVideoActions').innerHTML=vcVideoBarHTML();
+    }
+  } else {
+    $('callStatus').textContent='Em chamada 🔵';
+  }
+  vcTimerStart();
 }
 
 // ── UI da chamada ──
 function vcShowUI(mode){
-  _vcConnectedOnce = false;
+  _vcConnectedOnce=false;
   $('callOverlay').classList.remove('hidden');
-  $('toast').classList.remove('show'); // esconde toast do snooze se estiver visível
-  $('callPartnerName').textContent = VC.partner || '';
-  $('callAvatar').innerHTML = avatarOf(VC.partner || '?');
-  $('callTimer').style.display = 'none';
-  if(mode === 'calling'){
-    $('callStatus').textContent = 'Chamando... 📞';
-    $('callActions').innerHTML = `<button class="call-btn hangup" onclick="endCall()">📵</button>`;
-  } else if(mode === 'incoming'){
-    $('callStatus').textContent = 'Ligação entrante 📲';
-    $('callActions').innerHTML =
+  $('toast').classList.remove('show');
+
+  // reset layout para modo voz
+  const rv=$('vcRemoteVideo'); if(rv) rv.style.display='none';
+  const lv=$('vcLocalVideo'); if(lv) lv.style.display='none';
+  const box=$('callBox'); if(box) box.style.display='';
+  const bar=$('vcVideoBar'); if(bar) bar.classList.add('hidden');
+
+  $('callPartnerName').textContent=VC.partner||'';
+  $('callAvatar').innerHTML=avatarOf(VC.partner||'?');
+  $('callTimer').style.display='none';
+  const badge=$('callTypeBadge');
+  if(badge) badge.textContent=VC.isVideo?'📹 Videochamada':'📞 Chamada de voz';
+
+  if(mode==='calling'){
+    $('callStatus').textContent=VC.isVideo?'Chamando com vídeo... 📹':'Chamando... 📞';
+    $('callActions').innerHTML=`<button class="call-btn hangup" onclick="endCall()">📵</button>`;
+  } else if(mode==='incoming'){
+    $('callStatus').textContent=VC.isVideo?'Videochamada entrante 📹':'Ligação entrante 📲';
+    $('callActions').innerHTML=
       `<div class="call-actions-labeled">
          <div class="call-action-item">
-           <button class="call-btn accept call-ring" onclick="acceptCall()">📞</button>
+           <button class="call-btn accept call-ring" onclick="acceptCall()">` +(VC.isVideo?'📹':'📞')+`</button>
            <span class="call-action-label">Aceitar</span>
          </div>
          <div class="call-action-item">
@@ -5115,86 +5134,110 @@ function vcShowUI(mode){
            <span class="call-action-label">Rejeitar</span>
          </div>
        </div>`;
-  } else if(mode === 'connecting'){
-    $('callStatus').textContent = 'Conectando...';
-    $('callActions').innerHTML = vcInCallHTML();
+  } else if(mode==='connecting'){
+    $('callStatus').textContent='Conectando...';
+    $('callActions').innerHTML=vcInCallHTML();
   }
 }
 
 function vcInCallHTML(){
+  if(VC.isVideo) return vcVideoBarHTML();
   return `<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
           <button class="call-btn hangup" onclick="endCall()">📵</button>`;
 }
 
+function vcVideoBarHTML(){
+  return `<div class="call-actions-labeled">
+    <div class="call-action-item">
+      <button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
+      <span class="call-action-label">Mudo</span>
+    </div>
+    <div class="call-action-item">
+      <button class="call-btn camoff" id="camBtn" onclick="toggleCamCall()">📹</button>
+      <span class="call-action-label">Câmera</span>
+    </div>
+    <div class="call-action-item">
+      <button class="call-btn snooze" onclick="vcFlipCamera()" title="Girar câmera">🔄</button>
+      <span class="call-action-label">Girar</span>
+    </div>
+    <div class="call-action-item">
+      <button class="call-btn hangup" onclick="endCall()">📵</button>
+      <span class="call-action-label">Encerrar</span>
+    </div>
+  </div>`;
+}
+
 // ── Timer ──
 function vcTimerStart(){
-  VC.secs = 0;
-  $('callTimer').style.display = 'block';
-  $('callActions').innerHTML = vcInCallHTML();
-  VC.timerInt = setInterval(()=>{
+  VC.secs=0;
+  if(VC.isVideo){
+    $('vcVideoTimer').textContent='0:00';
+  } else {
+    $('callTimer').style.display='block';
+    $('callActions').innerHTML=vcInCallHTML();
+  }
+  VC.timerInt=setInterval(()=>{
     VC.secs++;
-    const m = Math.floor(VC.secs/60), s = VC.secs%60;
-    $('callTimer').textContent = m+':'+(s<10?'0':'')+s;
-  }, 1000);
+    const m=Math.floor(VC.secs/60),s=VC.secs%60;
+    const txt=m+':'+(s<10?'0':'')+s;
+    if(VC.isVideo){ const vt=$('vcVideoTimer'); if(vt) vt.textContent=txt; }
+    else { const ct=$('callTimer'); if(ct) ct.textContent=txt; }
+  },1000);
 }
 function vcTimerStop(){
   clearInterval(VC.timerInt); VC.timerInt=null;
-  $('callTimer').style.display = 'none';
+  const vt=$('vcVideoTimer'); if(vt) vt.textContent='';
+  const ct=$('callTimer'); if(ct) ct.style.display='none';
 }
 
-// ── Toque de chamada ──
+// ── Toque ──
 function vcRingStart(){
   try{
-    if(window._vcRingCtx){ try{window._vcRingCtx.close();}catch(e){} }
-    const ctx = new(window.AudioContext||window.webkitAudioContext)();
-    window._vcRingCtx = ctx;
-    let on = true;
-    window._vcRingStop = ()=>{ on=false; try{ctx.close();}catch(e){} };
-    const beep = (freq, dur, delay) => {
+    if(window._vcRingCtx){try{window._vcRingCtx.close();}catch(e){}}
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    window._vcRingCtx=ctx;
+    let on=true;
+    window._vcRingStop=()=>{on=false;try{ctx.close();}catch(e){}};
+    const beep=(freq,dur,delay)=>{
       if(!on) return;
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0.12, ctx.currentTime+delay);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+dur);
-      o.start(ctx.currentTime+delay);
-      o.stop(ctx.currentTime+delay+dur);
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=freq;
+      g.gain.setValueAtTime(0.12,ctx.currentTime+delay);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay+dur);
+      o.start(ctx.currentTime+delay);o.stop(ctx.currentTime+delay+dur);
     };
-    const loop = () => {
+    const loop=()=>{
       if(!on) return;
-      beep(880, 0.2, 0);
-      beep(660, 0.2, 0.25);
-      setTimeout(loop, 1400);
+      beep(880,0.2,0);beep(660,0.2,0.25);
+      setTimeout(loop,1400);
     };
     loop();
-  }catch(e){ console.warn('[VC] ring error', e); }
+  }catch(e){console.warn('[VC] ring error',e);}
 }
 function vcRingStop(){
-  try{ if(window._vcRingStop){ window._vcRingStop(); window._vcRingStop=null; } }catch(e){}
+  try{if(window._vcRingStop){window._vcRingStop();window._vcRingStop=null;}}catch(e){}
 }
 
-// ── Listener global (chamadas recebidas em qualquer aba) ──
+// ── Listener global ──
 function vcStartGlobalListener(){
   if(!me) return;
   sb.channel('vc-global-'+me.nick)
-    .on('postgres_changes',{
-      event:'INSERT', schema:'public', table:'call_signals',
-      filter:`to_nick=eq.${me.nick}`
-    }, row => {
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'call_signals',filter:`to_nick=eq.${me.nick}`}, row=>{
       if(!row.new) return;
-      if(row.new.type === 'ring'){
+      if(row.new.type==='ring'){
         if(VC.role){
-          // Já em chamada: ignorar se for o mesmo parceiro, senão responder busy
-          if(VC.partner !== row.new.from_nick){
-            const savedPartner = VC.partner;
-            VC.partner = row.new.from_nick;
-            vcInsertSignal('busy','').then(()=>{ VC.partner = savedPartner; });
+          if(VC.partner!==row.new.from_nick){
+            const saved=VC.partner;
+            VC.partner=row.new.from_nick;
+            vcInsertSignal('busy','').then(()=>{VC.partner=saved;});
           }
           return;
         }
-        VC.partner = row.new.from_nick;
-        VC.role    = 'callee';
-        VC.processedIds = new Set();
+        VC.partner=row.new.from_nick;
+        VC.role='callee';
+        VC.isVideo=row.new.payload?(()=>{try{return JSON.parse(row.new.payload).video===true;}catch(e){return false;}})():false;
+        VC.processedIds=new Set();
         vcShowUI('incoming');
         vcRingStart();
       }
