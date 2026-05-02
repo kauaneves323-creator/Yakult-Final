@@ -5928,284 +5928,113 @@ function gcShowIncoming(from, initiator){
 // ── Listener global também escuta sinais de grupo ──
 // (já integrado no vcStartGlobalListener via gcHandleSignal)
 
+
 // ══════════════════════════════════════════════════════════════════
-// ── NOTIFICAÇÕES PUSH — Service Worker + Notification API        ──
+// ── NOTIFICAÇÕES — Service Worker (yakult.net.br/sw.js)          ──
 // ══════════════════════════════════════════════════════════════════
 
-// ── Código do Service Worker (registrado via Blob URL) ──
-const SW_CODE = `
-const CACHE = 'yakult-sw-v1';
-const SUPA_URL = '${SUPA_URL.replace(/'/g,"\\'")}';
-const SUPA_KEY = '${SUPA_KEY.replace(/'/g,"\\'")}';
-
-let swNick = null;
-let lastChecked = null;
-let pollInterval = null;
-
-// Receber mensagens da página principal
-self.addEventListener('message', e => {
-  if(e.data && e.data.type === 'INIT') {
-    swNick = e.data.nick;
-    lastChecked = e.data.lastChecked || new Date().toISOString();
-    startPolling();
-  }
-  if(e.data && e.data.type === 'LOGOUT') {
-    swNick = null;
-    stopPolling();
-  }
-  if(e.data && e.data.type === 'UPDATE_CHECKED') {
-    lastChecked = e.data.lastChecked;
-  }
-});
-
-function startPolling() {
-  stopPolling();
-  pollInterval = setInterval(doPoll, 8000);
-}
-function stopPolling() {
-  if(pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-}
-
-async function doPoll() {
-  if(!swNick || !lastChecked) return;
-  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-  const anyVisible = clients.some(c => c.visibilityState === 'visible');
-  // Só dispara notificação push se o app estiver oculto/fechado
-  // (quando visível, o app já mostra toast/ring por conta própria)
-
-  const now = new Date().toISOString();
-
-  // 1. Verificar DMs novos
-  try {
-    const r = await fetch(SUPA_URL + '/rest/v1/dms?to_nick=eq.' + encodeURIComponent(swNick) + '&read=eq.false&created_at=gt.' + encodeURIComponent(lastChecked) + '&select=from_nick,text,created_at&order=created_at.asc&limit=5', {
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-    });
-    const dms = await r.json();
-    if(dms && dms.length > 0) {
-      const byNick = {};
-      dms.forEach(d => { if(!byNick[d.from_nick]) byNick[d.from_nick] = []; byNick[d.from_nick].push(d); });
-      for(const nick of Object.keys(byNick)) {
-        const msgs = byNick[nick];
-        const last = msgs[msgs.length - 1];
-        const preview = last.text ? (last.text.length > 60 ? last.text.slice(0,57)+'...' : last.text) : '📎 Mídia';
-        if(!anyVisible) {
-          await self.registration.showNotification('💬 ' + nick, {
-            body: preview,
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            tag: 'dm-' + nick,
-            renotify: true,
-            data: { url: self.location.origin, type: 'dm', from: nick },
-            vibrate: [200, 100, 200],
-            actions: [{ action: 'open', title: 'Abrir conversa' }]
-          });
-        }
-      }
-    }
-  } catch(e) {}
-
-  // 2. Verificar chamadas de voz/vídeo
-  try {
-    const since = new Date(Date.now() - 30000).toISOString();
-    const r2 = await fetch(SUPA_URL + '/rest/v1/call_signals?to_nick=eq.' + encodeURIComponent(swNick) + '&type=eq.ring&created_at=gt.' + encodeURIComponent(since) + '&select=from_nick,payload,created_at&order=created_at.desc&limit=1', {
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-    });
-    const rings = await r2.json();
-    if(rings && rings.length > 0) {
-      const ring = rings[0];
-      let isVideo = false;
-      try { const p = typeof ring.payload === 'string' ? JSON.parse(ring.payload) : ring.payload; isVideo = p && p.video === true; } catch(e) {}
-      const ringTime = new Date(ring.created_at).getTime();
-      const lastCheckedTime = new Date(lastChecked).getTime();
-      if(ringTime > lastCheckedTime) {
-        const tipo = isVideo ? '📹 Chamada de vídeo' : '📞 Chamada de voz';
-        if(!anyVisible) {
-          await self.registration.showNotification(tipo + ' de ' + ring.from_nick, {
-            body: 'Toque para atender',
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            tag: 'call-' + ring.from_nick,
-            renotify: true,
-            data: { url: self.location.origin, type: isVideo ? 'video' : 'call', from: ring.from_nick },
-            vibrate: [400, 200, 400, 200, 400],
-            requireInteraction: true,
-            actions: [
-              { action: 'accept', title: '✅ Atender' },
-              { action: 'reject', title: '❌ Recusar' }
-            ]
-          });
-        }
-      }
-    }
-  } catch(e) {}
-
-  lastChecked = now;
-}
-
-// Clicar na notificação abre o app
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  const data = e.notification.data || {};
-  const url = data.url || self.location.origin;
-  e.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-      if(clients.length > 0) {
-        const c = clients[0];
-        c.focus();
-        c.postMessage({ type: 'NOTIF_CLICK', data });
-        return;
-      }
-      return self.clients.openWindow(url);
-    })
-  );
-});
-
-self.addEventListener('install', e => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-`;
-
-// ── Registrar Service Worker via Blob ──
 let _swReg = null;
+const _notifShown = new Set();
 
-async function registerSW() {
-  if(!('serviceWorker' in navigator)) return;
+// ── Registrar SW ──
+async function registrarSW() {
+  if(!('serviceWorker' in navigator)) return false;
   try {
-    const blob = new Blob([SW_CODE], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    _swReg = await navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(async () => {
-      // Blob URL pode ser bloqueado em alguns browsers — tenta como inline script
-      return null;
-    });
-    if(_swReg) console.log('[SW] registrado');
-    // Ouvir mensagens do SW
+    _swReg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    console.log('[SW] registrado:', _swReg.scope);
+    // Ouvir mensagens do SW (clique na notificação)
     navigator.serviceWorker.addEventListener('message', e => {
-      if(e.data && e.data.type === 'NOTIF_CLICK') handleNotifClick(e.data.data);
+      if(!e.data) return;
+      if(e.data.type === 'NOTIF_CLICK') tratarCliqueNotif(e.data.data);
     });
+    return true;
   } catch(err) {
-    console.warn('[SW] falha no registro:', err);
+    console.warn('[SW] falha:', err);
+    return false;
   }
 }
 
-function handleNotifClick(data) {
+// ── Enviar dados do usuário logado para o SW ──
+function swEnviarInit() {
+  const sw = _swReg && (_swReg.active || _swReg.installing || _swReg.waiting);
+  if(!sw || !me) return;
+  sw.postMessage({
+    type: 'INIT',
+    nick: me.nick,
+    supaUrl: SUPA_URL,
+    supaKey: SUPA_KEY,
+    lastChecked: new Date(Date.now() - 10000).toISOString()
+  });
+}
+
+function swEnviarLogout() {
+  const sw = _swReg && _swReg.active;
+  if(sw) sw.postMessage({ type: 'LOGOUT' });
+}
+
+// ── Ação ao clicar na notificação ──
+function tratarCliqueNotif(data) {
   if(!data) return;
+  window.focus();
   if(data.type === 'dm' && data.from) {
     showTab('dm');
-    setTimeout(() => openDmConv(data.from), 300);
+    setTimeout(() => openDmConv(data.from), 250);
   } else if(data.type === 'call' || data.type === 'video') {
     if(VC.role === 'callee') vcShowUI('incoming');
   }
 }
 
-// ── Pedir permissão e iniciar sistema de notificações ──
-async function initPushNotifications() {
-  if(!me) return;
-  if(!('Notification' in window)) return;
-
-  // Registrar SW primeiro
-  await registerSW();
-
-  // Pedir permissão se ainda não foi concedida
-  if(Notification.permission === 'default') {
-    // Espera uma interação do usuário para pedir permissão (boa prática)
-    setTimeout(async () => {
-      const perm = await Notification.requestPermission();
-      if(perm === 'granted') {
-        toast('✅ Notificações ativadas!');
-        sendSWInit();
-      }
-    }, 3000);
-  } else if(Notification.permission === 'granted') {
-    sendSWInit();
-  }
-}
-
-function sendSWInit() {
-  if(!_swReg || !_swReg.active || !me) return;
-  _swReg.active.postMessage({
-    type: 'INIT',
-    nick: me.nick,
-    lastChecked: new Date(Date.now() - 5000).toISOString()
-  });
-}
-
-// ── Notificação local imediata (quando app está aberto mas em background) ──
-// Usada como fallback quando o SW não detectar (ex: app visível em outra aba)
-function showLocalNotif(title, body, data = {}) {
-  if(Notification.permission !== 'granted') return;
-  if(document.visibilityState === 'visible') return; // app visível, não precisa
+// ── Pedir permissão (precisa de gesto do usuário) ──
+async function pedirPermissaoNotif() {
+  if(!('Notification' in window)) return false;
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied') return false;
   try {
-    const n = new Notification(title, {
-      body,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: data.tag || 'yakult-notif',
-      renotify: true,
-      vibrate: data.vibrate || [200, 100, 200],
-      data,
-    });
-    n.onclick = () => { window.focus(); handleNotifClick(data); n.close(); };
-  } catch(e) {}
+    return (await Notification.requestPermission()) === 'granted';
+  } catch(e) { return false; }
 }
 
-// ── Hookar nas funções existentes para disparar notificações ──
-
-// Interceptar DMs recebidos
-const _origSubscribeDmChannel = subscribeDmChannel;
-window.subscribeDmChannel = function() {
-  _origSubscribeDmChannel.apply(this, arguments);
-  // O canal DM já existe — adicionar listener extra de notificação
-  // (feito diretamente no subscribeRealtime abaixo)
-};
-
-// Hookar no vcStartGlobalListener para notificar chamadas
-const _origVcStartGlobalListener = vcStartGlobalListener;
-window.vcStartGlobalListener = function() {
-  _origVcStartGlobalListener.apply(this, arguments);
-};
-
-// ── Sobrescrever vcShowUI para disparar notificação push local ──
-const _origVcShowUI = vcShowUI;
-window.vcShowUI = function(mode) {
-  _origVcShowUI.call(this, mode);
-  if(mode === 'incoming' && VC.partner) {
-    const isVideo = VC.isVideo;
-    const title = isVideo ? '📹 Chamada de vídeo' : '📞 Chamada de voz';
-    showLocalNotif(title + ' de ' + VC.partner, 'Toque para atender', {
-      type: isVideo ? 'video' : 'call',
-      from: VC.partner,
-      tag: 'call-' + VC.partner,
-      vibrate: [400, 200, 400, 200, 400]
+// ── Disparar notificação (fallback quando app está aberto em background) ──
+function dispararNotif(titulo, corpo, opcoes = {}) {
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const tag = opcoes.tag || ('yk-' + Date.now());
+  if(_notifShown.has(tag)) return;
+  _notifShown.add(tag);
+  setTimeout(() => _notifShown.delete(tag), 30000);
+  try {
+    const n = new Notification(titulo, {
+      body: corpo,
+      icon: '/favicon.ico',
+      tag,
+      renotify: true,
+      requireInteraction: opcoes.requireInteraction || false,
     });
-  }
-};
+    n.onclick = () => { tratarCliqueNotif(opcoes.data || {}); n.close(); };
+    if(!opcoes.requireInteraction) setTimeout(() => n.close(), 8000);
+  } catch(e) { console.warn('[Notif]', e); }
+}
 
-// ── Hookar no recebimento de DM para notificação push local ──
-// Sobrescrever o canal de DM para disparar notificação
-const _origLoadDmMessages = loadDmMessages;
-window.loadDmMessages = async function() {
-  await _origLoadDmMessages.apply(this, arguments);
-};
-
-// Monitorar DMs globais (mensagens que chegam sem o chat aberto)
-function startGlobalDmNotifListener() {
+// ── Escuta de DMs (fallback Realtime enquanto app está aberto) ──
+let _dmNotifCh = null;
+function iniciarEscutaDmNotif() {
   if(!me) return;
-  const ch = 'dm-notif-'+me.nick;
-  sb.channel(ch)
+  if(_dmNotifCh) { try { sb.removeChannel(_dmNotifCh); } catch(e){} }
+  _dmNotifCh = sb.channel('dm-push-' + me.nick + '-' + Date.now())
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'dms',
       filter: `to_nick=eq.${me.nick}`
-    }, async row => {
+    }, row => {
       if(!row.new) return;
       const from = row.new.from_nick;
       if(from === me.nick) return;
-      // Se o chat com esse nick está aberto e a página está visível, não notifica
-      if(currentDmPartner === from && document.visibilityState === 'visible') return;
-      const text = row.new.text || '📎 Mídia';
-      const preview = text.length > 70 ? text.slice(0,67)+'...' : text;
-      showLocalNotif('💬 ' + from, preview, {
-        type: 'dm', from, tag: 'dm-'+from, vibrate: [200, 100, 200]
+      if(document.visibilityState === 'visible' && currentDmPartner === from) return;
+      const texto = row.new.text || '';
+      const preview = texto ? (texto.length > 80 ? texto.slice(0,77)+'...' : texto) : '📎 Mídia';
+      dispararNotif('💬 ' + from + ' · yakult.net.br', preview, {
+        tag: 'dm-' + from,
+        data: { type: 'dm', from }
       });
-      // Atualizar o SW sobre o último tempo verificado
+      // Avisar SW para não duplicar
       if(_swReg && _swReg.active) {
         _swReg.active.postMessage({ type: 'UPDATE_CHECKED', lastChecked: new Date().toISOString() });
       }
@@ -6213,23 +6042,111 @@ function startGlobalDmNotifListener() {
     .subscribe();
 }
 
-// ── Inicializar após login ──
-const _origDoLogin = doLogin;
-window.doLogin = async function(data) {
-  await _origDoLogin.call(this, data);
-  await initPushNotifications();
-  startGlobalDmNotifListener();
-};
+// ── Notificação de chamada ──
+let _callNotif = null;
+function notificarChamada(parceiro, isVideo) {
+  if(_callNotif) { try { _callNotif.close(); } catch(e){} _callNotif = null; }
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const titulo = (isVideo ? '📹 Chamada de vídeo' : '📞 Chamada de voz') + ' · yakult.net.br';
+  _notifShown.delete('call-' + parceiro);
+  try {
+    _callNotif = new Notification(titulo, {
+      body: parceiro + ' está te ligando — toque para atender',
+      icon: '/favicon.ico',
+      tag: 'call-' + parceiro,
+      renotify: true,
+      requireInteraction: true,
+    });
+    _callNotif.onclick = () => {
+      window.focus();
+      vcShowUI('incoming');
+      if(_callNotif) { _callNotif.close(); _callNotif = null; }
+    };
+  } catch(e) {}
+}
+function fecharNotifChamada() {
+  if(_callNotif) { try { _callNotif.close(); } catch(e){} _callNotif = null; }
+}
 
-// Se já logado via auto-login, inicializar também
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    if(me) {
-      initPushNotifications();
-      startGlobalDmNotifListener();
+// ── Hookar vcShowUI para disparar notif de chamada ──
+{
+  const _orig = vcShowUI;
+  vcShowUI = function(mode) {
+    _orig.call(this, mode);
+    if(mode === 'incoming' && VC.partner) notificarChamada(VC.partner, VC.isVideo);
+    if(mode === 'connecting' || mode === 'calling') fecharNotifChamada();
+  };
+}
+
+// ── Hookar acceptCall / rejectCall ──
+{
+  const _origAcc = acceptCall;
+  acceptCall = async function() { fecharNotifChamada(); return _origAcc.apply(this, arguments); };
+  const _origRej = rejectCall;
+  rejectCall = async function() { fecharNotifChamada(); return _origRej.apply(this, arguments); };
+}
+
+// ── Mostrar botão de ativar notificações na topbar ──
+function mostrarBotaoNotif() {
+  if(document.getElementById('notifEnableBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'notifEnableBtn';
+  btn.textContent = '🔔';
+  btn.title = 'Ativar notificações';
+  btn.style.cssText = 'background:var(--pink);color:#fff;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;animation:pulse 2s infinite;';
+  btn.onclick = async () => {
+    const ok = await pedirPermissaoNotif();
+    btn.remove();
+    if(ok) {
+      toast('🔔 Notificações ativadas!');
+      swEnviarInit();
+      iniciarEscutaDmNotif();
+    } else {
+      toast('❌ Bloqueado. Ative nas configurações do browser.');
     }
-  }, 2000);
-});
+  };
+  const tr = document.querySelector('.topbar-right');
+  if(tr) tr.insertBefore(btn, tr.firstChild);
+}
+
+// ── Inicializar sistema de notificações após login ──
+async function iniciarNotificacoes() {
+  if(!me) return;
+  if(!('Notification' in window)) return;
+
+  // Registrar SW sempre (independente de permissão)
+  await registrarSW();
+
+  if(Notification.permission === 'granted') {
+    // Já tem permissão — ativar tudo imediatamente
+    swEnviarInit();
+    iniciarEscutaDmNotif();
+  } else if(Notification.permission === 'default') {
+    // Mostrar botão para pedir permissão via gesto
+    mostrarBotaoNotif();
+    // SW registrado — quando usuário aceitar, o SW já estará pronto
+  }
+  // Se 'denied', não faz nada
+}
+
+// ── Hookar doLogin ──
+{
+  const _orig = doLogin;
+  doLogin = async function(data) {
+    await _orig.call(this, data);
+    setTimeout(iniciarNotificacoes, 1200);
+  };
+}
+
+// ── Hookar logout para avisar o SW ──
+{
+  const _orig = logout;
+  logout = function() {
+    swEnviarLogout();
+    if(_dmNotifCh) { try { sb.removeChannel(_dmNotifCh); } catch(e){} _dmNotifCh = null; }
+    _orig.apply(this, arguments);
+  };
+}
 
 </script>
 </body>
