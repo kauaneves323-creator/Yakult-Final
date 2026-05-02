@@ -124,7 +124,7 @@
     .comment-preview-av{width:20px;height:20px;border-radius:50%;background:var(--blue-bg);border:1px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:10px;overflow:hidden;flex-shrink:0;}
     .comment-preview-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
     .comment-preview-nick{font-weight:bold;color:var(--blue-dark);margin-right:4px;}
-    .comment-preview-txt{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 80px);flex:1;}
+    .comment-preview-txt{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;}
     .comment-preview-img{width:22px;height:22px;border-radius:3px;object-fit:cover;vertical-align:middle;margin-left:2px;}
     .comment-preview-more{font-size:10px;color:var(--blue);cursor:pointer;font-weight:bold;padding:2px 4px;}
     .comment-preview-more:hover{text-decoration:underline;}
@@ -305,43 +305,100 @@
     .odot{width:8px;height:8px;border-radius:50%;background:#2a9d2a;flex-shrink:0;}
     .oname{color:var(--blue-dark);font-weight:bold;flex:1;}
 
-    /* CHAMADA DE VOZ */
-    .call-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;}
-    .call-box{background:#1a2540;border-radius:16px;padding:28px 24px;width:280px;max-width:92vw;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeIn .3s ease;}
-    .call-avatar{width:72px;height:72px;border-radius:50%;background:var(--blue-bg);border:3px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 10px;overflow:hidden;}
+    /* CHAMADA DE VOZ — estilo WhatsApp */
+    .call-overlay{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:stretch;justify-content:center;}
+    /* Caixa principal: ocupa tela toda no mobile, limitada no desktop */
+    .call-box{
+      position:relative;width:100%;max-width:420px;
+      background:#1a2540;overflow:hidden;
+      display:flex;flex-direction:column;
+      color:#fff;animation:fadeIn .3s ease;
+    }
+    /* Vídeo remoto: fundo que preenche tudo */
+    #vcRemoteVideo{
+      position:absolute;inset:0;width:100%;height:100%;
+      object-fit:cover;background:#111;display:none;z-index:0;
+    }
+    /* Quando não há vídeo remoto, mostra fundo escuro degradê */
+    .call-bg{
+      position:absolute;inset:0;
+      background:linear-gradient(160deg,#1a2a42 0%,#0f1a2c 100%);
+      z-index:0;
+    }
+    /* Vídeo local: PiP no canto superior direito */
+    #vcLocalVideo{
+      position:absolute;top:14px;right:14px;
+      width:90px;height:120px;
+      border-radius:12px;object-fit:cover;
+      background:#222;border:2px solid rgba(255,255,255,.35);
+      display:none;z-index:10;cursor:pointer;
+      box-shadow:0 4px 16px rgba(0,0,0,.5);
+    }
+    /* Conteúdo centralizado sobre o vídeo */
+    .call-content{
+      position:relative;z-index:5;
+      display:flex;flex-direction:column;align-items:center;
+      justify-content:space-between;
+      flex:1;padding:48px 24px 36px;min-height:420px;
+    }
+    .call-top{display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .call-avatar{
+      width:80px;height:80px;border-radius:50%;
+      background:rgba(255,255,255,.12);backdrop-filter:blur(4px);
+      border:3px solid rgba(255,255,255,.4);
+      display:flex;align-items:center;justify-content:center;
+      font-size:36px;overflow:hidden;
+    }
     .call-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-    .call-name{font-weight:bold;font-size:16px;margin-bottom:4px;}
-    .call-status{font-size:12px;opacity:.7;margin-bottom:20px;}
-    .call-timer{font-size:13px;font-weight:bold;color:#7ef0a0;margin-bottom:18px;display:none;}
-    .call-actions{display:flex;justify-content:center;gap:16px;flex-direction:row;align-items:center;flex-wrap:wrap;}
-    .call-btn{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
-    .call-btn:hover{transform:scale(1.08);}
+    .call-name{font-weight:bold;font-size:18px;text-shadow:0 1px 4px rgba(0,0,0,.6);}
+    .call-status{font-size:13px;opacity:.75;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+    .call-timer{font-size:14px;font-weight:bold;color:#7ef0a0;display:none;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+    /* Botões na parte de baixo */
+    .call-actions{
+      display:flex;justify-content:center;align-items:center;
+      gap:20px;flex-wrap:wrap;
+    }
+    .call-btn{
+      width:58px;height:58px;border-radius:50%;border:none;
+      font-size:24px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      transition:transform .15s,opacity .15s;
+      backdrop-filter:blur(4px);
+    }
+    .call-btn:hover{transform:scale(1.1);}
     .call-btn.hangup{background:#e03030;}
     .call-btn.accept{background:#20a050;}
     .call-btn.snooze{background:#e07b00;}
-    .call-btn.mute{background:rgba(255,255,255,.15);}
+    .call-btn.mute{background:rgba(255,255,255,.2);}
     .call-btn.muted{background:#e03030;}
-    .call-btn.add-person{background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);}
-    .call-btn.add-person:hover{background:rgba(255,255,255,.3);}
+    .call-btn.add-person{background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);}
+    .call-btn.cam-btn{background:rgba(255,255,255,.2);}
+    .call-btn-label{font-size:10px;opacity:.8;margin-top:4px;text-align:center;}
+    .call-btn-wrap{display:flex;flex-direction:column;align-items:center;}
     .call-ring{animation:callpulse 1s infinite;}
-    @keyframes callpulse{0%,100%{box-shadow:0 0 0 0 rgba(32,160,80,.6)}50%{box-shadow:0 0 0 12px rgba(32,160,80,0)}}
-    .call-actions-labeled{display:flex;justify-content:center;gap:20px;}
+    @keyframes callpulse{0%,100%{box-shadow:0 0 0 0 rgba(32,160,80,.6)}50%{box-shadow:0 0 0 14px rgba(32,160,80,0)}}
+    .call-actions-labeled{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;}
     .call-action-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
-    .call-action-label{font-size:10px;opacity:.75;color:#fff;}
-    .call-voice-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;cursor:pointer;white-space:nowrap;}
-    .call-voice-btn:hover{background:var(--blue-light);}
-    /* Botão convidar no canto da chamada */
-    .call-box{position:relative;}
-    .vc-invite-corner{position:absolute;top:10px;right:10px;width:36px;height:36px;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;font-size:18px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .15s;line-height:1;}
+    .call-action-label{font-size:11px;opacity:.75;color:#fff;}
+    /* Botão + no canto */
+    .vc-invite-corner{
+      position:absolute;top:14px;left:14px;z-index:10;
+      width:36px;height:36px;background:rgba(255,255,255,.18);
+      border:none;color:#fff;border-radius:50%;font-size:18px;
+      cursor:pointer;display:none;align-items:center;justify-content:center;
+      transition:background .15s;
+    }
     .vc-invite-corner.visible{display:flex;}
-    .vc-invite-corner:hover{background:rgba(255,255,255,.3);}
-    /* Botão + no canto superior direito da chamada em grupo */
-    .group-call-box{position:relative;}
-    .gc-add-corner-btn{position:absolute;top:10px;right:10px;width:36px;height:36px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;line-height:1;z-index:2;}
-    .gc-add-corner-btn:hover{background:rgba(255,255,255,.32);}
-    #vcInvitePanel{background:rgba(255,255,255,.07);border-radius:10px;padding:10px;margin-top:12px;text-align:left;display:none;}
+    .vc-invite-corner:hover{background:rgba(255,255,255,.32);}
+    /* Painel de convite */
+    #vcInvitePanel{
+      position:absolute;bottom:110px;left:16px;right:16px;z-index:15;
+      background:rgba(20,30,55,.92);backdrop-filter:blur(8px);
+      border-radius:14px;padding:12px;text-align:left;display:none;
+      border:1px solid rgba(255,255,255,.12);
+    }
     .vc-invite-title{font-size:10px;font-weight:bold;color:#adc8ff;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
-    .vc-friend-list{max-height:180px;overflow-y:auto;}
+    .vc-friend-list{max-height:160px;overflow-y:auto;}
     .vc-friend-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08);}
     .vc-friend-item:last-child{border-bottom:none;}
     .vc-friend-av{width:26px;height:26px;border-radius:50%;background:var(--blue-bg);border:1px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;overflow:hidden;}
@@ -350,8 +407,22 @@
     .vc-friend-invite-btn{background:#20a050;color:#fff;border:none;padding:3px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:bold;white-space:nowrap;}
     .vc-friend-invite-btn:hover{background:#178040;}
     .vc-friend-invite-btn:disabled{background:#555;cursor:default;}
-    #vcLocalVideo{width:80px;height:60px;border-radius:8px;object-fit:cover;position:absolute;bottom:10px;right:10px;border:2px solid rgba(255,255,255,.3);background:#111;display:none;}
-    #vcRemoteVideo{width:100%;max-height:220px;border-radius:10px;object-fit:cover;background:#111;display:none;margin-bottom:10px;}
+    .call-voice-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;cursor:pointer;white-space:nowrap;}
+    .call-voice-btn:hover{background:var(--blue-light);}
+    /* Trocar vídeo local/remoto ao clicar */
+    #vcLocalVideo.pip-big{
+      inset:0;width:100%;height:100%;
+      top:0;left:0;right:0;bottom:0;
+      border-radius:0;border:none;z-index:1;
+    }
+    #vcRemoteVideo.pip-small{
+      position:absolute;top:14px;right:14px;
+      width:90px;height:120px;
+      border-radius:12px;z-index:10;
+      border:2px solid rgba(255,255,255,.35);
+    }
+    /* Botão + no canto */
+    .call-box{position:relative;}
     /* CHAMADA EM GRUPO */
     .group-call-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;}
     .group-call-box{background:#1a2540;border-radius:16px;padding:20px;width:min(480px,96vw);color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.5);}
@@ -1248,21 +1319,32 @@
   </div>
 </div>
 
-<!-- CHAMADA DE VOZ OVERLAY -->
+<!-- CHAMADA DE VOZ OVERLAY — estilo WhatsApp -->
 <div id="callOverlay" class="call-overlay hidden">
   <div class="call-box">
-    <button class="vc-invite-corner" id="vcInviteCornerBtn" onclick="vcToggleInvitePanel()" title="Convidar amigos">➕</button>
+    <!-- Fundo escuro (quando não há vídeo) -->
+    <div class="call-bg"></div>
+    <!-- Vídeo remoto: fullscreen atrás de tudo -->
     <video id="vcRemoteVideo" autoplay playsinline></video>
-    <div class="call-avatar" id="callAvatar"></div>
-    <div class="call-name" id="callPartnerName"></div>
-    <div class="call-status" id="callStatus"></div>
-    <div class="call-timer" id="callTimer" style="display:none"></div>
-    <div class="call-actions" id="callActions"></div>
+    <!-- Vídeo local: PiP arrastável no canto -->
+    <video id="vcLocalVideo" autoplay playsinline muted onclick="vcSwapVideos()"></video>
+    <!-- Botão + no canto esquerdo (convidar) -->
+    <button class="vc-invite-corner" id="vcInviteCornerBtn" onclick="vcToggleInvitePanel()" title="Convidar amigos">➕</button>
+    <!-- Conteúdo principal sobre o vídeo -->
+    <div class="call-content">
+      <div class="call-top">
+        <div class="call-avatar" id="callAvatar"></div>
+        <div class="call-name" id="callPartnerName"></div>
+        <div class="call-status" id="callStatus"></div>
+        <div class="call-timer" id="callTimer"></div>
+      </div>
+      <div class="call-actions" id="callActions"></div>
+    </div>
+    <!-- Painel de convite -->
     <div id="vcInvitePanel">
       <div class="vc-invite-title">👥 Convidar amigos</div>
       <div class="vc-friend-list" id="vcFriendList"></div>
     </div>
-    <video id="vcLocalVideo" autoplay playsinline muted></video>
   </div>
 </div>
 <audio id="vcRemoteAudio" autoplay playsinline style="display:none"></audio>
@@ -1270,7 +1352,6 @@
 <!-- CHAMADA EM GRUPO OVERLAY -->
 <div id="groupCallOverlay" class="group-call-overlay hidden">
   <div class="group-call-box">
-    <button class="gc-add-corner-btn" onclick="gcEl('gcInvitePanel').classList.toggle('hidden');gcEl('gcInviteNick')&&gcEl('gcInviteNick').focus()" title="Adicionar pessoa">➕</button>
     <div class="group-call-title" id="gcTitle">👥 Chamada em grupo</div>
     <div class="group-call-status" id="gcStatus"></div>
     <!-- Painel de convidar (mostra durante a chamada) -->
@@ -2950,8 +3031,6 @@ function subscribeRealtime(){
     const postId=payload.new.post_id;
     const el=$('comments-'+postId);
     if(el&&!el.classList.contains('hidden'))loadComments(postId);
-    // Sempre atualizar o preview embaixo do post
-    loadCommentPreview(postId);
     if(payload.new.nick!==me.nick){
       const post=allPosts.find(p=>p.id===postId);
       if(post&&(post.author_nick||post.nick)===me.nick){
@@ -5020,7 +5099,7 @@ async function startVideoCall(){
       audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
       video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}
     });
-    // Mostrar vídeo local
+    // Mostrar vídeo local como PiP imediatamente
     const locVid=$('vcLocalVideo');
     if(locVid){locVid.srcObject=VC.stream;locVid.style.display='block';}
   }catch(err){
@@ -5171,8 +5250,10 @@ function vcBuildPeer(){
         remVid.srcObject=remoteStream;
         remVid.style.display='block';
         remVid.play().catch(()=>{});
-        // Ocultar avatar quando há vídeo
+        // Ocultar avatar e nome quando há vídeo remoto, deixar tela limpa
         const av=$('callAvatar'); if(av) av.style.display='none';
+        // Mostrar nome do parceiro sobreposto em cima do vídeo (translúcido)
+        const nm=$('callPartnerName'); if(nm) nm.style.textShadow='0 2px 8px rgba(0,0,0,.8)';
       }
     } else {
       const audio = $('vcRemoteAudio');
@@ -5247,17 +5328,48 @@ function toggleMuteCall(){
   if(btn){ btn.textContent = VC.muted ? '🔇' : '🎙️'; btn.className = 'call-btn '+(VC.muted?'muted':'mute'); }
 }
 
+// ── Câmera on/off ──
+function toggleCamCall(){
+  if(!VC.stream) return;
+  VC.camOff = !VC.camOff;
+  VC.stream.getVideoTracks().forEach(t => t.enabled = !VC.camOff);
+  const btn = $('camBtn');
+  if(btn){ btn.textContent = VC.camOff ? '🚫' : '📷'; btn.style.opacity = VC.camOff ? '0.5' : '1'; }
+  const locVid = $('vcLocalVideo');
+  if(locVid) locVid.style.opacity = VC.camOff ? '0.3' : '1';
+}
+
+// ── Trocar vídeo local ↔ remoto (clicar no PiP troca os dois) ──
+function vcSwapVideos(){
+  const remVid = $('vcRemoteVideo');
+  const locVid = $('vcLocalVideo');
+  if(!remVid || !locVid) return;
+  // Toggle tamanhos: pip vira grande e grande vira pip
+  if(locVid.classList.contains('pip-big')){
+    locVid.classList.remove('pip-big');
+    remVid.classList.remove('pip-small');
+  } else {
+    locVid.classList.add('pip-big');
+    remVid.classList.add('pip-small');
+  }
+}
+
 // ── UI da chamada ──
 function vcShowUI(mode){
   _vcConnectedOnce = false;
   $('callOverlay').classList.remove('hidden');
-  $('toast').classList.remove('show'); // esconde toast do snooze se estiver visível
+  $('toast').classList.remove('show');
   $('callPartnerName').textContent = VC.partner || '';
   $('callAvatar').innerHTML = avatarOf(VC.partner || '?');
+  $('callAvatar').style.display = '';
   $('callTimer').style.display = 'none';
   if(mode === 'calling'){
     $('callStatus').textContent = 'Chamando... 📞';
-    $('callActions').innerHTML = `<button class="call-btn hangup" onclick="endCall()">📵</button>`;
+    $('callActions').innerHTML = `
+      <div class="call-btn-wrap">
+        <button class="call-btn hangup" onclick="endCall()">📵</button>
+        <div class="call-btn-label">Encerrar</div>
+      </div>`;
   } else if(mode === 'incoming'){
     $('callStatus').textContent = 'Ligação entrante 📲';
     $('callActions').innerHTML =
@@ -5282,9 +5394,23 @@ function vcShowUI(mode){
 }
 
 function vcInCallHTML(){
-  return `<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
-          <button class="call-btn add-person" id="callAddBtn" onclick="vcToggleInvitePanel()" title="Adicionar pessoa">➕</button>
-          <button class="call-btn hangup" onclick="endCall()">📵</button>`;
+  const showCam = VC.isVideo;
+  return `<div class="call-btn-wrap">
+            <button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
+            <div class="call-btn-label">Mudo</div>
+          </div>
+          ${showCam?`<div class="call-btn-wrap">
+            <button class="call-btn cam-btn" id="camBtn" onclick="toggleCamCall()">📷</button>
+            <div class="call-btn-label">Câmera</div>
+          </div>`:''}
+          <div class="call-btn-wrap">
+            <button class="call-btn add-person" id="callAddBtn" onclick="vcToggleInvitePanel()">➕</button>
+            <div class="call-btn-label">Adicionar</div>
+          </div>
+          <div class="call-btn-wrap">
+            <button class="call-btn hangup" onclick="endCall()">📵</button>
+            <div class="call-btn-label">Encerrar</div>
+          </div>`;
 }
 
 function vcShowInviteBtn(show){
@@ -5349,7 +5475,6 @@ function vcTimerStart(){
   VC.secs = 0;
   $('callTimer').style.display = 'block';
   $('callActions').innerHTML = vcInCallHTML();
-  vcShowInviteBtn(true);
   VC.timerInt = setInterval(()=>{
     VC.secs++;
     const m = Math.floor(VC.secs/60), s = VC.secs%60;
