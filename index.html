@@ -4667,6 +4667,7 @@ let VC = {
   iceBuf:[],           // candidates recebidos antes de remoteDescription estar pronto
   sigChannel:null,     // canal Realtime Supabase
   processedIds:new Set(), // evitar reprocessar o mesmo sinal
+  pendingOffer:null,   // offer recebido antes de acceptCall criar o peer
 };
 
 const VC_ICE = {
@@ -4765,7 +4766,14 @@ async function vcHandleSignal(row){
 
   // ── RING: receber chamada ──
   if(type === 'ring'){
-    if(VC.peer){ await vcInsertSignal('busy',''); return; }
+    // Já estou em chamada com OUTRA pessoa → busy
+    if(VC.role && VC.partner && VC.partner !== row.from_nick){
+      await vcInsertSignal('busy',''); return;
+    }
+    // Já aceitei esta mesma chamada → ignorar ring duplicado
+    if(VC.role === 'callee' && VC.partner === row.from_nick) return;
+    // Já sou o caller de outra chamada → busy
+    if(VC.role === 'caller'){ await vcInsertSignal('busy',''); return; }
     VC.partner = row.from_nick;
     VC.role    = 'callee';
     vcShowUI('incoming');
@@ -4775,7 +4783,9 @@ async function vcHandleSignal(row){
 
   // ── OFFER: callee recebe offer do caller → cria answer ──
   if(type === 'offer'){
-    if(VC.role !== 'callee' || !VC.peer) return;
+    if(VC.role !== 'callee') return;
+    // Se peer ainda não está pronto, guardar offer para processar após acceptCall
+    if(!VC.peer){ VC.pendingOffer = payload; return; }
     try{
       await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
       // Aplicar ICE buffered antes do remoteDescription
@@ -4904,6 +4914,24 @@ async function acceptCall(){
   // Começar a escutar sinais futuros
   vcStartListening();
 
+  // Se o offer já tinha chegado antes do peer existir, processar agora
+  if(VC.pendingOffer){
+    const offer = VC.pendingOffer;
+    VC.pendingOffer = null;
+    try{
+      await VC.peer.setRemoteDescription(new RTCSessionDescription(offer));
+      for(const c of VC.iceBuf){
+        try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
+      }
+      VC.iceBuf = [];
+      const answer = await VC.peer.createAnswer();
+      await VC.peer.setLocalDescription(answer);
+      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      vcOnConnected();
+    }catch(e){ console.error('[VC] pendingOffer error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
+    return;
+  }
+
   // Buscar sinais já existentes no banco (offer pode ter chegado antes do listener)
   await vcFetchPendingSignals();
 }
@@ -4960,7 +4988,7 @@ function vcCleanup(){
   const audio = $('vcRemoteAudio');
   if(audio){ audio.srcObject=null; audio.src=''; }
   VC.role=null; VC.partner=null; VC.muted=false;
-  VC.secs=0; VC.iceBuf=[]; VC.processedIds=new Set();
+  VC.secs=0; VC.iceBuf=[]; VC.processedIds=new Set(); VC.pendingOffer=null;
   $('callOverlay').classList.add('hidden');
   // Só apaga sinais endereçados a MIM (não prejudica o parceiro)
   if(me) sb.from('call_signals').delete().eq('to_nick',me.nick)
@@ -5154,7 +5182,16 @@ function vcStartGlobalListener(){
       filter:`to_nick=eq.${me.nick}`
     }, row => {
       if(!row.new) return;
-      if(row.new.type === 'ring' && !VC.role){
+      if(row.new.type === 'ring'){
+        if(VC.role){
+          // Já em chamada: ignorar se for o mesmo parceiro, senão responder busy
+          if(VC.partner !== row.new.from_nick){
+            const savedPartner = VC.partner;
+            VC.partner = row.new.from_nick;
+            vcInsertSignal('busy','').then(()=>{ VC.partner = savedPartner; });
+          }
+          return;
+        }
         VC.partner = row.new.from_nick;
         VC.role    = 'callee';
         VC.processedIds = new Set();
