@@ -328,6 +328,24 @@
     .call-action-label{font-size:10px;opacity:.75;color:#fff;}
     .call-voice-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;cursor:pointer;white-space:nowrap;}
     .call-voice-btn:hover{background:var(--blue-light);}
+    /* Botão convidar no canto da chamada */
+    .call-box{position:relative;}
+    .vc-invite-corner{position:absolute;top:10px;right:10px;width:36px;height:36px;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;font-size:18px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .15s;line-height:1;}
+    .vc-invite-corner.visible{display:flex;}
+    .vc-invite-corner:hover{background:rgba(255,255,255,.3);}
+    #vcInvitePanel{background:rgba(255,255,255,.07);border-radius:10px;padding:10px;margin-top:12px;text-align:left;display:none;}
+    .vc-invite-title{font-size:10px;font-weight:bold;color:#adc8ff;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+    .vc-friend-list{max-height:180px;overflow-y:auto;}
+    .vc-friend-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08);}
+    .vc-friend-item:last-child{border-bottom:none;}
+    .vc-friend-av{width:26px;height:26px;border-radius:50%;background:var(--blue-bg);border:1px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;overflow:hidden;}
+    .vc-friend-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+    .vc-friend-nick{flex:1;font-size:12px;color:#e8eeff;font-weight:bold;}
+    .vc-friend-invite-btn{background:#20a050;color:#fff;border:none;padding:3px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:bold;white-space:nowrap;}
+    .vc-friend-invite-btn:hover{background:#178040;}
+    .vc-friend-invite-btn:disabled{background:#555;cursor:default;}
+    #vcLocalVideo{width:80px;height:60px;border-radius:8px;object-fit:cover;position:absolute;bottom:10px;right:10px;border:2px solid rgba(255,255,255,.3);background:#111;display:none;}
+    #vcRemoteVideo{width:100%;max-height:220px;border-radius:10px;object-fit:cover;background:#111;display:none;margin-bottom:10px;}
     /* CHAMADA EM GRUPO */
     .group-call-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;}
     .group-call-box{background:#1a2540;border-radius:16px;padding:20px;width:min(480px,96vw);color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.5);}
@@ -677,7 +695,7 @@
                 <div class="dm-header-av" id="dmChatAv"></div>
                 <div class="dm-header-name" id="dmChatName"></div>
                 <button class="call-voice-btn" onclick="startVoiceCall()" title="Chamada de voz">📞</button>
-                <button class="call-voice-btn" onclick="startGroupCall()" title="Chamada em grupo (até 5)">👥</button>
+                <button class="call-voice-btn" onclick="startVideoCall()" title="Chamada de vídeo">📹</button>
               </div>
               <div class="dm-messages" id="dmMessages"></div>
               <div class="typing-indicator" id="dmTypingIndicator"></div>
@@ -1227,11 +1245,18 @@
 <!-- CHAMADA DE VOZ OVERLAY -->
 <div id="callOverlay" class="call-overlay hidden">
   <div class="call-box">
+    <button class="vc-invite-corner" id="vcInviteCornerBtn" onclick="vcToggleInvitePanel()" title="Convidar amigos">➕</button>
+    <video id="vcRemoteVideo" autoplay playsinline></video>
     <div class="call-avatar" id="callAvatar"></div>
     <div class="call-name" id="callPartnerName"></div>
     <div class="call-status" id="callStatus"></div>
     <div class="call-timer" id="callTimer" style="display:none"></div>
     <div class="call-actions" id="callActions"></div>
+    <div id="vcInvitePanel">
+      <div class="vc-invite-title">👥 Convidar amigos</div>
+      <div class="vc-friend-list" id="vcFriendList"></div>
+    </div>
+    <video id="vcLocalVideo" autoplay playsinline muted></video>
   </div>
 </div>
 <audio id="vcRemoteAudio" autoplay playsinline style="display:none"></audio>
@@ -4963,6 +4988,54 @@ async function startVoiceCall(){
   }
 }
 
+// ── CALLER: iniciar chamada de vídeo ──
+async function startVideoCall(){
+  if(!currentDmPartner || !me) return;
+  if(VC.peer || VC.role) return toast('Já existe uma chamada ativa');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    return toast('Seu navegador não suporta chamadas de vídeo');
+  }
+
+  VC.partner = currentDmPartner;
+  VC.role    = 'caller';
+  VC.isVideo = true;
+  VC.iceBuf  = [];
+  VC.processedIds = new Set();
+
+  vcShowUI('calling');
+  vcStartListening();
+
+  // 1. Pegar câmera + microfone
+  try{
+    VC.stream = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
+      video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}
+    });
+    // Mostrar vídeo local
+    const locVid=$('vcLocalVideo');
+    if(locVid){locVid.srcObject=VC.stream;locVid.style.display='block';}
+  }catch(err){
+    toast('Câmera/microfone: '+err.message);
+    vcCleanup(); return;
+  }
+
+  // 2. Criar peer e adicionar tracks
+  VC.peer = vcBuildPeer();
+  VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
+
+  // 3. Criar offer com vídeo
+  try{
+    const offer = await VC.peer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+    await VC.peer.setLocalDescription(offer);
+    await vcInsertSignal('ring', '');
+    await new Promise(r => setTimeout(r, 300));
+    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp, video: true});
+  }catch(err){
+    toast('Erro ao iniciar chamada de vídeo: '+err.message);
+    vcCleanup(); return;
+  }
+}
+
 // ── CALLEE: aceitar chamada ──
 async function acceptCall(){
   vcRingStop();
@@ -4971,14 +5044,23 @@ async function acceptCall(){
   VC.processedIds = new Set();
 
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    return toast('Seu navegador não suporta chamadas de voz');
+    return toast('Seu navegador não suporta chamadas');
   }
 
-  // Pegar microfone
+  // Pegar microfone (e câmera se for chamada de vídeo)
   try{
-    VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
+    if(VC.isVideo){
+      VC.stream = await navigator.mediaDevices.getUserMedia({
+        audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},
+        video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}
+      });
+      const locVid=$('vcLocalVideo');
+      if(locVid){locVid.srcObject=VC.stream;locVid.style.display='block';}
+    } else {
+      VC.stream = await navigator.mediaDevices.getUserMedia(VC_AUDIO_CONSTRAINTS);
+    }
   }catch(err){
-    toast('Microfone: '+err.message);
+    toast('Microfone/câmera: '+err.message);
     vcCleanup(); return;
   }
 
@@ -5044,8 +5126,14 @@ function vcCleanup(){
   if(VC.sigChannel){try{sb.removeChannel(VC.sigChannel);}catch(e){} VC.sigChannel=null;}
   const audio = $('vcRemoteAudio');
   if(audio){ audio.srcObject=null; audio.src=''; }
+  const remVid=$('vcRemoteVideo'), locVid=$('vcLocalVideo');
+  if(remVid){remVid.srcObject=null;remVid.style.display='none';}
+  if(locVid){locVid.srcObject=null;locVid.style.display='none';}
+  const av=$('callAvatar'); if(av) av.style.display='';
   VC.role=null; VC.partner=null; VC.muted=false; VC.camOff=false;
   VC.secs=0; VC.iceBuf=[]; VC.processedIds=new Set(); VC.pendingOffer=null; VC.isVideo=false;
+  vcShowInviteBtn(false);
+  const invP=$('vcInvitePanel'); if(invP) invP.style.display='none';
   $('callOverlay').classList.add('hidden');
   // Só apaga sinais endereçados a MIM (não prejudica o parceiro)
   if(me) sb.from('call_signals').delete().eq('to_nick',me.nick)
@@ -5063,26 +5151,31 @@ function vcBuildPeer(){
     }
   };
 
-  // Receber áudio remoto
+  // Receber áudio/vídeo remoto
   peer.ontrack = e => {
     console.log('[VC] ontrack recebido', e.streams);
-    const audio = $('vcRemoteAudio');
-    if(!audio) return;
-    if(e.streams && e.streams[0]){
-      audio.srcObject = e.streams[0];
+    const remoteStream = e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]);
+
+    if(e.track.kind === 'video'){
+      const remVid=$('vcRemoteVideo');
+      if(remVid){
+        remVid.srcObject=remoteStream;
+        remVid.style.display='block';
+        remVid.play().catch(()=>{});
+        // Ocultar avatar quando há vídeo
+        const av=$('callAvatar'); if(av) av.style.display='none';
+      }
     } else {
-      // Fallback: criar stream do track
-      const stream = new MediaStream([e.track]);
-      audio.srcObject = stream;
-    }
-    // Garantir play (pode precisar de interação do usuário)
-    const playPromise = audio.play();
-    if(playPromise){
-      playPromise.catch(err=>{
-        console.warn('[VC] autoplay bloqueado:', err.message);
-        // Mostrar botão para o usuário clicar e desbloquear
-        vcShowUnmuteButton();
-      });
+      const audio = $('vcRemoteAudio');
+      if(!audio) return;
+      audio.srcObject = remoteStream;
+      const playPromise = audio.play();
+      if(playPromise){
+        playPromise.catch(err=>{
+          console.warn('[VC] autoplay bloqueado:', err.message);
+          vcShowUnmuteButton();
+        });
+      }
     }
   };
 
@@ -5133,6 +5226,7 @@ function vcOnConnected(){
   _vcConnectedOnce = true;
   $('callStatus').textContent = 'Em chamada 🔵';
   vcTimerStart();
+  vcShowInviteBtn(true);
 }
 
 // ── Mudo ──
@@ -5181,6 +5275,63 @@ function vcShowUI(mode){
 function vcInCallHTML(){
   return `<button class="call-btn mute" id="muteBtn" onclick="toggleMuteCall()">🎙️</button>
           <button class="call-btn hangup" onclick="endCall()">📵</button>`;
+}
+
+function vcShowInviteBtn(show){
+  const btn = document.getElementById('vcInviteCornerBtn');
+  if(!btn) return;
+  if(show) btn.classList.add('visible');
+  else btn.classList.remove('visible');
+}
+
+function vcToggleInvitePanel(){
+  const panel = document.getElementById('vcInvitePanel');
+  if(!panel) return;
+  const isHidden = panel.style.display === 'none' || !panel.style.display;
+  panel.style.display = isHidden ? 'block' : 'none';
+  if(isHidden) vcRenderFriendsInvite();
+}
+
+function vcRenderFriendsInvite(){
+  const list = document.getElementById('vcFriendList');
+  if(!list) return;
+  const inCall = GC.participants.length > 0 ? GC.participants : [me.nick, VC.partner];
+  const available = (myFriends||[]).filter(f => !inCall.includes(f) && f !== VC.partner || !inCall.includes(f));
+  const friendsToShow = (myFriends||[]).filter(f => f !== me.nick && !GC.participants.includes(f));
+  if(friendsToShow.length === 0){
+    list.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,.5);text-align:center;padding:8px">Nenhum amigo para convidar</div>';
+    return;
+  }
+  list.innerHTML = friendsToShow.map(nick => `
+    <div class="vc-friend-item">
+      <div class="vc-friend-av">${avatarOf(nick)}</div>
+      <div class="vc-friend-nick">${esc(nick)}</div>
+      <button class="vc-friend-invite-btn" onclick="vcInviteFriendToCall('${esc(nick)}',this)">Convidar</button>
+    </div>
+  `).join('');
+}
+
+async function vcInviteFriendToCall(nick, btn){
+  if(btn){ btn.disabled=true; btn.textContent='Convidando...'; }
+  // Se não há chamada de grupo ativa, cria uma escalando a chamada atual
+  if(!GC.room){
+    GC.room = me.nick+'_'+Date.now();
+    GC.participants = [me.nick];
+    GC.isVideo = VC.isVideo||false;
+    // Reusar stream já obtido
+    GC.stream = VC.stream;
+    gcStartListening();
+    gcShowOverlay();
+    // Convidar o parceiro atual para o grupo
+    if(VC.partner) await gcInviteNick(VC.partner);
+    // Encerrar chamada 1:1 (sinaliza) mas mantém o stream
+    await vcInsertSignal('end','');
+    VC.role=null; VC.peer=null;
+    $('callOverlay').classList.add('hidden');
+    vcShowInviteBtn(false);
+  }
+  await gcInviteNick(nick);
+  document.getElementById('vcInvitePanel').style.display='none';
 }
 
 // ── Timer ──
