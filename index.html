@@ -303,15 +303,19 @@
     .call-name{font-weight:bold;font-size:16px;margin-bottom:4px;}
     .call-status{font-size:12px;opacity:.7;margin-bottom:20px;}
     .call-timer{font-size:13px;font-weight:bold;color:#7ef0a0;margin-bottom:18px;display:none;}
-    .call-actions{display:flex;justify-content:center;gap:16px;}
+    .call-actions{display:flex;justify-content:center;gap:16px;flex-direction:column;align-items:center;}
     .call-btn{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
     .call-btn:hover{transform:scale(1.08);}
     .call-btn.hangup{background:#e03030;}
     .call-btn.accept{background:#20a050;}
+    .call-btn.snooze{background:#e07b00;}
     .call-btn.mute{background:rgba(255,255,255,.15);}
     .call-btn.muted{background:#e03030;}
     .call-ring{animation:callpulse 1s infinite;}
     @keyframes callpulse{0%,100%{box-shadow:0 0 0 0 rgba(32,160,80,.6)}50%{box-shadow:0 0 0 12px rgba(32,160,80,0)}}
+    .call-actions-labeled{display:flex;justify-content:center;gap:20px;}
+    .call-action-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .call-action-label{font-size:10px;opacity:.75;color:#fff;}
     .call-voice-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:7px 9px;border-radius:20px;font-size:14px;cursor:pointer;white-space:nowrap;}
     .call-voice-btn:hover{background:var(--blue-light);}
     .loading{text-align:center;color:var(--muted);padding:16px;font-size:12px;}
@@ -4911,6 +4915,18 @@ async function rejectCall(){
   vcCleanup();
 }
 
+// ── Deixar tocando: fecha o overlay mas mantém o ring para decidir depois ──
+function snoozeCall(){
+  $('callOverlay').classList.add('hidden');
+  // Mostra um toast com opção de retomar
+  const t = $('toast');
+  t.innerHTML = `📞 Ligação de <b>${VC.partner}</b> &nbsp;
+    <button onclick="vcShowUI('incoming')" style="background:var(--blue);color:#fff;border:none;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:6px;">Ver</button>
+    <button onclick="rejectCall()" style="background:#e03030;color:#fff;border:none;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:4px;">Rejeitar</button>`;
+  t.classList.add('show');
+  // Não para o ring — fica tocando em background
+}
+
 // Busca sinais já pendentes no banco (para o callee que acabou de aceitar)
 async function vcFetchPendingSignals(){
   if(!me || !VC.partner) return;
@@ -5047,6 +5063,7 @@ function toggleMuteCall(){
 function vcShowUI(mode){
   _vcConnectedOnce = false;
   $('callOverlay').classList.remove('hidden');
+  $('toast').classList.remove('show'); // esconde toast do snooze se estiver visível
   $('callPartnerName').textContent = VC.partner || '';
   $('callAvatar').innerHTML = avatarOf(VC.partner || '?');
   $('callTimer').style.display = 'none';
@@ -5056,8 +5073,20 @@ function vcShowUI(mode){
   } else if(mode === 'incoming'){
     $('callStatus').textContent = 'Ligação entrante 📲';
     $('callActions').innerHTML =
-      `<button class="call-btn accept call-ring" onclick="acceptCall()">📞</button>
-       <button class="call-btn hangup" onclick="rejectCall()">📵</button>`;
+      `<div class="call-actions-labeled">
+         <div class="call-action-item">
+           <button class="call-btn accept call-ring" onclick="acceptCall()">📞</button>
+           <span class="call-action-label">Aceitar</span>
+         </div>
+         <div class="call-action-item">
+           <button class="call-btn snooze" onclick="snoozeCall()">🔕</button>
+           <span class="call-action-label">Deixar tocando</span>
+         </div>
+         <div class="call-action-item">
+           <button class="call-btn hangup" onclick="rejectCall()">📵</button>
+           <span class="call-action-label">Rejeitar</span>
+         </div>
+       </div>`;
   } else if(mode === 'connecting'){
     $('callStatus').textContent = 'Conectando...';
     $('callActions').innerHTML = vcInCallHTML();
