@@ -4876,7 +4876,6 @@ const VC_ICE = {
     {urls:'stun:stun.l.google.com:19302'},
     {urls:'stun:stun1.l.google.com:19302'},
     {urls:'stun:stun.cloudflare.com:3478'},
-    {urls:'stun:stun.nextcloud.com:443'},
     // TURN: relay para conexões entre países/redes restritas
     {
       urls:[
@@ -4890,12 +4889,13 @@ const VC_ICE = {
     },
     {
       urls:[
-        'turn:relay.metered.ca:80',
-        'turn:relay.metered.ca:443',
-        'turns:relay.metered.ca:443'
+        'turn:a.relay.metered.ca:80',
+        'turn:a.relay.metered.ca:80?transport=tcp',
+        'turn:a.relay.metered.ca:443',
+        'turns:a.relay.metered.ca:443'
       ],
-      username:'e8dd65603a4bde817e8c4c7a',
-      credential:'uBcFH8HN56mmJZjB'
+      username:'openrelayproject',
+      credential:'openrelayproject'
     }
   ],
   iceTransportPolicy:'all',
@@ -4916,22 +4916,35 @@ const VC_AUDIO_CONSTRAINTS = {
   video:false
 };
 
-// Ajusta bitrate via API correta (sem mexer no SDP)
+// Aguarda todos os candidatos ICE (STUN + TURN) serem coletados antes de enviar offer/answer
+// Isso garante que o parceiro receba o melhor caminho de uma vez, sem depender de trickle lento
+function vcWaitIceGathering(peer, maxMs=7000){
+  return new Promise(resolve=>{
+    if(peer.iceGatheringState==='complete'){resolve();return;}
+    let done=false;
+    const finish=()=>{ if(!done){done=true;resolve();} };
+    peer.addEventListener('icegatheringstatechange',()=>{
+      if(peer.iceGatheringState==='complete') finish();
+    });
+    setTimeout(finish, maxMs); // fallback: não espera mais que maxMs
+  });
+}
+
+// Ajusta bitrate via API correta depois que ICE conecta
 function vcSetBitrate(peer){
   try{
     peer.getSenders().forEach(sender=>{
       if(!sender.track) return;
       const params = sender.getParameters();
-      if(!params.encodings || !params.encodings.length) params.encodings=[{}];
+      if(!params.encodings||!params.encodings.length) params.encodings=[{}];
       if(sender.track.kind==='audio'){
-        params.encodings[0].maxBitrate = 40000; // 40kbps Opus
+        params.encodings[0].maxBitrate=40000;
       } else if(sender.track.kind==='video'){
-        params.encodings[0].maxBitrate = 500000; // 500kbps vídeo
-        params.encodings[0].scaleResolutionDownBy = 1;
+        params.encodings[0].maxBitrate=600000;
       }
       sender.setParameters(params).catch(()=>{});
     });
-  }catch(e){ console.warn('[VC] setParameters error',e); }
+  }catch(e){ console.warn('[VC] setParameters',e); }
 }
 
 // ── Inserir sinal no banco ──
@@ -5024,19 +5037,20 @@ async function vcHandleSignal(row){
   // ── OFFER: callee recebe offer do caller → cria answer ──
   if(type === 'offer'){
     if(VC.role !== 'callee') return;
-    // Atualizar isVideo se o offer confirmar vídeo
     if(payload && payload.video === true) VC.isVideo = true;
     if(!VC.peer){ VC.pendingOffer=payload; return; }
     try{
       await VC.peer.setRemoteDescription(new RTCSessionDescription(payload));
-      // Aplicar ICE buffered antes do remoteDescription
       for(const c of VC.iceBuf){
         try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){}
       }
       VC.iceBuf = [];
       const answer = await VC.peer.createAnswer();
       await VC.peer.setLocalDescription(answer);
-      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      // Espera todos os candidatos ICE do callee antes de enviar answer
+      await vcWaitIceGathering(VC.peer, 7000);
+      const finalAns = VC.peer.localDescription;
+      await vcInsertSignal('answer', {type: finalAns.type, sdp: finalAns.sdp});
       vcOnConnected();
     }catch(e){ console.error('[VC] offer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
@@ -5114,15 +5128,16 @@ async function startVoiceCall(){
   VC.peer = vcBuildPeer();
   VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
 
-  // 3. Criar offer
+  // 3. Criar offer e esperar TODOS os candidatos ICE (STUN+TURN) antes de enviar
   try{
     const offer = await VC.peer.createOffer({offerToReceiveAudio:true});
     await VC.peer.setLocalDescription(offer);
-    // 4. Avisar callee (ring) e já enviar offer junto
     await vcInsertSignal('ring', '');
-    // Pequena pausa para garantir que o ring chegue antes do offer
-    await new Promise(r => setTimeout(r, 300));
-    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp});
+    // Espera coletar todos os candidatos (TURN demora ~2-4s a mais que STUN)
+    await vcWaitIceGathering(VC.peer, 7000);
+    // Envia offer com todos os candidatos já embutidos no SDP
+    const final = VC.peer.localDescription;
+    await vcInsertSignal('offer', {type: final.type, sdp: final.sdp});
   }catch(err){
     toast('Erro ao iniciar chamada: '+err.message);
     vcCleanup(); return;
@@ -5164,13 +5179,14 @@ async function startVideoCall(){
   VC.peer = vcBuildPeer();
   VC.stream.getTracks().forEach(t => VC.peer.addTrack(t, VC.stream));
 
-  // 3. Criar offer com vídeo
+  // 3. Criar offer com vídeo e esperar todos os candidatos ICE
   try{
     const offer = await VC.peer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
     await VC.peer.setLocalDescription(offer);
     await vcInsertSignal('ring', {video: true});
-    await new Promise(r => setTimeout(r, 300));
-    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp, video: true});
+    await vcWaitIceGathering(VC.peer, 7000);
+    const final = VC.peer.localDescription;
+    await vcInsertSignal('offer', {type: final.type, sdp: final.sdp, video: true});
   }catch(err){
     toast('Erro ao iniciar chamada de vídeo: '+err.message);
     vcCleanup(); return;
@@ -5223,7 +5239,9 @@ async function acceptCall(){
       VC.iceBuf = [];
       const answer = await VC.peer.createAnswer();
       await VC.peer.setLocalDescription(answer);
-      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
+      await vcWaitIceGathering(VC.peer, 7000);
+      const finalPend = VC.peer.localDescription;
+      await vcInsertSignal('answer', {type: finalPend.type, sdp: finalPend.sdp});
       vcOnConnected();
     }catch(e){ console.error('[VC] pendingOffer error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
@@ -5343,29 +5361,31 @@ function vcBuildPeer(){
     console.log('[VC] ICE state:', peer.iceConnectionState);
     if(peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed'){
       vcOnConnected();
-      vcSetBitrate(peer); // aplica bitrate depois que ICE conectou
+      vcSetBitrate(peer);
     }
     if(peer.iceConnectionState === 'failed'){
-      // Tenta ICE restart antes de desligar
       if(VC.role==='caller' && VC.peer){
         toast('Reconectando... 🔄');
         VC.peer.restartIce();
         VC.peer.createOffer({iceRestart:true, offerToReceiveAudio:true, offerToReceiveVideo:!!VC.isVideo})
-          .then(offer => VC.peer.setLocalDescription(offer)
-            .then(() => vcInsertSignal('offer', {type:offer.type, sdp:offer.sdp, restart:true, video:!!VC.isVideo})))
+          .then(async offer=>{
+            await VC.peer.setLocalDescription(offer);
+            await vcWaitIceGathering(VC.peer, 7000);
+            const final = VC.peer.localDescription;
+            return vcInsertSignal('offer', {type:final.type, sdp:final.sdp, restart:true, video:!!VC.isVideo});
+          })
           .catch(()=>{ toast('Conexão falhou 📵'); endCall(); });
       } else {
         setTimeout(()=>{ if(VC.peer && VC.peer.iceConnectionState==='failed'){ toast('Conexão falhou 📵'); endCall(); } }, 8000);
       }
     }
     if(peer.iceConnectionState === 'disconnected'){
-      // Espera 6s — muitas vezes reconecta sozinho
       setTimeout(()=>{
         if(VC.peer && VC.peer.iceConnectionState==='disconnected'){
-          toast('Conexão instável — reconectando... 🔄');
+          toast('Reconectando... 🔄');
           if(VC.role==='caller') VC.peer.restartIce();
         }
-      }, 6000);
+      }, 5000);
     }
   };
 
