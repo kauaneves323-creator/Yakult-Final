@@ -4872,14 +4872,12 @@ let VC = {
 };
 
 const VC_ICE = {
-  // ── STUN: múltiplos provedores para descoberta de IP público ──
   iceServers:[
     {urls:'stun:stun.l.google.com:19302'},
     {urls:'stun:stun1.l.google.com:19302'},
     {urls:'stun:stun.cloudflare.com:3478'},
     {urls:'stun:stun.nextcloud.com:443'},
-    // ── TURN: relay para conexões entre países/redes restritas ──
-    // Open Relay Project (gratuito, global)
+    // TURN: relay para conexões entre países/redes restritas
     {
       urls:[
         'turn:openrelay.metered.ca:80',
@@ -4890,7 +4888,6 @@ const VC_ICE = {
       username:'openrelayproject',
       credential:'openrelayproject'
     },
-    // Metered free relay (backup)
     {
       urls:[
         'turn:relay.metered.ca:80',
@@ -4901,8 +4898,8 @@ const VC_ICE = {
       credential:'uBcFH8HN56mmJZjB'
     }
   ],
-  iceTransportPolicy:'all',    // tenta direto; usa TURN como fallback automático
-  bundlePolicy:'max-bundle',   // um único canal de transporte (menor latência)
+  iceTransportPolicy:'all',
+  bundlePolicy:'max-bundle',
   rtcpMuxPolicy:'require',
   iceCandidatePoolSize:10,
 };
@@ -4912,21 +4909,29 @@ const VC_AUDIO_CONSTRAINTS = {
     echoCancellation:true,
     noiseSuppression:true,
     autoGainControl:true,
-    channelCount:1,           // mono — menor banda, menor latência
-    sampleRate:48000,         // taxa nativa do Opus
+    channelCount:1,
+    sampleRate:48000,
     sampleSize:16
   },
   video:false
 };
 
-// ── Melhora o SDP para usar Opus com bitrate mais alto e FEC ──
-function vcPatchSDP(sdp){
-  // Força bitrate 40kbps + FEC (Forward Error Correction) para resistir a perda de pacotes
-  return sdp
-    .replace(/a=fmtp:(\d+) useinbandfec=\d+/g, 'a=fmtp:$1 useinbandfec=1;stereo=0;maxaveragebitrate=40000')
-    .replace(/(a=rtpmap:\d+ opus\/48000\/2\r?\n)/g, '$1a=fmtp:0 useinbandfec=1;stereo=0;maxaveragebitrate=40000\r\n')
-    // Limita bitrate de vídeo a 500kbps para não sobrecarregar redes lentas
-    .replace(/b=AS:\d+/g, 'b=AS:500');
+// Ajusta bitrate via API correta (sem mexer no SDP)
+function vcSetBitrate(peer){
+  try{
+    peer.getSenders().forEach(sender=>{
+      if(!sender.track) return;
+      const params = sender.getParameters();
+      if(!params.encodings || !params.encodings.length) params.encodings=[{}];
+      if(sender.track.kind==='audio'){
+        params.encodings[0].maxBitrate = 40000; // 40kbps Opus
+      } else if(sender.track.kind==='video'){
+        params.encodings[0].maxBitrate = 500000; // 500kbps vídeo
+        params.encodings[0].scaleResolutionDownBy = 1;
+      }
+      sender.setParameters(params).catch(()=>{});
+    });
+  }catch(e){ console.warn('[VC] setParameters error',e); }
 }
 
 // ── Inserir sinal no banco ──
@@ -5030,9 +5035,8 @@ async function vcHandleSignal(row){
       }
       VC.iceBuf = [];
       const answer = await VC.peer.createAnswer();
-      const patchedAns = new RTCSessionDescription({type:answer.type, sdp:vcPatchSDP(answer.sdp)});
-      await VC.peer.setLocalDescription(patchedAns);
-      await vcInsertSignal('answer', {type: patchedAns.type, sdp: patchedAns.sdp});
+      await VC.peer.setLocalDescription(answer);
+      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
       vcOnConnected();
     }catch(e){ console.error('[VC] offer handling error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
@@ -5113,11 +5117,12 @@ async function startVoiceCall(){
   // 3. Criar offer
   try{
     const offer = await VC.peer.createOffer({offerToReceiveAudio:true});
-    const patched = new RTCSessionDescription({type:offer.type, sdp:vcPatchSDP(offer.sdp)});
-    await VC.peer.setLocalDescription(patched);
+    await VC.peer.setLocalDescription(offer);
+    // 4. Avisar callee (ring) e já enviar offer junto
     await vcInsertSignal('ring', '');
+    // Pequena pausa para garantir que o ring chegue antes do offer
     await new Promise(r => setTimeout(r, 300));
-    await vcInsertSignal('offer', {type: patched.type, sdp: patched.sdp});
+    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp});
   }catch(err){
     toast('Erro ao iniciar chamada: '+err.message);
     vcCleanup(); return;
@@ -5162,11 +5167,10 @@ async function startVideoCall(){
   // 3. Criar offer com vídeo
   try{
     const offer = await VC.peer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
-    const patched = new RTCSessionDescription({type:offer.type, sdp:vcPatchSDP(offer.sdp)});
-    await VC.peer.setLocalDescription(patched);
+    await VC.peer.setLocalDescription(offer);
     await vcInsertSignal('ring', {video: true});
     await new Promise(r => setTimeout(r, 300));
-    await vcInsertSignal('offer', {type: patched.type, sdp: patched.sdp, video: true});
+    await vcInsertSignal('offer', {type: offer.type, sdp: offer.sdp, video: true});
   }catch(err){
     toast('Erro ao iniciar chamada de vídeo: '+err.message);
     vcCleanup(); return;
@@ -5218,9 +5222,8 @@ async function acceptCall(){
       for(const c of VC.iceBuf){ try{ await VC.peer.addIceCandidate(new RTCIceCandidate(c)); }catch(e){} }
       VC.iceBuf = [];
       const answer = await VC.peer.createAnswer();
-      const patchedAns2 = new RTCSessionDescription({type:answer.type, sdp:vcPatchSDP(answer.sdp)});
-      await VC.peer.setLocalDescription(patchedAns2);
-      await vcInsertSignal('answer', {type: patchedAns2.type, sdp: patchedAns2.sdp});
+      await VC.peer.setLocalDescription(answer);
+      await vcInsertSignal('answer', {type: answer.type, sdp: answer.sdp});
       vcOnConnected();
     }catch(e){ console.error('[VC] pendingOffer error', e); vcCleanup(); toast('Erro na chamada: '+e.message); }
     return;
@@ -5340,33 +5343,29 @@ function vcBuildPeer(){
     console.log('[VC] ICE state:', peer.iceConnectionState);
     if(peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed'){
       vcOnConnected();
+      vcSetBitrate(peer); // aplica bitrate depois que ICE conectou
     }
     if(peer.iceConnectionState === 'failed'){
       // Tenta ICE restart antes de desligar
-      console.log('[VC] ICE failed — tentando restart...');
-      toast('Reconectando chamada... 🔄');
-      if(VC.role === 'caller' && VC.peer){
+      if(VC.role==='caller' && VC.peer){
+        toast('Reconectando... 🔄');
         VC.peer.restartIce();
-        VC.peer.createOffer({iceRestart:true, offerToReceiveAudio:true, offerToReceiveVideo:VC.isVideo})
-          .then(offer => {
-            const patched = new RTCSessionDescription({type:offer.type, sdp:vcPatchSDP(offer.sdp)});
-            return VC.peer.setLocalDescription(patched)
-              .then(() => vcInsertSignal('offer', {type:patched.type, sdp:patched.sdp, restart:true, video:VC.isVideo||false}));
-          })
+        VC.peer.createOffer({iceRestart:true, offerToReceiveAudio:true, offerToReceiveVideo:!!VC.isVideo})
+          .then(offer => VC.peer.setLocalDescription(offer)
+            .then(() => vcInsertSignal('offer', {type:offer.type, sdp:offer.sdp, restart:true, video:!!VC.isVideo})))
           .catch(()=>{ toast('Conexão falhou 📵'); endCall(); });
       } else {
-        // Callee aguarda novo offer do caller
         setTimeout(()=>{ if(VC.peer && VC.peer.iceConnectionState==='failed'){ toast('Conexão falhou 📵'); endCall(); } }, 8000);
       }
     }
     if(peer.iceConnectionState === 'disconnected'){
-      // Espera 5s — muitas vezes reconecta sozinho
+      // Espera 6s — muitas vezes reconecta sozinho
       setTimeout(()=>{
         if(VC.peer && VC.peer.iceConnectionState==='disconnected'){
           toast('Conexão instável — reconectando... 🔄');
           if(VC.role==='caller') VC.peer.restartIce();
         }
-      }, 5000);
+      }, 6000);
     }
   };
 
