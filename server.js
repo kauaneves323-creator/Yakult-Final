@@ -21,6 +21,13 @@ app.get('/healthz', (_req, res) => {
   res.status(200).json({ ok: true });
 });
 
+// Serve o Service Worker na raiz com headers corretos
+app.get('/sw.js', (_req, res) => {
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(rootDir, 'sw.js'));
+});
+
 app.get('/', (_req, res) => {
   res.sendFile(path.join(rootDir, 'index.html'));
 });
