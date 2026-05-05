@@ -5312,27 +5312,40 @@ function vcBuildPeer(){
 
   // Receber áudio/vídeo remoto
   peer.ontrack = e => {
-    console.log('[VC] ontrack recebido', e.streams);
+    console.log('[VC] ontrack recebido', e.track.kind, e.streams);
     const remoteStream = e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]);
 
-    if(e.track.kind === 'video'){
-      const remVid=$('vcRemoteVideo');
+    if(VC.isVideo){
+      // ── Chamada de VÍDEO ──
+      // Áudio E vídeo passam pelo mesmo <video> remoto (sem muted).
+      // NÃO atribuímos ao <audio> para evitar conflito de dois elementos
+      // reproduzindo o mesmo MediaStream ao mesmo tempo.
+      const remVid = $('vcRemoteVideo');
       if(remVid){
-        remVid.srcObject=remoteStream;
-        remVid.style.display='block';
-        remVid.play().catch(()=>{});
-        // Ocultar avatar e nome quando há vídeo remoto, deixar tela limpa
-        const av=$('callAvatar'); if(av) av.style.display='none';
-        // Mostrar nome do parceiro sobreposto em cima do vídeo (translúcido)
-        const nm=$('callPartnerName'); if(nm) nm.style.textShadow='0 2px 8px rgba(0,0,0,.8)';
+        // Só troca srcObject se for um stream diferente (evita reset da reprodução)
+        if(remVid.srcObject !== remoteStream){
+          remVid.srcObject = remoteStream;
+        }
+        if(e.track.kind === 'video'){
+          remVid.style.display = 'block';
+          const av = $('callAvatar'); if(av) av.style.display = 'none';
+          const nm = $('callPartnerName'); if(nm) nm.style.textShadow = '0 2px 8px rgba(0,0,0,.8)';
+        }
+        remVid.play().catch(err => {
+          console.warn('[VC] autoplay bloqueado no vídeo:', err.message);
+          vcShowUnmuteButton();
+        });
       }
     } else {
+      // ── Chamada de VOZ ──
+      // Só existe trilha de áudio; usa o elemento <audio> dedicado.
+      if(e.track.kind !== 'audio') return;
       const audio = $('vcRemoteAudio');
       if(!audio) return;
       audio.srcObject = remoteStream;
       const playPromise = audio.play();
       if(playPromise){
-        playPromise.catch(err=>{
+        playPromise.catch(err => {
           console.warn('[VC] autoplay bloqueado:', err.message);
           vcShowUnmuteButton();
         });
@@ -5391,7 +5404,9 @@ function vcShowUnmuteButton(){
   btn.textContent = '🔊';
   btn.title = 'Clique para ouvir';
   btn.onclick = () => {
-    $('vcRemoteAudio').play().catch(()=>{});
+    // Em chamada de vídeo o áudio vem do <video>; em chamada de voz, do <audio>
+    const el = VC.isVideo ? $('vcRemoteVideo') : $('vcRemoteAudio');
+    if(el) el.play().catch(()=>{});
     btn.remove();
   };
   actions.prepend(btn);
