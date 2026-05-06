@@ -730,11 +730,12 @@
           <textarea class="stxt" id="postTxt" placeholder="O que você está pensando? (Ctrl+Enter para postar)" maxlength="500" oninput="updateCharCount('postTxt','postCharCount',500)"></textarea>
           <div class="char-count" id="postCharCount">0/500</div>
           <div class="post-toolbar">
-            <label class="file-btn" for="postImgInput">📷 Foto</label>
-            <input type="file" id="postImgInput" accept="image/*" style="display:none" onchange="previewPostImg(this)">
+            <label class="file-btn" for="postImgInput">📷 Foto/Vídeo</label>
+            <input type="file" id="postImgInput" accept="image/*,video/*" style="display:none" onchange="previewPostImg(this)">
             <button class="btn-s" style="margin-top:0" onclick="sendPost()">Postar</button>
           </div>
           <img id="postImgPreview" class="img-preview">
+          <video id="postVidPreview" style="display:none;width:100%;max-height:200px;border-radius:var(--radius);margin-top:6px" controls></video>
         </div>
         <div class="search-bar">
           <input id="feedSearch" placeholder="🔍 Buscar no feed..." oninput="filterFeed(this.value)">
@@ -1596,14 +1597,30 @@ async function uploadAvatar(input){
 let feedPage=0;
 const FEED_PAGE_SIZE=20;
 
+let postVidBase64=null;
 function previewPostImg(input){
-  if(!input.files[0]){postImgBase64=null;$('postImgPreview').style.display='none';return;}
-  if(input.files[0].size>3*1024*1024){toast('Imagem muito grande! Máx 3MB');input.value='';return;}
-  toB64(input.files[0]).then(b64=>{
-    postImgBase64=b64;
-    $('postImgPreview').src=b64;
-    $('postImgPreview').style.display='block';
-  });
+  if(!input.files[0]){
+    postImgBase64=null;postVidBase64=null;
+    $('postImgPreview').style.display='none';
+    $('postVidPreview').style.display='none';
+    return;
+  }
+  const file=input.files[0];
+  if(file.type.startsWith('video')){
+    if(file.size>30*1024*1024){toast('Vídeo muito grande! Máx 30MB');input.value='';return;}
+    toB64(file).then(b64=>{
+      postVidBase64=b64;postImgBase64=null;
+      $('postImgPreview').style.display='none';
+      $('postVidPreview').src=b64;$('postVidPreview').style.display='block';
+    });
+  } else {
+    if(file.size>3*1024*1024){toast('Imagem muito grande! Máx 3MB');input.value='';return;}
+    toB64(file).then(b64=>{
+      postImgBase64=b64;postVidBase64=null;
+      $('postVidPreview').style.display='none';
+      $('postImgPreview').src=b64;$('postImgPreview').style.display='block';
+    });
+  }
 }
 
 async function loadFeed(append=false){
@@ -1630,15 +1647,18 @@ async function loadMoreFeed(){
 
 async function sendPost(){
   const text=$('postTxt').value.trim();
-  if(!text&&!postImgBase64)return toast('Escreva algo ou adicione uma foto!');
+  if(!text&&!postImgBase64&&!postVidBase64)return toast('Escreva algo ou adicione uma foto/vídeo!');
   const btn=document.querySelector('[onclick="sendPost()"]');
   if(btn){btn.disabled=true;btn.textContent='Postando...';}
+  const media=postVidBase64||postImgBase64||null;
+  const mtype=postVidBase64?'video':postImgBase64?'image':null;
   const{error}=await sb.from('posts').insert({
     author_nick:me.nick,
     display_name:me.display_name||me.nick,
     author_photo:me.photo||null,
     content:esc(text),
-    image:postImgBase64||null,
+    image:media,
+    media_type:mtype,
     likes:[],
     created_at:new Date().toISOString()
   });
@@ -1646,8 +1666,9 @@ async function sendPost(){
   if(error)return toast('Erro: '+error.message);
   $('postTxt').value='';
   updateCharCount('postTxt','postCharCount',500);
-  postImgBase64=null;
+  postImgBase64=null;postVidBase64=null;
   $('postImgPreview').style.display='none';
+  $('postVidPreview').style.display='none';
   $('postImgInput').value='';
   toast('Postagem publicada! 🎉');
 }
@@ -1681,7 +1702,9 @@ function renderFeed(posts,hasMore=false){
         <span class="post-time">${timeAgo(p.created_at)}</span>
       </div>
       ${content?`<div class="post-txt">${content}</div>`:''}
-      ${p.image?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
+      ${p.image&&p.media_type==='video'?`<video class="post-img" src="${p.image}" controls style="max-height:300px;width:100%;border-radius:var(--radius);margin-bottom:6px"></video>`:''}
+      ${p.image&&p.media_type!=='video'?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
+      ${p.image&&!p.media_type?`<img class="post-img" src="${p.image}" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'300px':'none'" title="Clique para expandir">`:''}
       <div class="post-actions">
         <button class="post-btn ${liked?'liked':''}" onclick="toggleLike('${p.id}',${JSON.stringify(likes)})">♥ ${likes.length}${liked?' curtido':' curtir'}</button>
         <button class="post-btn" onclick="toggleComments('${p.id}')">💬 comentar</button>
