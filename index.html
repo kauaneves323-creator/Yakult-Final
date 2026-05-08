@@ -1447,7 +1447,7 @@
               <div class="reel-sheet-icon">🎥</div>
               <div class="reel-sheet-txt">
                 <strong>Escolher vídeo</strong>
-                <small>MP4, MOV, WebM · máx 50 MB</small>
+                <small>MP4, MOV, WebM · máx 5 min · máx 500 MB</small>
               </div>
             </button>
             <input type="file" id="reelVideoInput" accept="video/*" style="display:none" onchange="previewReelVideo(this)">
@@ -3509,7 +3509,7 @@ function sharePost(id,author,preview){
 }
 
 // ── REELS (Instagram style) ──
-let reelVideoB64=null,reelVideoMime=null;
+let reelVideoB64=null,reelVideoMime=null,reelVideoFile=null;
 let _reelsMuted=false;
 
 // No-op stubs (fullscreen removido)
@@ -3534,43 +3534,74 @@ function closeReelUpload(){
   $('reelCaptionWrap').style.display='none';
   $('reelCaption').value='';
   $('reelVideoInput').value='';
-  reelVideoB64=null;reelVideoMime=null;
+  reelVideoB64=null;reelVideoMime=null;reelVideoFile=null;
 }
 
 function previewReelVideo(input){
   const file=input.files[0];
   if(!file)return;
-  if(file.size>52428800){toast('❌ Vídeo muito grande! Máx 50 MB');input.value='';return;}
+  if(file.size>524288000){toast('❌ Vídeo muito grande! Máx 500 MB');input.value='';return;}
+  const objectUrl=URL.createObjectURL(file);
   const vid=$('reelVidPreview');
-  vid.src=URL.createObjectURL(file);
-  $('reelVidPreviewWrap').style.display='block';
-  $('reelSelectBtn').style.display='none';
-  $('reelCaptionWrap').style.display='block';
-  const r=new FileReader();
-  r.onload=()=>{reelVideoB64=r.result;reelVideoMime=file.type;};
-  r.readAsDataURL(file);
+  vid.src=objectUrl;
+  vid.onloadedmetadata=()=>{
+    if(vid.duration>300){
+      toast('❌ Vídeo muito longo! Máx 5 minutos');
+      vid.src='';URL.revokeObjectURL(objectUrl);input.value='';
+      $('reelVidPreviewWrap').style.display='none';
+      $('reelSelectBtn').style.display='flex';
+      $('reelCaptionWrap').style.display='none';
+      reelVideoFile=null;reelVideoB64=null;reelVideoMime=null;
+      return;
+    }
+    // Guarda o File para enviar via Storage (sem ler como base64)
+    reelVideoFile=file;
+    reelVideoB64=null;reelVideoMime=null;
+    $('reelVidPreviewWrap').style.display='block';
+    $('reelSelectBtn').style.display='none';
+    $('reelCaptionWrap').style.display='block';
+  };
 }
 
 async function publishReel(){
-  if(!reelVideoB64){toast('Selecione um vídeo!');return;}
+  if(!reelVideoFile&&!reelVideoB64){toast('Selecione um vídeo!');return;}
   const caption=$('reelCaption').value.trim();
   const prog=$('reelUploadProg');
   const bar=$('reelUploadProgBar');
   const btn=$('reelPublishBtn');
-  prog.style.display='block';bar.style.width='30%';btn.disabled=true;
+  prog.style.display='block';bar.style.width='10%';btn.disabled=true;
   try{
-    const{error}=await sb.from('reels').insert({
+    let videoUrl;
+    if(reelVideoFile){
+      // Upload via Supabase Storage (suporta arquivos grandes)
+      const ext=reelVideoFile.name.split('.').pop()||'mp4';
+      const storagePath=`${me.nick}/${Date.now()}.${ext}`;
+      bar.style.width='40%';
+      const{data:upData,error:upErr}=await sb.storage
+        .from('reels')
+        .upload(storagePath,reelVideoFile,{contentType:reelVideoFile.type,upsert:false});
+      if(upErr)throw upErr;
+      bar.style.width='75%';
+      const{data:urlData}=sb.storage.from('reels').getPublicUrl(upData.path);
+      videoUrl=urlData.publicUrl;
+    } else {
+      // Fallback: base64 (vídeos antigos/pequenos)
+      videoUrl=reelVideoB64;
+      bar.style.width='75%';
+    }
+    const{error:dbErr}=await sb.from('reels').insert({
       author:me.nick,
       author_photo:me.photo||null,
       caption,
-      video_url:reelVideoB64,
+      video_url:videoUrl,
       likes:[],
       created_at:new Date().toISOString()
     });
-    if(error)throw error;
+    if(dbErr)throw dbErr;
     bar.style.width='100%';
     setTimeout(()=>{prog.style.display='none';bar.style.width='0%';},600);
     toast('🎬 Reel publicado!');
+    reelVideoFile=null;
     closeReelUpload();
     loadReels();
   }catch(e){
