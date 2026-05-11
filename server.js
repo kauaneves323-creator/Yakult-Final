@@ -21,6 +21,16 @@ app.get('/healthz', (_req, res) => {
   res.status(200).json({ ok: true });
 });
 
+// Endpoint seguro — credenciais vêm de variáveis de ambiente, nunca do código
+app.get('/config', (_req, res) => {
+  const url = process.env.SUPA_URL;
+  const key = process.env.SUPA_KEY;
+  if (!url || !key) {
+    return res.status(500).json({ error: 'Configuração ausente no servidor' });
+  }
+  res.json({ supaUrl: url, supaKey: key });
+});
+
 // Serve o Service Worker na raiz com headers corretos
 app.get('/sw.js', (_req, res) => {
   res.setHeader('Service-Worker-Allowed', '/');
