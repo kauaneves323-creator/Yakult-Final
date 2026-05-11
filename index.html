@@ -1528,9 +1528,26 @@
         oninput="document.getElementById('editBioCount').textContent=this.value.length+'/100'"></textarea>
     </div>
     <div class="ig"><label>site / link (opcional)</label><input id="editSite" maxlength="80" placeholder="https://..."></div>
-    <div class="modal-btns">
+    <div class="ig"><label>gmail (opcional)</label><input id="editGmail" type="email" maxlength="100" placeholder="seuemail@gmail.com"></div>
+    <div class="modal-btns" style="flex-wrap:wrap;gap:6px;">
+      <button class="cancel" onclick="openResetPassword()" style="background:#f5f0e8;color:#a0522d;border:1px solid #e0c097;">🔑 Redefinir senha</button>
       <button class="cancel" onclick="closeEditProfile()">Cancelar</button>
       <button class="save" onclick="saveProfile()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REDEFINIR SENHA -->
+<div id="resetPassModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>🔑 Redefinir senha</h3>
+    <div class="ig"><label>senha atual</label><input id="rpOld" type="password" placeholder="Digite sua senha atual"></div>
+    <div class="ig"><label>nova senha</label><input id="rpNew" type="password" placeholder="Mínimo 4 caracteres"></div>
+    <div class="ig"><label>confirmar nova senha</label><input id="rpConfirm" type="password" placeholder="Repita a nova senha"></div>
+    <div id="rpErr" style="color:#c00;font-size:11px;margin-bottom:4px;display:none"></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="$('resetPassModal').classList.add('hidden')">Cancelar</button>
+      <button class="save" onclick="doResetPassword()">Salvar nova senha</button>
     </div>
   </div>
 </div>
@@ -1657,10 +1674,20 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPA_URL='https://nctzqgochkfrlxjjawan.supabase.co';
-const SUPA_KEY='sb_publishable_INuIEt9LcnACogCJNZE4xg_3heVJ8cQ';
 const {createClient}=supabase;
-const sb=createClient(SUPA_URL,SUPA_KEY);
+let sb=null;
+let SUPA_URL=null;
+let SUPA_KEY=null;
+
+async function initSupabase(){
+  const res=await fetch('/config');
+  if(!res.ok) throw new Error('Falha ao carregar configuração');
+  const cfg=await res.json();
+  SUPA_URL=cfg.supaUrl;
+  SUPA_KEY=cfg.supaKey;
+  sb=createClient(SUPA_URL,SUPA_KEY);
+}
+
 
 let me=null,myFriends=[],channels=[],onlineInterval=null,feedRefreshInterval=null;
 let friendRequests=[]; // pedidos recebidos ainda pendentes
@@ -1761,7 +1788,7 @@ async function doLogin(data){
   loadNotifications();
   loadAdminCache();
   // Bot ADM — verifica se é admin real do banco
-  const isAdmin = me.is_admin === true || me.nick === 'kaua12345' || me.nick === 'elisabete';
+  const isAdmin = me.is_admin === true || me.nick === 'kaua12345';
   if(isAdmin){
     me._isAdmin = true;
     $('botToggleBtn').style.display='flex';
@@ -1821,6 +1848,7 @@ function openEditProfile(){
   $('editName').value=me.display_name||me.nick;
   $('editBio').value=me.bio||'';
   $('editSite').value=me.site||'';
+  $('editGmail').value=me.gmail||'';
   $('editBioCount').textContent=(me.bio||'').length+'/100';
   $('editModal').classList.remove('hidden');
 }
@@ -1829,14 +1857,40 @@ async function saveProfile(){
   const name=$('editName').value.trim();
   const bio=$('editBio').value.trim();
   const site=$('editSite').value.trim();
+  const gmail=$('editGmail').value.trim();
   if(!name)return toast('Nome não pode ser vazio');
-  const{error}=await sb.from('users').update({display_name:name,bio,site:site||null}).eq('nick',me.nick);
+  if(gmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gmail))return toast('Gmail inválido');
+  const{error}=await sb.from('users').update({display_name:name,bio,site:site||null,gmail:gmail||null}).eq('nick',me.nick);
   if(error)return toast('Erro: '+error.message);
-  me.display_name=name;me.bio=bio;me.site=site||null;
+  me.display_name=name;me.bio=bio;me.site=site||null;me.gmail=gmail||null;
   updateMyProfileUI();
   $('topUser').textContent='👤 '+name;
   closeEditProfile();
   toast('Perfil atualizado! ✨');
+}
+function openResetPassword(){
+  $('rpOld').value='';$('rpNew').value='';$('rpConfirm').value='';
+  $('rpErr').style.display='none';
+  $('resetPassModal').classList.remove('hidden');
+}
+async function doResetPassword(){
+  const oldPass=$('rpOld').value;
+  const newPass=$('rpNew').value;
+  const confirm=$('rpConfirm').value;
+  const errEl=$('rpErr');
+  errEl.style.display='none';
+  if(!oldPass||!newPass||!confirm){errEl.textContent='Preencha todos os campos';errEl.style.display='block';return;}
+  if(newPass.length<4){errEl.textContent='A nova senha deve ter pelo menos 4 caracteres';errEl.style.display='block';return;}
+  if(newPass!==confirm){errEl.textContent='As senhas não coincidem';errEl.style.display='block';return;}
+  const oldHash=btoa(unescape(encodeURIComponent(oldPass)));
+  const{data:userData}=await sb.from('users').select('password_hash').eq('nick',me.nick).maybeSingle();
+  if(!userData||userData.password_hash!==oldHash){errEl.textContent='Senha atual incorreta';errEl.style.display='block';return;}
+  const newHash=btoa(unescape(encodeURIComponent(newPass)));
+  const{error}=await sb.from('users').update({password_hash:newHash}).eq('nick',me.nick);
+  if(error){errEl.textContent='Erro: '+error.message;errEl.style.display='block';return;}
+  setCookie('yk_hash',newHash,30);
+  $('resetPassModal').classList.add('hidden');
+  toast('Senha redefinida com sucesso! 🔑');
 }
 
 function updateMyProfileUI(){
@@ -1959,7 +2013,7 @@ async function sendPost(){
 function renderFeed(posts,hasMore=false){
   const w=$('feedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda. Seja o primeiro! 🌟</div>';return;}
-  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345' || me.nick==='elisabete');
+  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
   w.innerHTML=posts.map(p=>{
     const nick=p.author_nick||p.nick||'?';
     const photo=p.author_photo||p.photo||null;
@@ -2176,7 +2230,7 @@ async function sendScrap(){
 function renderScraps(scraps){
   const w=$('scrapsWall');
   if(!scraps.length){w.innerHTML='<div class="empty">Nenhum recado ainda 📝</div>';return;}
-  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345' || me.nick==='elisabete');
+  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
   w.innerHTML=scraps.map(s=>`
     <div class="scrap-item" id="scrap-${s.id}">
       <div class="scrap-hdr">
@@ -2229,7 +2283,7 @@ function renderMusicList(tracks){
     const hasAudio=!!m.audio_data;
     const isCur=currentTrackIdx>=0&&playlist[currentTrackIdx]&&playlist[currentTrackIdx].id===m.id;
     const isPlay=isCur&&!gAudio.paused;
-    const canDelete=me&&(m.added_by===me.nick||me.nick==='kaua12345'||me.nick==='elisabete'||me._isAdmin);
+    const canDelete=me&&(m.added_by===me.nick||me.nick==='kaua12345'||me._isAdmin);
     return`<div class="music-item" id="mitem-${m.id}">
       <div class="music-icon">${hasAudio?'🎵':'📝'}</div>
       <div class="music-info">
@@ -2788,7 +2842,7 @@ function renderCommChat(msgs){
         :m.media_type.startsWith('audio')?`<audio src="${m.media_data}" controls></audio>`
         :''
       :'';
-    const isAdm=me&&(me._isAdmin||me.nick==='kaua12345'||me.nick==='elisabete');
+    const isAdm=me&&(me._isAdmin||me.nick==='kaua12345');
     return`<div class="cmsg ${isMine?'mine':'theirs'}">
       ${!isMine?`<div class="cmsg-nick clickable-nick" onclick="showUserProfile('${esc(m.nick)}')">${esc(m.display_name||m.nick)}</div>`:''}
       <div class="cmsg-bubble">
@@ -3081,7 +3135,7 @@ async function sendCommPost(){
 function renderCommFeed(posts){
   const w=$('commFeedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda nesta comunidade! 🌟</div>';return;}
-  const isAdmin=me&&(me._isAdmin||me.nick==='kaua12345'||me.nick==='elisabete');
+  const isAdmin=me&&(me._isAdmin||me.nick==='kaua12345');
   w.innerHTML=posts.map(p=>{
     const likes=Array.isArray(p.likes)?p.likes:[];
     const liked=likes.includes(me.nick);
@@ -4016,7 +4070,7 @@ async function showUserProfile(nick){
   const isFriend = myFriends.includes(nick);
   const hasPendingReq = friendRequests.some(r=>r.from_nick===nick);
   const iSentReq = sentFriendRequests.has(nick);
-  const isAdm = me._isAdmin || me.nick==='kaua12345' || me.nick==='elisabete';
+  const isAdm = me._isAdmin || me.nick==='kaua12345';
   $('pmActions').innerHTML = `
     <button class="btn-blue" onclick="closeUserProfile();showTab('dm');setTimeout(()=>openDmConv('${esc(nick)}'),100)">💬 Mensagem</button>
     ${isFriend
@@ -4186,7 +4240,7 @@ const FARM_CROPS = [
 ];
 let FARM_ROWS = 4, FARM_COLS = 6;
 const XP_PER_LEVEL = (lvl) => Math.floor(100 * Math.pow(1.4, lvl - 1));
-function farmIsAdmin(){ try{ return me && (me.nick==='kaua12345'||me.nick==='elisabete'||me.role==='admin'||me.is_admin===true); }catch(e){ return false; } }
+function farmIsAdmin(){ try{ return me && (me.nick==='kaua12345'||me.role==='admin'||me.is_admin===true); }catch(e){ return false; } }
 
 let farm = {
   coins: 50, level: 1, xp: 0,
@@ -4940,6 +4994,7 @@ function farmOpenTitleShop(){
 }
 // ── INIT ──
 (async()=>{
+  await initSupabase();
   await tryAutoLogin();
 })();
 function farmEquipTitle(id){ farm.title=id; farmOpenTitleShop(); toast('✅ Título equipado!'); farmSave(); }
@@ -5416,10 +5471,6 @@ async function loadAdminCache(){
   if(!adminUsersCache['kaua12345']){
     const {data:kd} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('nick','kaua12345').maybeSingle();
     if(kd) adminUsersCache['kaua12345'] = kd;
-  }
-  if(!adminUsersCache['elisabete']){
-    const {data:ed} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('nick','elisabete').maybeSingle();
-    if(ed) adminUsersCache['elisabete'] = ed;
   }
 }
 
