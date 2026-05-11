@@ -23,8 +23,8 @@ app.get('/healthz', (_req, res) => {
 
 // Endpoint seguro — credenciais vêm de variáveis de ambiente, nunca do código
 app.get('/config', (_req, res) => {
-  const url = process.env.SUPA_URL;
-  const key = process.env.SUPA_KEY;
+  const url = process.env.SUPA_URL;https://nctzqgochkfrlxjjawan.supabase.co/rest/v1/
+  const key = process.env.SUPA_KEY;sb_publishable_LE9_vPzR4-EYE7QtgvrIOQ_EFvIt0XQ
   if (!url || !key) {
     return res.status(500).json({ error: 'Configuração ausente no servidor' });
   }

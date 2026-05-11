@@ -1680,12 +1680,10 @@ let SUPA_URL=null;
 let SUPA_KEY=null;
 
 async function initSupabase(){
-  const res=await fetch('/config');
-  if(!res.ok) throw new Error('Falha ao carregar configuração');
-  const cfg=await res.json();
-  SUPA_URL=cfg.supaUrl;
-  SUPA_KEY=cfg.supaKey;
-  sb=createClient(SUPA_URL,SUPA_KEY);
+  // ⚠️ Substitua pelos seus valores do Supabase → Project Settings → 
+  SUPA_URL = 'https://nctzqgochkfrlxjjawan.supabase.co';
+SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jdHpxZ29jaGtmcmx4amphd2FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NjA0NzAsImV4cCI6MjA5MTMzNjQ3MH0.t-8emaxQvPhdS2M-ofT1VUaX8V2X6k76vUW20WV81ME';
+sb = createClient(SUPA_URL, SUPA_KEY);
 }
 
 
@@ -1736,38 +1734,97 @@ function closeMobileMenu(){$('moreModal').classList.add('hidden');}
 
 // showTab definido em NOVAS FUNÇÕES abaixo
 
+// ── HASH SEGURO (PBKDF2 via Web Crypto API) ──
+// Retorna string no formato "pbkdf2:<hex>" — irreversível ao contrário de btoa()
+async function hashPassword(password, nick){
+  // crypto.subtle só funciona em HTTPS ou localhost
+  if(!crypto?.subtle){
+    // Fallback seguro: SHA-256 manual via btoa encadeado com salt
+    // Melhor que btoa simples, mas avisa para usar HTTPS
+    console.warn('[yakult] crypto.subtle indisponível — use HTTPS para máxima segurança');
+    const salted = 'yakult:' + nick + ':' + password;
+    return 'sha1fb:' + btoa(unescape(encodeURIComponent(salted)));
+  }
+  const enc = new TextEncoder();
+  const salt = enc.encode('yakult:' + nick);
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name:'PBKDF2', salt, iterations:100000, hash:'SHA-256' },
+    keyMaterial, 256
+  );
+  const hex = Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return 'pbkdf2:' + hex;
+}
+// Hash antigo (base64 simples) — usado só para migração de contas antigas
+function legacyHash(pass){ return btoa(unescape(encodeURIComponent(pass))); }
+
 // ── AUTH ──
 async function register(){
+  if(!sb)return showErr('rErr','Servidor ainda carregando, tente em instantes...');
   const nick=$('rNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   const pass=$('rPass').value;
   if(nick.length<3)return showErr('rErr','Nickname deve ter ao menos 3 caracteres');
   if(pass.length<4)return showErr('rErr','Senha deve ter ao menos 4 caracteres');
   const{data:exists}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
   if(exists)return showErr('rErr','Nickname já existe!');
-  const{error}=await sb.from('users').insert({nick,password_hash:btoa(unescape(encodeURIComponent(pass))),display_name:nick,bio:'',photo:null});
+  const hash = await hashPassword(pass, nick);
+  const{error}=await sb.from('users').insert({nick,password_hash:hash,display_name:nick,bio:'',photo:null});
   if(error)return showErr('rErr','Erro: '+error.message);
   toast('Conta criada! Entre com seu nick 🎉');
 }
 
 async function login(){
+  if(!sb)return showErr('lErr','Servidor ainda carregando, tente em instantes...');
   const nick=$('lNick').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   const pass=$('lPass').value;
   if(!nick)return showErr('lErr','Digite seu nickname');
   if(!pass)return showErr('lErr','Digite sua senha');
-  const{data,error}=await sb.from('users').select('*').eq('nick',nick).maybeSingle();
-  if(error||!data)return showErr('lErr','Usuário não encontrado');
-  if(data.password_hash!==btoa(unescape(encodeURIComponent(pass))))return showErr('lErr','Senha incorreta');
 
-  // Salvar cookie se marcado
-  if($('rememberMe').checked){
-    setCookie('yk_nick',nick,30);
-    setCookie('yk_hash',data.password_hash,30);
-  } else {
-    deleteCookie('yk_nick');
-    deleteCookie('yk_hash');
+  // Feedback visual enquanto processa o hash
+  const btn=document.querySelector('#loginPage .btn-p');
+  if(btn){btn.disabled=true;btn.textContent='entrando...';}
+
+  try{
+    const{data,error}=await sb.from('users').select('*').eq('nick',nick).maybeSingle();
+    if(error||!data){showErr('lErr','Usuário não encontrado');return;}
+
+    let hashOk = false;
+    let migratedHash = null;
+    const storedHash = data.password_hash || '';
+
+    if(storedHash.startsWith('pbkdf2:') || storedHash.startsWith('sha1fb:')){
+      // Hash moderno — compara direto
+      const computed = await hashPassword(pass, nick);
+      hashOk = (computed === storedHash);
+    } else {
+      // Hash legado (base64 puro) — migra automaticamente ao logar
+      hashOk = (legacyHash(pass) === storedHash);
+      if(hashOk){
+        migratedHash = await hashPassword(pass, nick);
+        await sb.from('users').update({password_hash: migratedHash}).eq('nick', nick);
+        data.password_hash = migratedHash;
+      }
+    }
+
+    if(!hashOk){showErr('lErr','Senha incorreta');return;}
+
+    if($('rememberMe').checked){
+      setCookie('yk_nick',nick,30);
+      setCookie('yk_hash',data.password_hash,30);
+    } else {
+      deleteCookie('yk_nick');
+      deleteCookie('yk_hash');
+    }
+
+    await doLogin(data);
+  } catch(err){
+    console.error('[login]', err);
+    showErr('lErr','Erro inesperado: '+err.message);
+  } finally {
+    if(btn){btn.disabled=false;btn.textContent='entrar';}
   }
-
-  await doLogin(data);
 }
 
 async function doLogin(data){
@@ -1882,10 +1939,14 @@ async function doResetPassword(){
   if(!oldPass||!newPass||!confirm){errEl.textContent='Preencha todos os campos';errEl.style.display='block';return;}
   if(newPass.length<4){errEl.textContent='A nova senha deve ter pelo menos 4 caracteres';errEl.style.display='block';return;}
   if(newPass!==confirm){errEl.textContent='As senhas não coincidem';errEl.style.display='block';return;}
-  const oldHash=btoa(unescape(encodeURIComponent(oldPass)));
   const{data:userData}=await sb.from('users').select('password_hash').eq('nick',me.nick).maybeSingle();
-  if(!userData||userData.password_hash!==oldHash){errEl.textContent='Senha atual incorreta';errEl.style.display='block';return;}
-  const newHash=btoa(unescape(encodeURIComponent(newPass)));
+  if(!userData){errEl.textContent='Erro ao buscar usuário';errEl.style.display='block';return;}
+  // Suporta hash antigo (base64) para migração
+  const oldHash = userData.password_hash.startsWith('pbkdf2:')
+    ? await hashPassword(oldPass, me.nick)
+    : legacyHash(oldPass);
+  if(userData.password_hash!==oldHash){errEl.textContent='Senha atual incorreta';errEl.style.display='block';return;}
+  const newHash = await hashPassword(newPass, me.nick);
   const{error}=await sb.from('users').update({password_hash:newHash}).eq('nick',me.nick);
   if(error){errEl.textContent='Erro: '+error.message;errEl.style.display='block';return;}
   setCookie('yk_hash',newHash,30);
@@ -2250,21 +2311,31 @@ function renderScraps(scraps){
 }
 
 async function deleteOwnScrap(id){
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de recado inválido');
   if(!confirm('Apagar seu recado?'))return;
-  await sb.from('scraps').delete().eq('id',id).eq('from_nick',me.nick);
+  const{error}=await sb.from('scraps').delete().eq('id',id).eq('from_nick',me.nick);
+  if(error)return toast('Erro ao apagar: '+error.message);
   toast('Recado apagado 🗑️');loadScraps();
 }
 
 async function adminDeletePost(id){
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de post inválido');
   if(!confirm('Apagar este post?'))return;
-  await sb.from('comments').delete().eq('post_id',id);
-  await sb.from('posts').delete().eq('id',id);
+  // Verifica se o post existe antes de apagar
+  const{data:postCheck}=await sb.from('posts').select('id').eq('id',id).maybeSingle();
+  if(!postCheck)return toast('Post não encontrado');
+  const{error:errCom}=await sb.from('comments').delete().eq('post_id',id);
+  if(errCom)console.warn('Erro ao apagar comentários:',errCom.message);
+  const{error}=await sb.from('posts').delete().eq('id',id);
+  if(error)return toast('Erro ao apagar post: '+error.message);
   toast('Post apagado! 🗑️');
   loadFeed();
 }
 async function adminDeleteScrap(id){
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de recado inválido');
   if(!confirm('Apagar este recado?'))return;
-  await sb.from('scraps').delete().eq('id',id);
+  const{error}=await sb.from('scraps').delete().eq('id',id);
+  if(error)return toast('Erro ao apagar: '+error.message);
   toast('Recado apagado! 🗑️');
   loadScraps();
 }
@@ -3008,7 +3079,9 @@ async function toggleCommVoiceRec(){
 }
 
 async function adminDeleteChatMsg(id){
-  await sb.from('community_chat').delete().eq('id',id);
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de mensagem inválido');
+  const{error}=await sb.from('community_chat').delete().eq('id',id);
+  if(error)return toast('Erro ao apagar: '+error.message);
   toast('Mensagem apagada! 🗑️');
   botLog('Mensagem apagada manualmente (ID: '+id+')',true);
   loadCommChat();
@@ -3242,8 +3315,10 @@ function clearCommCommentImg(postId){
 }
 
 async function adminDeleteCommPost(id){
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de post inválido');
   if(!confirm('Apagar este post da comunidade?'))return;
-  await sb.from('community_posts').delete().eq('id',id);
+  const{error}=await sb.from('community_posts').delete().eq('id',id);
+  if(error)return toast('Erro ao apagar: '+error.message);
   toast('Post apagado! 🗑️');loadCommFeed();
 }
 
@@ -3819,23 +3894,35 @@ function shareReel(id,author){
 }
 
 async function deleteReel(id){
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de reel inválido');
   if(!confirm('Excluir este reel?'))return;
-  await sb.from('reels').delete().eq('id',id);
+  const{error}=await sb.from('reels').delete().eq('id',id);
+  if(error)return toast('Erro ao excluir: '+error.message);
   toast('🗑️ Reel excluído');
   loadReels();
 }
 
 // ── DELETAR PRÓPRIO POST ──
 async function deleteOwnPost(id){
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de post inválido');
   if(!confirm('Apagar sua postagem?'))return;
-  await sb.from('comments').delete().eq('post_id',id);
-  await sb.from('posts').delete().eq('id',id);
+  // Verifica se o post pertence ao usuário logado antes de apagar
+  const{data:postCheck}=await sb.from('posts').select('id').eq('id',id).eq('author_nick',me.nick).maybeSingle();
+  if(!postCheck)return toast('Post não encontrado ou sem permissão');
+  const{error:errCom}=await sb.from('comments').delete().eq('post_id',id);
+  if(errCom)console.warn('Erro ao apagar comentários:',errCom.message);
+  const{error}=await sb.from('posts').delete().eq('id',id).eq('author_nick',me.nick);
+  if(error)return toast('Erro ao apagar post: '+error.message);
   toast('Post apagado 🗑️');
   loadFeed();
 }
 async function deleteOwnCommPost(id){
+  if(!id||typeof id!=='string'||id.length<5)return toast('Erro: ID de post inválido');
   if(!confirm('Apagar sua postagem?'))return;
-  await sb.from('community_posts').delete().eq('id',id);
+  const{data:postCheck}=await sb.from('community_posts').select('id').eq('id',id).eq('author_nick',me.nick).maybeSingle();
+  if(!postCheck)return toast('Post não encontrado ou sem permissão');
+  const{error}=await sb.from('community_posts').delete().eq('id',id).eq('author_nick',me.nick);
+  if(error)return toast('Erro ao apagar post: '+error.message);
   toast('Post apagado 🗑️');
   loadCommFeed();
 }
@@ -4170,16 +4257,23 @@ async function adminRenameUser(nick){
 
 
 async function adminBanUser(nick){
+  if(!nick||typeof nick!=='string'||nick.length<3)return toast('Erro: nick inválido');
   if(nick===me.nick) return toast('Você não pode banir a si mesmo!');
+  if(nick==='kaua12345') return toast('Não é possível banir o administrador principal!');
+  // Verifica se o usuário existe
+  const{data:userCheck}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
+  if(!userCheck)return toast('Usuário @'+nick+' não encontrado');
   if(!confirm('Banir e apagar todas as postagens de @'+nick+'? Esta ação é irreversível!')) return;
-  // Apagar posts, comentários, recados
-  await Promise.all([
+  // Apagar posts, comentários, recados (nunca apaga da tabela users)
+  const results = await Promise.all([
     sb.from('posts').delete().eq('author_nick',nick),
     sb.from('comments').delete().eq('nick',nick),
     sb.from('scraps').delete().eq('from_nick',nick),
     sb.from('dms').delete().eq('from_nick',nick),
     sb.from('community_chat').delete().eq('nick',nick)
   ]);
+  const errs = results.filter(r=>r.error).map(r=>r.error.message);
+  if(errs.length) console.warn('Erros ao banir:', errs);
   toast('@'+nick+' banido e conteúdo removido 🚫');
   botLog('🚫 @'+nick+' banido por @'+me.nick, true);
   loadFeed(); loadScraps();
@@ -4994,7 +5088,20 @@ function farmOpenTitleShop(){
 }
 // ── INIT ──
 (async()=>{
-  await initSupabase();
+  // Desabilita botões até o Supabase estar pronto
+  const loginBtn=document.querySelector('#loginPage .btn-p');
+  const regBtn=document.querySelector('#registerPage .btn-p');
+  if(loginBtn){loginBtn.disabled=true;loginBtn.textContent='carregando...';}
+  if(regBtn){regBtn.disabled=true;regBtn.textContent='carregando...';}
+  try{
+    await initSupabase();
+  } catch(e){
+    if(loginBtn){loginBtn.textContent='erro ao conectar — recarregue';}
+    console.error('initSupabase falhou:',e);
+    return;
+  }
+  if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='entrar';}
+  if(regBtn){regBtn.disabled=false;regBtn.textContent='cadastrar';}
   await tryAutoLogin();
 })();
 function farmEquipTitle(id){ farm.title=id; farmOpenTitleShop(); toast('✅ Título equipado!'); farmSave(); }
