@@ -235,6 +235,89 @@ app.post('/verify-session', async (req, res) => {
   }
 });
 
+// ── Helper: verificar se requisitante é admin ──────────────────
+async function isAdmin(nick, token) {
+  if (!nick || !token) return false;
+  const { status, data } = await supaFetch(
+    `/users?nick=eq.${encodeURIComponent(nick)}&session_token=eq.${encodeURIComponent(token)}&select=nick,is_admin&limit=1`
+  );
+  if (status !== 200 || !data || !data.length) return false;
+  return data[0].is_admin === true || nick === 'apexzinn';
+}
+
+// ── POST /admin/rename-user ────────────────────────────────────
+// Renomeia o display_name de um usuário (não o nick — nick é chave primária)
+app.post('/admin/rename-user', async (req, res) => {
+  const { adminNick, sessionToken, targetNick, newDisplayName } = req.body;
+  if (!adminNick || !sessionToken || !targetNick || !newDisplayName)
+    return res.status(400).json({ error: 'Dados incompletos' });
+
+  if (!(await isAdmin(adminNick, sessionToken)))
+    return res.status(403).json({ error: 'Acesso negado' });
+
+  const name = newDisplayName.trim();
+  if (!name || name.length < 2) return res.status(400).json({ error: 'Nome inválido' });
+
+  const { status, data } = await supaFetch(`/users?nick=eq.${encodeURIComponent(targetNick)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ display_name: name })
+  });
+  if (status !== 200) return res.status(500).json({ error: 'Erro ao renomear' });
+  return res.json({ ok: true });
+});
+
+// ── POST /admin/delete-user ────────────────────────────────────
+app.post('/admin/delete-user', async (req, res) => {
+  const { adminNick, sessionToken, targetNick } = req.body;
+  if (!adminNick || !sessionToken || !targetNick)
+    return res.status(400).json({ error: 'Dados incompletos' });
+
+  if (!(await isAdmin(adminNick, sessionToken)))
+    return res.status(403).json({ error: 'Acesso negado' });
+
+  if (targetNick === adminNick)
+    return res.status(400).json({ error: 'Não pode deletar a si mesmo' });
+
+  // Apaga dados relacionados antes do usuário
+  await supaFetch(`/posts?author_nick=eq.${encodeURIComponent(targetNick)}`, { method: 'DELETE' });
+  await supaFetch(`/scraps?from_nick=eq.${encodeURIComponent(targetNick)}`, { method: 'DELETE' });
+  await supaFetch(`/comments?nick=eq.${encodeURIComponent(targetNick)}`, { method: 'DELETE' });
+  await supaFetch(`/dms?from_nick=eq.${encodeURIComponent(targetNick)}`, { method: 'DELETE' });
+  await supaFetch(`/online?nick=eq.${encodeURIComponent(targetNick)}`, { method: 'DELETE' });
+
+  const { status } = await supaFetch(`/users?nick=eq.${encodeURIComponent(targetNick)}`, { method: 'DELETE' });
+  if (status !== 200 && status !== 204) return res.status(500).json({ error: 'Erro ao deletar usuário' });
+  return res.json({ ok: true });
+});
+
+// ── POST /admin/set-admin ──────────────────────────────────────
+app.post('/admin/set-admin', async (req, res) => {
+  const { adminNick, sessionToken, targetNick, value } = req.body;
+  if (!adminNick || !sessionToken || !targetNick)
+    return res.status(400).json({ error: 'Dados incompletos' });
+
+  if (!(await isAdmin(adminNick, sessionToken)))
+    return res.status(403).json({ error: 'Acesso negado' });
+
+  const { status } = await supaFetch(`/users?nick=eq.${encodeURIComponent(targetNick)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ is_admin: !!value })
+  });
+  if (status !== 200) return res.status(500).json({ error: 'Erro ao atualizar' });
+  return res.json({ ok: true });
+});
+
+// ── GET /admin/users ───────────────────────────────────────────
+app.get('/admin/users', async (req, res) => {
+  const { nick, token } = req.query;
+  if (!(await isAdmin(nick, token)))
+    return res.status(403).json({ error: 'Acesso negado' });
+
+  const { status, data } = await supaFetch('/users?select=nick,display_name,is_admin,created_at&order=created_at.desc&limit=200');
+  if (status !== 200) return res.status(500).json({ error: 'Erro ao buscar usuários' });
+  return res.json(data || []);
+});
+
 // ── Iniciar servidor ───────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando na porta ${PORT}`);

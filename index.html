@@ -536,6 +536,33 @@
     .btn-dark{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;padding:3px 10px;border-radius:var(--radius);cursor:pointer;font-size:12px;}
     .btn-dark:hover{background:rgba(255,255,255,.15);}
 
+    /* PAINEL ADMIN */
+    .admin-panel{background:var(--white);border:2px solid var(--pink);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+    .admin-panel h3{color:var(--pink);font-size:13px;font-weight:bold;border-bottom:2px solid var(--pink);padding-bottom:5px;margin-bottom:10px;}
+    .admin-user-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+    .admin-user-row:last-child{border-bottom:none;}
+    .admin-user-info{flex:1;min-width:0;}
+    .admin-user-nick{font-weight:bold;color:var(--blue-dark);font-size:12px;}
+    .admin-user-name{font-size:11px;color:var(--muted);}
+    .admin-badge-adm{background:var(--pink);color:#fff;border-radius:8px;padding:1px 7px;font-size:10px;font-weight:bold;margin-left:4px;}
+    .admin-btn{background:var(--blue-bg);border:1px solid var(--border);color:var(--blue-dark);padding:3px 9px;border-radius:var(--radius);font-size:11px;cursor:pointer;white-space:nowrap;}
+    .admin-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+    .admin-btn.danger{background:#fff0f0;border-color:#f5c0c0;color:#c00;}
+    .admin-btn.danger:hover{background:#c00;color:#fff;border-color:#c00;}
+    .admin-btn.success{background:#f0fff0;border-color:#c0f0c0;color:#080;}
+    .admin-btn.success:hover{background:#080;color:#fff;}
+    .admin-search{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;outline:none;margin-bottom:10px;}
+    .admin-search:focus{border-color:var(--pink);}
+    .admin-stats{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+    .admin-stat-box{background:var(--blue-bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;text-align:center;flex:1;min-width:70px;}
+    .admin-stat-n{font-size:20px;font-weight:bold;color:var(--blue-dark);}
+    .admin-stat-l{font-size:10px;color:var(--muted);}
+    body.dark .admin-panel{background:#1e2130;border-color:var(--pink);}
+    body.dark .admin-user-row{border-color:#2d3a50;}
+    body.dark .admin-btn{background:#1a2236;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .admin-search{background:#151c2c;border-color:#2d3a50;color:#d4dbe8;}
+    body.dark .admin-stat-box{background:#1a2236;border-color:#2d3a50;}
+
     /* VOLTAR AO TOPO */
     #backToTop{position:fixed;right:16px;bottom:80px;z-index:60;background:var(--blue-dark);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;}
     #backToTop.show{display:flex;}
@@ -932,6 +959,7 @@
         <a onclick="showTab('reels')" id="nav-reels">🎬 Reels</a>
         <a onclick="showTab('games')" id="nav-games">🃏 Jogos</a>
         <a onclick="showTab('online')" id="nav-online">🌐 Online agora</a>
+        <a onclick="showTab('adminpanel')" id="nav-adminpanel" class="hidden" style="color:var(--pink);font-weight:bold">🛡️ Painel Admin</a>
       </div>
     </div>
 
@@ -1150,6 +1178,19 @@
       <!-- ONLINE -->
       <div id="tab-online" class="hidden">
         <div class="card"><h3>🌐 online agora</h3><div id="onlineList"><div class="loading">Carregando...</div></div></div>
+      </div>
+
+      <!-- PAINEL ADMIN -->
+      <div id="tab-adminpanel" class="hidden">
+        <div class="admin-panel">
+          <h3>🛡️ Painel Administrativo</h3>
+          <div class="admin-stats">
+            <div class="admin-stat-box"><div class="admin-stat-n" id="adminStatUsers">—</div><div class="admin-stat-l">usuários</div></div>
+            <div class="admin-stat-box"><div class="admin-stat-n" id="adminStatAdmins">—</div><div class="admin-stat-l">admins</div></div>
+          </div>
+          <input class="admin-search" id="adminSearchInp" placeholder="🔍 Buscar usuário..." oninput="adminFilterUsers(this.value)">
+          <div id="adminUserList"><div class="loading">Carregando usuários...</div></div>
+        </div>
       </div>
 
       <!-- JOGOS -->
@@ -1809,6 +1850,7 @@ async function login(){
     }
 
     await doLogin(json.user);
+    _adminSessionToken = json.sessionToken || '';
   }catch(err){
     showErr('lErr','Erro de rede: '+err.message);
   }finally{
@@ -1834,11 +1876,14 @@ async function doLogin(data){
   loadNotifications();
   loadAdminCache();
   // Bot ADM — verifica se é admin real do banco
-  const isAdmin = me.is_admin === true || me.nick === 'kaua12345';
+  const isAdmin = me.is_admin === true || me.nick === 'apexzinn';
   if(isAdmin){
     me._isAdmin = true;
     $('botToggleBtn').style.display='flex';
     subscribeBotChannel();
+    // Mostrar link admin na navegação
+    const navAdm = $('nav-adminpanel');
+    if(navAdm) navAdm.classList.remove('hidden');
   }
 }
 
@@ -1855,7 +1900,10 @@ async function tryAutoLogin(){
     });
     if(!res.ok){deleteCookie('yk_nick');deleteCookie('yk_token');return;}
     const json=await res.json();
-    if(json.ok&&json.user)await doLogin(json.user);
+    if(json.ok&&json.user){
+      _adminSessionToken = getCookie('yk_token') || '';
+      await doLogin(json.user);
+    }
   }catch(e){
     // falha silenciosa — usuário faz login manual
   }
@@ -2072,7 +2120,7 @@ async function sendPost(){
 function renderFeed(posts,hasMore=false){
   const w=$('feedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda. Seja o primeiro! 🌟</div>';return;}
-  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
+  const isAdmin = me && (me._isAdmin || me.nick==='apexzinn');
   w.innerHTML=posts.map(p=>{
     const nick=p.author_nick||p.nick||'?';
     const photo=p.author_photo||p.photo||null;
@@ -2289,7 +2337,7 @@ async function sendScrap(){
 function renderScraps(scraps){
   const w=$('scrapsWall');
   if(!scraps.length){w.innerHTML='<div class="empty">Nenhum recado ainda 📝</div>';return;}
-  const isAdmin = me && (me._isAdmin || me.nick==='kaua12345');
+  const isAdmin = me && (me._isAdmin || me.nick==='apexzinn');
   w.innerHTML=scraps.map(s=>`
     <div class="scrap-item" id="scrap-${s.id}">
       <div class="scrap-hdr">
@@ -2352,7 +2400,7 @@ function renderMusicList(tracks){
     const hasAudio=!!m.audio_data;
     const isCur=currentTrackIdx>=0&&playlist[currentTrackIdx]&&playlist[currentTrackIdx].id===m.id;
     const isPlay=isCur&&!gAudio.paused;
-    const canDelete=me&&(m.added_by===me.nick||me.nick==='kaua12345'||me._isAdmin);
+    const canDelete=me&&(m.added_by===me.nick||me.nick==='apexzinn'||me._isAdmin);
     return`<div class="music-item" id="mitem-${m.id}">
       <div class="music-icon">${hasAudio?'🎵':'📝'}</div>
       <div class="music-info">
@@ -2911,7 +2959,7 @@ function renderCommChat(msgs){
         :m.media_type.startsWith('audio')?`<audio src="${m.media_data}" controls></audio>`
         :''
       :'';
-    const isAdm=me&&(me._isAdmin||me.nick==='kaua12345');
+    const isAdm=me&&(me._isAdmin||me.nick==='apexzinn');
     return`<div class="cmsg ${isMine?'mine':'theirs'}">
       ${!isMine?`<div class="cmsg-nick clickable-nick" onclick="showUserProfile('${esc(m.nick)}')">${esc(m.display_name||m.nick)}</div>`:''}
       <div class="cmsg-bubble">
@@ -3206,7 +3254,7 @@ async function sendCommPost(){
 function renderCommFeed(posts){
   const w=$('commFeedWall');
   if(!posts.length){w.innerHTML='<div class="empty">Nenhuma postagem ainda nesta comunidade! 🌟</div>';return;}
-  const isAdmin=me&&(me._isAdmin||me.nick==='kaua12345');
+  const isAdmin=me&&(me._isAdmin||me.nick==='apexzinn');
   w.innerHTML=posts.map(p=>{
     const likes=Array.isArray(p.likes)?p.likes:[];
     const liked=likes.includes(me.nick);
@@ -3373,7 +3421,7 @@ async function adminDeleteCommPost(id){
 // alter publication supabase_realtime add table public.friend_requests;
 //
 // ══════════════════════════════════════════════════════════════════
-const BOT_ADMIN='kaua12345';
+const BOT_ADMIN='apexzinn';
 function toggleBot(){
   const p=$('botPanel');
   p.classList.toggle('open');
@@ -3610,7 +3658,7 @@ function updateScrapBadge(){
 // Zerar badge ao abrir aba de scraps
 function showTab(name){
   if(name!=='reels') closeReelsFullscreen();
-  ['feed','scraps','dm','friends','communities','music','reels','games','online','notifications'].forEach(t=>{
+  ['feed','scraps','dm','friends','communities','music','reels','games','online','notifications','adminpanel'].forEach(t=>{
     const el=$('tab-'+t);if(el)el.classList.add('hidden');
     const nav=$('nav-'+t);if(nav)nav.classList.remove('active');
     const mnav=$('mnav-'+t);if(mnav)mnav.classList.remove('active');
@@ -3623,6 +3671,7 @@ function showTab(name){
   if(name==='reels') loadReels();
   if(name==='scraps'){scrapUnread=0;updateScrapBadge();}
   if(name==='notifications'){renderNotifTab();notifUnread=0;updateNotifBadge();}
+  if(name==='adminpanel')loadAdminPanel();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -4155,7 +4204,7 @@ async function showUserProfile(nick){
   const isFriend = myFriends.includes(nick);
   const hasPendingReq = friendRequests.some(r=>r.from_nick===nick);
   const iSentReq = sentFriendRequests.has(nick);
-  const isAdm = me._isAdmin || me.nick==='kaua12345';
+  const isAdm = me._isAdmin || me.nick==='apexzinn';
   $('pmActions').innerHTML = `
     <button class="btn-blue" onclick="closeUserProfile();showTab('dm');setTimeout(()=>openDmConv('${esc(nick)}'),100)">💬 Mensagem</button>
     ${isFriend
@@ -4257,7 +4306,7 @@ async function adminRenameUser(nick){
 async function adminBanUser(nick){
   if(!nick||typeof nick!=='string'||nick.length<3)return toast('Erro: nick inválido');
   if(nick===me.nick) return toast('Você não pode banir a si mesmo!');
-  if(nick==='kaua12345') return toast('Não é possível banir o administrador principal!');
+  if(nick==='apexzinn') return toast('Não é possível banir o administrador principal!');
   // Verifica se o usuário existe
   const{data:userCheck}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
   if(!userCheck)return toast('Usuário @'+nick+' não encontrado');
@@ -4332,7 +4381,7 @@ const FARM_CROPS = [
 ];
 let FARM_ROWS = 4, FARM_COLS = 6;
 const XP_PER_LEVEL = (lvl) => Math.floor(100 * Math.pow(1.4, lvl - 1));
-function farmIsAdmin(){ try{ return me && (me.nick==='kaua12345'||me.role==='admin'||me.is_admin===true); }catch(e){ return false; } }
+function farmIsAdmin(){ try{ return me && (me.nick==='apexzinn'||me.role==='admin'||me.is_admin===true); }catch(e){ return false; } }
 
 let farm = {
   coins: 50, level: 1, xp: 0,
@@ -5573,9 +5622,9 @@ async function loadAdminCache(){
   adminUsersCache = {};
   (data||[]).forEach(u => { adminUsersCache[u.nick] = u; });
   // Also add hardcoded admin
-  if(!adminUsersCache['kaua12345']){
-    const {data:kd} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('nick','kaua12345').maybeSingle();
-    if(kd) adminUsersCache['kaua12345'] = kd;
+  if(!adminUsersCache['apexzinn']){
+    const {data:kd} = await sb.from('users').select('nick,is_admin,font_style,farm_title').eq('nick','apexzinn').maybeSingle();
+    if(kd) adminUsersCache['apexzinn'] = kd;
   }
 }
 
@@ -6820,6 +6869,116 @@ function dispararNotif(titulo, corpo, opcoes = {}) {
     if(!opcoes.requireInteraction) setTimeout(() => n.close(), 8000);
   } catch(e) { console.warn('[Notif]', e); }
 }
+
+// ── PAINEL ADMIN ──────────────────────────────────────────────
+let _adminAllUsers = [];
+
+async function loadAdminPanel() {
+  if (!me || !me._isAdmin) return;
+  const el = $('adminUserList');
+  el.innerHTML = '<div class="loading">Carregando usuários...</div>';
+  try {
+    const res = await fetch(`/admin/users?nick=${encodeURIComponent(me.nick)}&token=${encodeURIComponent(getCookie('yk_token')||sessionStorage.getItem('yk_token')||'')}`);
+    // tenta pegar o token da sessão atual — ele pode estar só em memória
+    // fallback: usa sessionToken salvo em variável global
+    const users = await res.json();
+    if (!res.ok) { el.innerHTML = '<div class="empty">Sem acesso</div>'; return; }
+    _adminAllUsers = users;
+    $('adminStatUsers').textContent = users.length;
+    $('adminStatAdmins').textContent = users.filter(u => u.is_admin).length;
+    adminRenderUsers(users);
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Erro ao carregar</div>';
+  }
+}
+
+function adminFilterUsers(q) {
+  const filtered = q
+    ? _adminAllUsers.filter(u =>
+        u.nick.includes(q.toLowerCase()) ||
+        (u.display_name||'').toLowerCase().includes(q.toLowerCase()))
+    : _adminAllUsers;
+  adminRenderUsers(filtered);
+}
+
+function adminRenderUsers(users) {
+  const el = $('adminUserList');
+  if (!users.length) { el.innerHTML = '<div class="empty">Nenhum usuário encontrado</div>'; return; }
+  el.innerHTML = users.map(u => `
+    <div class="admin-user-row" id="adm-row-${u.nick}">
+      <div class="admin-user-info">
+        <div class="admin-user-nick">@${esc(u.nick)}${u.is_admin?'<span class="admin-badge-adm">ADM</span>':''}</div>
+        <div class="admin-user-name" id="adm-name-${u.nick}">${esc(u.display_name||u.nick)}</div>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="admin-btn" onclick="adminRenameUser('${esc(u.nick)}')" title="Renomear display name">✏️ Nome</button>
+        ${u.nick !== me.nick ? `
+          ${u.is_admin
+            ? `<button class="admin-btn" onclick="adminSetAdmin('${esc(u.nick)}',false)" title="Remover admin">⬇️ ADM</button>`
+            : `<button class="admin-btn success" onclick="adminSetAdmin('${esc(u.nick)}',true)" title="Tornar admin">⭐ ADM</button>`}
+          <button class="admin-btn danger" onclick="adminDeleteUser('${esc(u.nick)}')" title="Deletar usuário">🗑️ Del</button>
+        ` : '<span style="font-size:10px;color:var(--muted);padding:3px 6px">você</span>'}
+      </div>
+    </div>`).join('');
+}
+
+async function adminRenameUser(nick) {
+  const currentName = ($('adm-name-'+nick)||{}).textContent || nick;
+  const newName = prompt(`Novo nome de exibição para @${nick}:`, currentName);
+  if (!newName || newName.trim() === currentName) return;
+
+  const token = getCookie('yk_token') || _adminSessionToken || '';
+  const res = await fetch('/admin/rename-user', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ adminNick: me.nick, sessionToken: token, targetNick: nick, newDisplayName: newName.trim() })
+  });
+  const json = await res.json();
+  if (!res.ok) return toast('Erro: ' + (json.error||'?'));
+  toast(`✏️ @${nick} renomeado para "${newName.trim()}"!`);
+  const nameEl = $('adm-name-'+nick);
+  if (nameEl) nameEl.textContent = newName.trim();
+  const u = _adminAllUsers.find(x => x.nick === nick);
+  if (u) u.display_name = newName.trim();
+  // Atualiza cache de admins
+  loadAdminCache();
+}
+
+async function adminSetAdmin(nick, value) {
+  const msg = value ? `Tornar @${nick} ADMIN?` : `Remover admin de @${nick}?`;
+  if (!confirm(msg)) return;
+  const token = getCookie('yk_token') || _adminSessionToken || '';
+  const res = await fetch('/admin/set-admin', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ adminNick: me.nick, sessionToken: token, targetNick: nick, value })
+  });
+  const json = await res.json();
+  if (!res.ok) return toast('Erro: ' + (json.error||'?'));
+  toast(value ? `⭐ @${nick} agora é admin!` : `@${nick} não é mais admin`);
+  loadAdminPanel();
+  loadAdminCache();
+}
+
+async function adminDeleteUser(nick) {
+  if (!confirm(`⚠️ DELETAR @${nick} permanentemente?\n\nIsso irá apagar todos os posts, recados e mensagens do usuário.\n\nTem certeza?`)) return;
+  const token = getCookie('yk_token') || _adminSessionToken || '';
+  const res = await fetch('/admin/delete-user', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ adminNick: me.nick, sessionToken: token, targetNick: nick })
+  });
+  const json = await res.json();
+  if (!res.ok) return toast('Erro: ' + (json.error||'?'));
+  toast(`🗑️ @${nick} deletado!`);
+  _adminAllUsers = _adminAllUsers.filter(u => u.nick !== nick);
+  $('adminStatUsers').textContent = _adminAllUsers.length;
+  $('adminStatAdmins').textContent = _adminAllUsers.filter(u => u.is_admin).length;
+  adminRenderUsers(_adminAllUsers);
+}
+
+// Guarda sessionToken em memória para usar nas rotas admin
+let _adminSessionToken = '';
 
 // ── Escuta de DMs (fallback Realtime enquanto app está aberto) ──
 let _dmNotifCh = null;
