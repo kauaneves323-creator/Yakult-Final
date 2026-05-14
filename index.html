@@ -1767,12 +1767,18 @@ async function register(){
   const pass=$('rPass').value;
   if(nick.length<3)return showErr('rErr','Nickname deve ter ao menos 3 caracteres');
   if(pass.length<4)return showErr('rErr','Senha deve ter ao menos 4 caracteres');
-  const{data:exists}=await sb.from('users').select('nick').eq('nick',nick).maybeSingle();
-  if(exists)return showErr('rErr','Nickname já existe!');
-  const hash = await hashPassword(pass, nick);
-  const{error}=await sb.from('users').insert({nick,password_hash:hash,display_name:nick,bio:'',photo:null});
-  if(error)return showErr('rErr','Erro: '+error.message);
-  toast('Conta criada! Entre com seu nick 🎉');
+  try{
+    const res=await fetch('/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nick,password:pass})
+    });
+    const json=await res.json();
+    if(!res.ok)return showErr('rErr',json.error||'Erro ao criar conta');
+    toast('Conta criada! Entre com seu nick 🎉');
+  }catch(err){
+    showErr('rErr','Erro de rede: '+err.message);
+  }
 }
 
 async function login(){
@@ -1782,47 +1788,30 @@ async function login(){
   if(!nick)return showErr('lErr','Digite seu nickname');
   if(!pass)return showErr('lErr','Digite sua senha');
 
-  // Feedback visual enquanto processa o hash
   const btn=document.querySelector('#loginPage .btn-p');
   if(btn){btn.disabled=true;btn.textContent='entrando...';}
 
   try{
-    const{data,error}=await sb.from('users').select('*').eq('nick',nick).maybeSingle();
-    if(error||!data){showErr('lErr','Usuário não encontrado');return;}
-
-    let hashOk = false;
-    let migratedHash = null;
-    const storedHash = data.password_hash || '';
-
-    if(storedHash.startsWith('pbkdf2:') || storedHash.startsWith('sha1fb:')){
-      // Hash moderno — compara direto
-      const computed = await hashPassword(pass, nick);
-      hashOk = (computed === storedHash);
-    } else {
-      // Hash legado (base64 puro) — migra automaticamente ao logar
-      hashOk = (legacyHash(pass) === storedHash);
-      if(hashOk){
-        migratedHash = await hashPassword(pass, nick);
-        await sb.from('users').update({password_hash: migratedHash}).eq('nick', nick);
-        data.password_hash = migratedHash;
-      }
-    }
-
-    if(!hashOk){showErr('lErr','Senha incorreta');return;}
+    const res=await fetch('/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nick,password:pass})
+    });
+    const json=await res.json();
+    if(!res.ok){showErr('lErr',json.error||'Erro ao entrar');return;}
 
     if($('rememberMe').checked){
-      setCookie('yk_nick',nick,30);
-      setCookie('yk_hash',data.password_hash,30);
+      setCookie('yk_nick',json.user.nick,30);
+      setCookie('yk_token',json.sessionToken,30);
     } else {
       deleteCookie('yk_nick');
-      deleteCookie('yk_hash');
+      deleteCookie('yk_token');
     }
 
-    await doLogin(data);
-  } catch(err){
-    console.error('[login]', err);
-    showErr('lErr','Erro inesperado: '+err.message);
-  } finally {
+    await doLogin(json.user);
+  }catch(err){
+    showErr('lErr','Erro de rede: '+err.message);
+  }finally{
     if(btn){btn.disabled=false;btn.textContent='entrar';}
   }
 }
@@ -1856,11 +1845,20 @@ async function doLogin(data){
 // Auto-login via cookie
 async function tryAutoLogin(){
   const nick=getCookie('yk_nick');
-  const hash=getCookie('yk_hash');
-  if(!nick||!hash)return;
-  const{data,error}=await sb.from('users').select('*').eq('nick',nick).maybeSingle();
-  if(error||!data||data.password_hash!==hash)return;
-  await doLogin(data);
+  const token=getCookie('yk_token');
+  if(!nick||!token)return;
+  try{
+    const res=await fetch('/verify-session',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nick,sessionToken:token})
+    });
+    if(!res.ok){deleteCookie('yk_nick');deleteCookie('yk_token');return;}
+    const json=await res.json();
+    if(json.ok&&json.user)await doLogin(json.user);
+  }catch(e){
+    // falha silenciosa — usuário faz login manual
+  }
 }
 
 function updateMyProfileUI(){
