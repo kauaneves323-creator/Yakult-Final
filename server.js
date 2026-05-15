@@ -99,6 +99,11 @@ app.get('/sw.js', (_req, res) => {
   res.sendFile(path.join(rootDir, 'sw.js'));
 });
 
+
+app.get('/clash.html', (_req, res) => {
+  res.sendFile(path.join(rootDir, 'clash.html'));
+});
+
 app.get('/', (_req, res) => {
   res.sendFile(path.join(rootDir, 'index.html'));
 });

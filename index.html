@@ -1195,6 +1195,34 @@
 
       <!-- JOGOS -->
       <div id="tab-games" class="hidden">
+        <!-- SELETOR DE JOGOS -->
+        <div class="card" style="padding:12px">
+          <h3 style="margin-bottom:12px">🎮 Jogos</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div onclick="openGame('royale')" style="background:linear-gradient(135deg,#2d1060,#1a0533);border:2px solid #7b2fff;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+              <div style="font-size:36px;margin-bottom:6px">⚔️</div>
+              <div style="font-weight:bold;color:#f5c518;font-size:13px">Yakult Royale</div>
+              <div style="font-size:10px;color:#a78bca;margin-top:3px">Torre vs Torre</div>
+            </div>
+            <div onclick="openGame('farm')" style="background:linear-gradient(135deg,#1f4d0f,#2d6a1f);border:2px solid #4a9e35;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+              <div style="font-size:36px;margin-bottom:6px">🌾</div>
+              <div style="font-weight:bold;color:#ffe066;font-size:13px">Colheita Feliz</div>
+              <div style="font-size:10px;color:#b5d98a;margin-top:3px">Fazenda & Negócios</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- IFRAME DO YAKULT ROYALE -->
+        <div id="gameRoyaleWrap" style="display:none;position:fixed;inset:0;z-index:500;background:#000;flex-direction:column">
+          <div style="background:#1a0533;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:2px solid #7b2fff22">
+            <span style="color:#f5c518;font-weight:bold;font-size:14px">⚔️ Yakult Royale</span>
+            <button onclick="closeGame('royale')" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:4px 14px;font-size:12px;cursor:pointer">✕ Fechar</button>
+          </div>
+          <iframe id="iframeRoyale" src="" style="flex:1;border:none;width:100%;height:100%" allow="autoplay"></iframe>
+        </div>
+
+        <!-- COLHEITA FELIZ (original) -->
+        <div id="gameFarmWrap">
         <div class="card" style="padding:0;overflow:hidden;border-radius:8px;">
           <!-- HUD -->
           <div id="farmHud" style="background:linear-gradient(135deg,#2d6a1f,#4a9e35);padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1502,7 +1530,8 @@
             <button class="reel-cancel-btn" onclick="closeReelUpload()">Cancelar</button>
           </div>
         </div>
-      </div>
+        </div><!-- /gameFarmWrap -->
+      </div><!-- /tab-games -->
 
       <!-- NOTIFICAÇÕES -->
       <div id="tab-notifications" class="hidden">
@@ -6979,6 +7008,27 @@ async function adminDeleteUser(nick) {
 
 // Guarda sessionToken em memória para usar nas rotas admin
 let _adminSessionToken = '';
+
+
+// ── GAME LAUNCHER ──────────────────────────────────────────
+function openGame(game) {
+  if(game === 'royale') {
+    const wrap = document.getElementById('gameRoyaleWrap');
+    wrap.style.display = 'flex';
+    const iframe = document.getElementById('iframeRoyale');
+    if(!iframe.src || iframe.src === window.location.href) {
+      iframe.src = '/clash.html';
+    }
+  } else if(game === 'farm') {
+    document.getElementById('gameFarmWrap').style.display = 'block';
+  }
+}
+
+function closeGame(game) {
+  if(game === 'royale') {
+    document.getElementById('gameRoyaleWrap').style.display = 'none';
+  }
+}
 
 // ── Escuta de DMs (fallback Realtime enquanto app está aberto) ──
 let _dmNotifCh = null;
