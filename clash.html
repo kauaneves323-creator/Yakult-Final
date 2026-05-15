@@ -263,6 +263,7 @@ body{font-family:'CR',sans-serif;background:#111;color:#fff;overflow:hidden;heig
   display:flex;flex-direction:column;align-items:center;
   pointer-events:none;
   transition:left .4s linear,top .4s linear;
+  transform:translateX(-50%);
 }
 .troop-img{width:34px;height:34px;object-fit:cover;border-radius:5px;
   filter:drop-shadow(0 2px 4px rgba(0,0,0,.8));animation:troopBob .5s ease-in-out infinite}
@@ -762,7 +763,7 @@ const CARDS = [
   {id:'goblin_giant',img:'goblin_giant', name:'Goblin Gigante',cost:6, hp:2800, atk:160, spd:0.7, type:'troop',  target:'towers', range:5},
   {id:'fireball',    img:'fireball',     name:'Bola de Fogo',  cost:4, hp:0,    atk:320, spd:0,   type:'spell',  target:'any',    range:0},
   {id:'archer',      img:null,           name:'Arqueira',      cost:3, hp:280,  atk:55,  spd:1.1, type:'troop',  target:'any',    range:8, emoji:'🏹'},
-  {id:'giant',       img:null,           name:'Gigante',       cost:5, hp:2400, atk:120, spd:0.8, type:'troop',  target:'towers', range:5, emoji:'🦣'},
+  {id:'giant',       img:'data:image/jpeg;base64,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' , name:'Gigante',       cost:5, hp:2400, atk:120, spd:0.8, type:'troop',  target:'towers', range:5},
   {id:'wizard',      img:null,           name:'Mago',          cost:5, hp:380,  atk:110, spd:1.0, type:'troop',  target:'any',    range:8, emoji:'🧙'},
   {id:'skeleton',    img:null,           name:'Esqueletos',    cost:3, hp:80,   atk:40,  spd:1.6, type:'troop',  target:'any',    range:5, emoji:'💀'},
 ];
@@ -1214,7 +1215,6 @@ function spawnTroop(card,xPct,yPct,isMine) {
     :`<div class="troop-emoji-disp">${card.emoji||'❓'}</div>`;
   el.innerHTML=imgHtml+`<div class="troop-hpbar"><div class="troop-hpfill" style="width:100%"></div></div><div class="troop-dot"></div>`;
   el.style.left=xPct+'%'; el.style.top=yPct+'%';
-  el.style.transform='translate(-50%,-50%)';
   arena.appendChild(el);
 
   const troop={id:'t'+(tid++),card,x:xPct,y:yPct,hp:card.hp,maxHp:card.hp,isMine,el,atkCD:0,path:null};
@@ -1351,7 +1351,11 @@ function hitTower(side,tower,dmg) {
   // Shake
   const sfx=side==='mine'?'m':'e';
   const twEl=$('tw-'+sfx+'-'+tower);
-  if(twEl){twEl.style.transform+=' translateX(3px)';setTimeout(()=>twEl.style.transform=twEl.style.transform.replace(' translateX(3px)',''),150);}
+  if(twEl){
+    const orig=twEl.style.transform;
+    twEl.style.transform=(orig||'')+' translateX(3px)';
+    setTimeout(()=>twEl.style.transform=orig,150);
+  }
 
   if(twHp[side][tower]<=0) destroyTower(side,tower);
 }
