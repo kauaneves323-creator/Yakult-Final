@@ -446,6 +446,18 @@ body{font-family:'CR',sans-serif;background:#111;color:#fff;overflow:hidden;heig
   </div>
 </div>
 
+<!-- MODAL CONVITE RECEBIDO -->
+<div class="modal-ov" id="incomingInviteModal">
+  <div class="modal-box">
+    <h3>⚔️ Convite de Batalha!</h3>
+    <p style="margin-bottom:10px"><b id="inviteFromNick">???</b> te desafiou para uma batalha no Yakult Royale!</p>
+    <div class="modal-btns">
+      <button class="modal-btn no" onclick="declineIncomingInvite()">Recusar ❌</button>
+      <button class="modal-btn ok" onclick="acceptIncomingInvite()">Aceitar ⚔️</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ LOBBY ══ -->
 <div class="screen active" id="s-lobby">
   <div class="lobby-bar">
@@ -894,12 +906,88 @@ function collectChest(el) {
 function openModal()  { $('modalFriend').classList.add('open'); }
 function closeModal() { $('modalFriend').classList.remove('open'); }
 
+// ══════════════════════════════════════════════════════════
+// SISTEMA DE CONVITE REAL-TIME (via postMessage → index.html)
+// ══════════════════════════════════════════════════════════
+
+// Ouve mensagens do pai (index.html) com eventos de convite
+window.addEventListener('message', function(e) {
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+
+  if (d.type === 'GAME_INVITE_ACCEPTED') {
+    // O convidado aceitou — entrar na batalha
+    foeNick = d.from; isBot = false;
+    notif('✅ ' + foeNick + ' aceitou o convite!');
+    clearTimeout(_waitTimeout);
+    $('wFoeNick').textContent = foeNick;
+    $('waitSub').textContent = 'Oponente encontrado!';
+    setTimeout(startBattle, 1000);
+  }
+
+  if (d.type === 'GAME_INVITE_DECLINED') {
+    clearTimeout(_waitTimeout);
+    notif('❌ ' + d.from + ' recusou o convite.');
+    show('s-lobby');
+  }
+
+  if (d.type === 'GAME_INVITE_INCOMING') {
+    // Recebemos um convite — mostrar popup de aceitar/recusar
+    _pendingInviteFrom = d.from;
+    $('inviteFromNick').textContent = d.from;
+    $('incomingInviteModal').classList.add('open');
+  }
+
+  if (d.type === 'GAME_INVITE_TIMEOUT_ACK') {
+    // Convidado não respondeu a tempo (index.html nos avisou)
+    clearTimeout(_waitTimeout);
+    notif('⏱️ ' + foeNick + ' não respondeu a tempo.');
+    show('s-lobby');
+  }
+
+  if (d.type === 'GAME_MY_NICK') {
+    // index.html nos enviou o nick do usuário logado
+    myNick = d.nick;
+  }
+});
+
+let _waitTimeout = null;
+let _pendingInviteFrom = null;
+
 function inviteFriend() {
-  const nick=$('friendInp').value.trim();
-  if(!nick)return;
+  const nick = $('friendInp').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  if (!nick) return;
+  if (nick === myNick) { notif('⚠️ Você não pode se convidar!'); return; }
   closeModal();
-  foeNick=nick; isBot=false;
+  foeNick = nick; isBot = false;
+
+  // Pede ao index.html para enviar o convite via Supabase Realtime
+  window.parent.postMessage({ type: 'GAME_SEND_INVITE', to: nick, from: myNick }, '*');
+
   startWait();
+}
+
+function acceptIncomingInvite() {
+  $('incomingInviteModal').classList.remove('open');
+  const from = _pendingInviteFrom;
+  if (!from) return;
+  // Avisa o index.html para broadcast de aceitação
+  window.parent.postMessage({ type: 'GAME_ACCEPT_INVITE', to: from, from: myNick }, '*');
+  // Entra como convidado (foe = quem enviou)
+  foeNick = from; isBot = false;
+  $('wMyNick').textContent = myNick;
+  $('wFoeNick').textContent = foeNick;
+  $('waitSub').textContent = 'Oponente encontrado!';
+  show('s-wait');
+  setTimeout(startBattle, 1200);
+}
+
+function declineIncomingInvite() {
+  $('incomingInviteModal').classList.remove('open');
+  const from = _pendingInviteFrom;
+  if (!from) return;
+  window.parent.postMessage({ type: 'GAME_DECLINE_INVITE', to: from, from: myNick }, '*');
+  _pendingInviteFrom = null;
 }
 
 function startBot() {
@@ -915,11 +1003,13 @@ function startWait() {
   $('wFoeNick').textContent='???';
   $('waitSub').textContent='Aguardando '+foeNick+'...';
   show('s-wait');
-  setTimeout(()=>{
-    $('wFoeNick').textContent=foeNick;
-    $('waitSub').textContent='Oponente encontrado!';
-    setTimeout(startBattle,1000);
-  },2000);
+
+  // Timeout de 30s — se o convidado não responder, cancela
+  _waitTimeout = setTimeout(() => {
+    window.parent.postMessage({ type: 'GAME_INVITE_TIMEOUT', to: foeNick, from: myNick }, '*');
+    notif('⏱️ ' + foeNick + ' não respondeu a tempo.');
+    show('s-lobby');
+  }, 30000);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1344,6 +1434,8 @@ function showResult(reason) {
 // INIT
 // ══════════════════════════════════════════════════════════
 try { myNick=window.parent?.me?.nick||localStorage.getItem('yk_nick')||'Você'; }catch(e){}
+// Pede ao pai o nick mais atualizado (caso rode dentro do iframe do index.html)
+try { window.parent.postMessage({ type: 'GAME_REQUEST_NICK' }, '*'); } catch(e){}
 myDeck=buildMyDeck();
 renderLobby();
 </script>
