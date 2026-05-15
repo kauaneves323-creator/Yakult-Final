@@ -3604,6 +3604,8 @@ function subscribeRealtime(){
     if(el&&!el.classList.contains('hidden'))loadCommComments(postId);
   }).subscribe();
   channels=[ch1,ch2,ch3,ch4,ch5,ch6,ch6b,ch6c,ch6d,ch7,ch8];
+  // Inicia escuta de convites de jogo
+  iniciarEscutaGameInvite();
 }
 
 // ── ENTER ──
@@ -7029,6 +7031,99 @@ function closeGame(game) {
     document.getElementById('gameRoyaleWrap').style.display = 'none';
   }
 }
+
+// ── SISTEMA DE CONVITE DE JOGO (Supabase Realtime Broadcast) ──────────────
+let _gameInviteCh = null;
+
+function iniciarEscutaGameInvite() {
+  if (!me) return;
+  if (_gameInviteCh) { try { sb.removeChannel(_gameInviteCh); } catch(e){} }
+
+  _gameInviteCh = sb.channel('game-invite-' + me.nick)
+    .on('broadcast', { event: 'game_invite' }, ({ payload }) => {
+      const iframe = document.getElementById('iframeRoyale');
+      const wrap   = document.getElementById('gameRoyaleWrap');
+      const from   = payload.from;
+
+      if (wrap.style.display !== 'none' && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'GAME_INVITE_INCOMING', from }, '*');
+      } else {
+        // Abre o clash e entrega o convite assim que carregar
+        openGame('royale');
+        const tryDeliver = (attempts) => {
+          if (attempts <= 0) return;
+          try {
+            iframe.contentWindow.postMessage({ type: 'GAME_INVITE_INCOMING', from }, '*');
+          } catch(e) {
+            setTimeout(() => tryDeliver(attempts - 1), 400);
+          }
+        };
+        iframe.onload = () => { tryDeliver(5); iframe.onload = null; };
+        toast('⚔️ ' + from + ' te desafiou no Yakult Royale!');
+      }
+    })
+    .on('broadcast', { event: 'game_accept' }, ({ payload }) => {
+      const iframe = document.getElementById('iframeRoyale');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'GAME_INVITE_ACCEPTED', from: payload.from }, '*');
+      }
+    })
+    .on('broadcast', { event: 'game_decline' }, ({ payload }) => {
+      const iframe = document.getElementById('iframeRoyale');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'GAME_INVITE_DECLINED', from: payload.from }, '*');
+      }
+    })
+    .subscribe();
+}
+
+// Escuta mensagens vindas do iframe do clash.html
+window.addEventListener('message', function(e) {
+  if (!me || !sb) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+
+  if (d.type === 'GAME_REQUEST_NICK') {
+    const iframe = document.getElementById('iframeRoyale');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'GAME_MY_NICK', nick: me.nick }, '*');
+    }
+    return;
+  }
+
+  // Helper: envia broadcast para o canal do destinatário
+  function sendGameBroadcast(toNick, event, payload) {
+    const chName = 'game-invite-' + toNick;
+    // Verifica se já existe canal subscrito para esse nick
+    let ch = sb.getChannels?.()?.find?.(c => c.topic === 'realtime:' + chName);
+    if (ch && ch.state === 'joined') {
+      ch.send({ type: 'broadcast', event, payload });
+    } else {
+      // Cria canal temporário só para enviar
+      const tmp = sb.channel(chName);
+      tmp.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          tmp.send({ type: 'broadcast', event, payload });
+          // Remove após 3s para não acumular canais
+          setTimeout(() => { try { sb.removeChannel(tmp); } catch(e){} }, 3000);
+        }
+      });
+    }
+  }
+
+  if (d.type === 'GAME_SEND_INVITE') {
+    sendGameBroadcast(d.to, 'game_invite', { from: me.nick });
+    return;
+  }
+  if (d.type === 'GAME_ACCEPT_INVITE') {
+    sendGameBroadcast(d.to, 'game_accept', { from: me.nick });
+    return;
+  }
+  if (d.type === 'GAME_DECLINE_INVITE') {
+    sendGameBroadcast(d.to, 'game_decline', { from: me.nick });
+    return;
+  }
+});
 
 // ── Escuta de DMs (fallback Realtime enquanto app está aberto) ──
 let _dmNotifCh = null;
