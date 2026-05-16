@@ -3822,7 +3822,11 @@ async function loadReels(){
   if(!wall)return;
   wall.innerHTML='<div class="reel-empty">Carregando reels...</div>';
   const{data,error}=await sb.from('reels').select('*').order('created_at',{ascending:false}).limit(30);
-  if(error||!data||!data.length){
+  if(error){
+    wall.innerHTML='<div class="reel-empty">Erro ao carregar reels 😕<br><small style="opacity:.6">'+error.message+'</small></div>';
+    return;
+  }
+  if(!data||!data.length){
     wall.innerHTML='<div class="reel-empty">Nenhum reel ainda.<br>Seja o primeiro a postar! 🎬</div>';
     return;
   }
@@ -3859,7 +3863,7 @@ function buildReelItem(r){
   wrap.className='reel-item';
   wrap.id='reel-'+r.id;
 
-  const isVideo=r.video_url&&(r.video_url.startsWith('data:video')||r.video_url.match(/\.(mp4|mov|webm)/i));
+  const isVideo=r.video_url&&(r.video_url.startsWith('data:video')||r.video_url.match(/\.(mp4|mov|webm)/i)||r.video_url.includes('/reels/')||r.video_url.includes('supabase'));
 
   wrap.innerHTML=`
     ${isVideo
