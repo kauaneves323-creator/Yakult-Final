@@ -19,7 +19,18 @@
       --text:#333;--muted:#777;--scrap-bg:#f1f6ff;--scrap-bdr:#d9e6f6;--radius:6px;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:Arial,Helvetica,sans-serif;font-size:13px;background:var(--blue-light);color:var(--text);min-height:100vh;}
+  body{
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:13px;
+  color:var(--text);
+  min-height:100vh;
+
+  background-image:url('fundo-copa.png');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
     .topbar{background:var(--blue);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;box-shadow:0 2px 4px rgba(0,0,0,.15);}
     .logo{font-size:26px;font-weight:bold;font-style:italic;color:#fff;letter-spacing:-1px;}
     .logo span{color:var(--pink);}
@@ -118,7 +129,20 @@
     .btn-s:hover{background:var(--pink-dark);}
 
     /* POSTAGENS */
-    .post-item{background:var(--scrap-bg);border:1px solid var(--scrap-bdr);border-radius:var(--radius);padding:10px;margin-top:8px;animation:fadeIn .3s ease;}
+   .post-item{
+  background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(5px);
+}
+.card,
+.profile-box,
+.side-box,
+.new-post,
+.scrap-item{
+  background:rgba(0,0,0,.45) !important;
+  backdrop-filter:blur(5px);
+  border:1px solid rgba(255,255,255,.08);
+}
     .post-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
     .post-av{width:32px;height:32px;border-radius:50%;background:var(--blue-bg);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;flex-shrink:0;}
     .post-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
