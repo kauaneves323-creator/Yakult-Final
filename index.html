@@ -47,7 +47,7 @@
       background-repeat:no-repeat;
       background-attachment:fixed;
     }
-    #homePage{display:grid;grid-template-columns:200px 1fr 250px;gap:14px;}
+    #homePage{display:grid;grid-template-columns:200px 1fr 250px;gap:14px;background-image:url('bg.png');background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed;}
 
     @media(max-width:760px){
       #homePage{grid-template-columns:1fr;}
@@ -702,16 +702,30 @@
     .clickable-nick:hover{text-decoration:underline;}
 
     /* ── REELS (Instagram style) ── */
-    #tab-reels{ position:relative; }
+    #tab-reels{ 
+      position:fixed;
+      top:70px;
+      left:0;
+      right:0;
+      bottom:0;
+      width:100%;
+      height:calc(100vh - 70px);
+      background:#000;
+      z-index:50;
+      display:flex;
+      flex-direction:column;
+    }
+    #tab-reels.hidden{
+      display:none!important;
+    }
 
     /* Scroll-snap container */
     .reels-viewport{
-      width:100%;max-width:100%;margin:0 auto;
-      height:calc(100vh - 60px);
+      width:100%;
+      flex:1;
       overflow-y:scroll;
       scroll-snap-type:y mandatory;
       -webkit-overflow-scrolling:touch;
-      border-radius:0;
       background:#000;
       display:flex;
       flex-direction:column;
@@ -722,8 +736,8 @@
     .reel-item{
       position:relative;
       width:100%;
-      height:calc(100vh - 60px);
-      min-height:calc(100vh - 60px);
+      height:100vh;
+      min-height:100vh;
       scroll-snap-align:start;
       background:#000;
       overflow:hidden;
@@ -838,7 +852,7 @@
       display:flex;align-items:center;justify-content:space-around;
       border-top:1px solid rgba(255,255,255,.15);
       width:100%;
-      z-index:100;
+      z-index:101;
     }
     .rbn-btn{
       display:flex;flex-direction:column;align-items:center;
