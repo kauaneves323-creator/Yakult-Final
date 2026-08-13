@@ -1801,10 +1801,17 @@ let SUPA_URL=null;
 let SUPA_KEY=null;
 
 async function initSupabase(){
-  // ⚠️ Substitua pelos seus valores do Supabase → Project Settings → 
-  SUPA_URL = 'https://nctzqgochkfrlxjjawan.supabase.co';
-SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jdHpxZ29jaGtmcmx4amphd2FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NjA0NzAsImV4cCI6MjA5MTMzNjQ3MH0.t-8emaxQvPhdS2M-ofT1VUaX8V2X6k76vUW20WV81ME';
-sb = createClient(SUPA_URL, SUPA_KEY);
+  // Busca a URL e a chave (anon) no servidor, via GET /config.
+  // Assim nenhuma chave fica escrita direto no HTML.
+  const res = await fetch('/config');
+  if(!res.ok){
+    console.error('Não foi possível carregar /config. Verifique as variáveis de ambiente SUPA_URL e SUPA_KEY no servidor.');
+    return;
+  }
+  const cfg = await res.json();
+  SUPA_URL = cfg.supaUrl;
+  SUPA_KEY = cfg.supaKey;
+  sb = createClient(SUPA_URL, SUPA_KEY);
 }
 
 
