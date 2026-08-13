@@ -126,7 +126,10 @@ app.post('/register', async (req, res) => {
     const { status: s, data: existing } = await supaFetch(
       `/users?nick=eq.${encodeURIComponent(nick)}&select=nick&limit=1`
     );
-    if (s !== 200) return res.status(500).json({ error: 'Erro ao consultar banco' });
+    if (s !== 200) {
+      console.error('[register] falha ao consultar banco. status:', s, 'resposta:', JSON.stringify(existing));
+      return res.status(500).json({ error: 'Erro ao consultar banco' });
+    }
     if (existing && existing.length > 0) return res.status(409).json({ error: 'Nickname já existe!' });
 
     // Cria o hash e insere
@@ -238,6 +241,191 @@ app.post('/verify-session', async (req, res) => {
     console.error('[verify-session]', err);
     return res.status(500).json({ error: 'Erro interno: ' + err.message });
   }
+});
+
+// ── Helper: verificar se o sessionToken pertence mesmo ao nick ──
+async function verifySession(nick, token) {
+  if (!nick || !token) return false;
+  const { status, data } = await supaFetch(
+    `/users?nick=eq.${encodeURIComponent(nick)}&session_token=eq.${encodeURIComponent(token)}&select=nick&limit=1`
+  );
+  return status === 200 && !!data && data.length > 0;
+}
+
+function dmConvKey(a, b) {
+  return [a, b].sort().join('|');
+}
+
+// ── POST /profile/update ───────────────────────────────────────
+// Atualiza nome, bio, site e gmail do próprio usuário logado.
+app.post('/profile/update', async (req, res) => {
+  const { nick, sessionToken, display_name, bio, site, gmail } = req.body;
+  if (!(await verifySession(nick, sessionToken)))
+    return res.status(403).json({ error: 'Sessão inválida' });
+
+  const name = (display_name || '').trim();
+  if (!name) return res.status(400).json({ error: 'Nome não pode ser vazio' });
+  if (gmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gmail))
+    return res.status(400).json({ error: 'Gmail inválido' });
+
+  const { status } = await supaFetch(`/users?nick=eq.${encodeURIComponent(nick)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      display_name: name,
+      bio: (bio || '').trim(),
+      site: site ? site.trim() : null,
+      gmail: gmail ? gmail.trim() : null
+    })
+  });
+  if (status !== 200) return res.status(500).json({ error: 'Erro ao atualizar perfil' });
+  return res.json({ ok: true });
+});
+
+// ── POST /profile/change-password ──────────────────────────────
+// Troca a senha do próprio usuário logado, exigindo a senha atual.
+app.post('/profile/change-password', async (req, res) => {
+  const { nick, sessionToken, oldPassword, newPassword } = req.body;
+  if (!(await verifySession(nick, sessionToken)))
+    return res.status(403).json({ error: 'Sessão inválida' });
+
+  if (!oldPassword || !newPassword)
+    return res.status(400).json({ error: 'Preencha todos os campos' });
+  if (newPassword.length < 4)
+    return res.status(400).json({ error: 'A nova senha deve ter ao menos 4 caracteres' });
+
+  const { status: s, data } = await supaFetch(
+    `/users?nick=eq.${encodeURIComponent(nick)}&select=password_hash&limit=1`
+  );
+  if (s !== 200 || !data || !data.length)
+    return res.status(404).json({ error: 'Usuário não encontrado' });
+
+  const storedHash = data[0].password_hash || '';
+  const ok = await checkPassword(oldPassword, nick, storedHash);
+  if (!ok) return res.status(401).json({ error: 'Senha atual incorreta' });
+
+  const newHash = await hashPasswordAsync(newPassword, nick);
+  const { status: up } = await supaFetch(`/users?nick=eq.${encodeURIComponent(nick)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ password_hash: newHash })
+  });
+  if (up !== 200) return res.status(500).json({ error: 'Erro ao redefinir senha' });
+  return res.json({ ok: true, newHash });
+});
+
+// ── POST /profile/photo ────────────────────────────────────────
+// Atualiza a foto de perfil do próprio usuário logado.
+app.post('/profile/photo', async (req, res) => {
+  const { nick, sessionToken, photo } = req.body;
+  if (!(await verifySession(nick, sessionToken)))
+    return res.status(403).json({ error: 'Sessão inválida' });
+  if (!photo) return res.status(400).json({ error: 'Foto ausente' });
+  if (photo.length > 3 * 1024 * 1024)
+    return res.status(400).json({ error: 'Foto muito grande' });
+
+  const { status } = await supaFetch(`/users?nick=eq.${encodeURIComponent(nick)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ photo })
+  });
+  if (status !== 200) return res.status(500).json({ error: 'Erro ao salvar foto' });
+  return res.json({ ok: true });
+});
+
+// ── POST /dms/unread ────────────────────────────────────────────
+// Contagem de mensagens não lidas por remetente.
+app.post('/dms/unread', async (req, res) => {
+  const { nick, sessionToken } = req.body;
+  if (!(await verifySession(nick, sessionToken)))
+    return res.status(403).json({ error: 'Sessão inválida' });
+
+  const { status, data } = await supaFetch(
+    `/dms?to_nick=eq.${encodeURIComponent(nick)}&read=eq.false&select=from_nick`
+  );
+  if (status !== 200) return res.status(500).json({ error: 'Erro ao buscar mensagens' });
+
+  const counts = {};
+  (data || []).forEach(m => { counts[m.from_nick] = (counts[m.from_nick] || 0) + 1; });
+  return res.json({ ok: true, counts });
+});
+
+// ── POST /dms/list ──────────────────────────────────────────────
+// Lista de conversas do usuário logado (última mensagem de cada uma).
+app.post('/dms/list', async (req, res) => {
+  const { nick, sessionToken } = req.body;
+  if (!(await verifySession(nick, sessionToken)))
+    return res.status(403).json({ error: 'Sessão inválida' });
+
+  const { data: sent }   = await supaFetch(`/dms?from_nick=eq.${encodeURIComponent(nick)}&select=to_nick,text,created_at&order=created_at.desc`);
+  const { data: recv }   = await supaFetch(`/dms?to_nick=eq.${encodeURIComponent(nick)}&select=from_nick,text,created_at&order=created_at.desc`);
+  const { data: unread } = await supaFetch(`/dms?to_nick=eq.${encodeURIComponent(nick)}&read=eq.false&select=from_nick`);
+
+  const unreadCounts = {};
+  (unread || []).forEach(m => { unreadCounts[m.from_nick] = (unreadCounts[m.from_nick] || 0) + 1; });
+
+  const convMap = {};
+  (sent || []).forEach(m => {
+    const k = m.to_nick;
+    if (!convMap[k] || new Date(m.created_at) > new Date(convMap[k].ts))
+      convMap[k] = { partner: k, preview: m.text, ts: m.created_at, unread: unreadCounts[k] || 0 };
+  });
+  (recv || []).forEach(m => {
+    const k = m.from_nick;
+    if (!convMap[k] || new Date(m.created_at) > new Date(convMap[k].ts))
+      convMap[k] = { partner: k, preview: m.text, ts: m.created_at, unread: unreadCounts[k] || 0 };
+    else
+      convMap[k].unread = unreadCounts[k] || 0;
+  });
+
+  return res.json({ ok: true, conversations: Object.values(convMap) });
+});
+
+// ── POST /dms/conversation ─────────────────────────────────────
+// Mensagens trocadas com um parceiro específico; marca como lidas.
+app.post('/dms/conversation', async (req, res) => {
+  const { nick, sessionToken, partner } = req.body;
+  if (!(await verifySession(nick, sessionToken)))
+    return res.status(403).json({ error: 'Sessão inválida' });
+  if (!partner) return res.status(400).json({ error: 'Parceiro ausente' });
+
+  const key = dmConvKey(nick, partner);
+  const { status, data } = await supaFetch(
+    `/dms?conv_key=eq.${encodeURIComponent(key)}&select=*&order=created_at.asc`
+  );
+  if (status !== 200) return res.status(500).json({ error: 'Erro ao buscar mensagens' });
+
+  await supaFetch(
+    `/dms?to_nick=eq.${encodeURIComponent(nick)}&from_nick=eq.${encodeURIComponent(partner)}`,
+    { method: 'PATCH', body: JSON.stringify({ read: true }) }
+  );
+
+  return res.json({ ok: true, messages: data || [] });
+});
+
+// ── POST /dms/send ──────────────────────────────────────────────
+// Envia uma mensagem privada.
+app.post('/dms/send', async (req, res) => {
+  const { nick, sessionToken, to, text, mediaData, mediaType } = req.body;
+  if (!(await verifySession(nick, sessionToken)))
+    return res.status(403).json({ error: 'Sessão inválida' });
+  if (!to) return res.status(400).json({ error: 'Destinatário ausente' });
+  if (!text && !mediaData) return res.status(400).json({ error: 'Mensagem vazia' });
+  if (mediaData && mediaData.length > 12 * 1024 * 1024)
+    return res.status(400).json({ error: 'Mídia muito grande' });
+
+  const key = dmConvKey(nick, to);
+  const { status, data } = await supaFetch('/dms', {
+    method: 'POST',
+    body: JSON.stringify({
+      from_nick: nick,
+      to_nick: to,
+      text: text || '',
+      conv_key: key,
+      read: false,
+      media_data: mediaData || null,
+      media_type: mediaType || null
+    })
+  });
+  if (status !== 201) return res.status(500).json({ error: 'Erro ao enviar mensagem' });
+  return res.json({ ok: true, message: (data || [])[0] });
 });
 
 // ── Helper: verificar se requisitante é admin ──────────────────
