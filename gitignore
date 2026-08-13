@@ -1,0 +1,15 @@
+# Segredos — nunca commitar
+.env
+.env.*
+!.env.example
+
+# Dependências
+node_modules/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
